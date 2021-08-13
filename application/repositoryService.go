@@ -10,7 +10,7 @@ import (
 )
 
 type repositoryService struct {
-	model             domain.Entity
+	model             *domain.Entity
 	queryRepository   contracts.QueryRepositoryAdapter
 	commandRepository contracts.CommandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
@@ -19,12 +19,14 @@ type repositoryService struct {
 
 func (r *repositoryService) SetQueryRepositoryAdapter(adapter contracts.QueryRepositoryAdapter) *repositoryService {
 	r.queryRepository = adapter
+	r.model.ID = uuid.Nil
 	r.queryRepository.SetModel(r.model)
 	return r
 }
 
 func (r *repositoryService) SetCommandRepositoryAdapter(adapter contracts.CommandRepositoryAdapter) *repositoryService {
 	r.commandRepository = adapter
+	r.model.ID = uuid.Nil
 	r.commandRepository.SetModel(r.model)
 	return r
 }

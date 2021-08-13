@@ -11,7 +11,7 @@ import (
 
 type adapter struct {
 	conn  *gorm.DB
-	model domain.Entity
+	model *domain.Entity
 }
 
 type clients struct {
@@ -42,7 +42,7 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func (a *adapter) SetModel(model domain.Entity) {
+func (a *adapter) SetModel(model *domain.Entity) {
 	a.model = model
 }
 

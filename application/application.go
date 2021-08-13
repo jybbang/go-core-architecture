@@ -81,7 +81,7 @@ func GetStateService() *stateService {
 	return statesInstance
 }
 
-func GetRepositoryService(model domain.Entity) *repositoryService {
+func GetRepositoryService(model *domain.Entity) *repositoryService {
 	valueOf := reflect.ValueOf(model)
 	key := valueOf.Type().Name()
 

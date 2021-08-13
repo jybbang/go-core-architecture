@@ -5,7 +5,7 @@ import (
 )
 
 type CommandRepositoryAdapter interface {
-	SetModel(domain.Entity)
+	SetModel(*domain.Entity)
 	Remove(*domain.Entity) error
 	RemoveRange([]*domain.Entity) error
 	Add(*domain.Entity) error

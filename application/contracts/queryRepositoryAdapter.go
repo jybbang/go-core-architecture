@@ -6,7 +6,7 @@ import (
 )
 
 type QueryRepositoryAdapter interface {
-	SetModel(domain.Entity)
+	SetModel(*domain.Entity)
 	Find(domain.Copyable, uuid.UUID) error
 	Any() (bool, error)
 	AnyWithFilter(interface{}, interface{}) (bool, error)

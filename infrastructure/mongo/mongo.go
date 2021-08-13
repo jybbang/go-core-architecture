@@ -15,7 +15,7 @@ import (
 )
 
 type adapter struct {
-	model      domain.Entity
+	model      *domain.Entity
 	conn       *mongo.Client
 	database   *mongo.Database
 	collection *mongo.Collection
@@ -83,7 +83,7 @@ func NewMongoAdapter(connectionUri string, dbName string) *adapter {
 	return mongo
 }
 
-func (a *adapter) SetModel(model domain.Entity) {
+func (a *adapter) SetModel(model *domain.Entity) {
 	valueOf := reflect.ValueOf(model)
 	key := valueOf.Type().Name()
 
