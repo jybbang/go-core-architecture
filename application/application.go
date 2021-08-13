@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/jybbang/core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/domain"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"

@@ -1,4 +1,4 @@
-module github.com/jybbang/core-architecture
+module github.com/jybbang/go-core-architecture
 
 go 1.16
 

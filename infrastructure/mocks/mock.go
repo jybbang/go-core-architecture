@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 	cmap "github.com/orcaman/concurrent-map"
 
-	"github.com/jybbang/core-architecture/application/contracts"
-	"github.com/jybbang/core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/application/contracts"
+	"github.com/jybbang/go-core-architecture/domain"
 )
 
 type adapter struct {

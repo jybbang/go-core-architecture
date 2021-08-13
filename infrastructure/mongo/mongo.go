@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/google/uuid"
-	"github.com/jybbang/core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/domain"
 	"go.uber.org/zap"
 )
 

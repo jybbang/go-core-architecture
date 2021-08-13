@@ -2,7 +2,7 @@ package contracts
 
 import (
 	"github.com/google/uuid"
-	"github.com/jybbang/core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/domain"
 )
 
 type QueryRepositoryAdapter interface {

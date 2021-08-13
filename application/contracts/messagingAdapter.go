@@ -1,6 +1,6 @@
 package contracts
 
-import "github.com/jybbang/core-architecture/domain"
+import "github.com/jybbang/go-core-architecture/domain"
 
 type ReplyHandler func(string)
 

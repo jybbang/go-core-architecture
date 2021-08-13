@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"github.com/jybbang/core-architecture/application"
+	"github.com/jybbang/go-core-architecture/application"
 	"go.uber.org/zap"
 )
 

@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/jybbang/core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/domain"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

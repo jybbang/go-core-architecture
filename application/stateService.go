@@ -3,8 +3,8 @@ package application
 import (
 	"sync"
 
-	"github.com/jybbang/core-architecture/application/contracts"
-	"github.com/jybbang/core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/application/contracts"
+	"github.com/jybbang/go-core-architecture/domain"
 	"github.com/sony/gobreaker"
 )
 

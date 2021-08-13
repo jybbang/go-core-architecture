@@ -9,8 +9,8 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 	"go.uber.org/zap"
 
-	"github.com/jybbang/core-architecture/application/contracts"
-	"github.com/jybbang/core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/application/contracts"
+	"github.com/jybbang/go-core-architecture/domain"
 )
 
 type adapter struct {
