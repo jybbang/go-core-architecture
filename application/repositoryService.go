@@ -10,7 +10,7 @@ import (
 )
 
 type repositoryService struct {
-	model             *domain.Entity
+	model             domain.Entitier
 	queryRepository   contracts.QueryRepositoryAdapter
 	commandRepository contracts.CommandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
@@ -19,19 +19,19 @@ type repositoryService struct {
 
 func (r *repositoryService) SetQueryRepositoryAdapter(adapter contracts.QueryRepositoryAdapter) *repositoryService {
 	r.queryRepository = adapter
-	r.model.ID = uuid.Nil
+	r.model.SetID(uuid.Nil)
 	r.queryRepository.SetModel(r.model)
 	return r
 }
 
 func (r *repositoryService) SetCommandRepositoryAdapter(adapter contracts.CommandRepositoryAdapter) *repositoryService {
 	r.commandRepository = adapter
-	r.model.ID = uuid.Nil
+	r.model.SetID(uuid.Nil)
 	r.commandRepository.SetModel(r.model)
 	return r
 }
 
-func (r *repositoryService) Find(dto domain.Copyable, id uuid.UUID) error {
+func (r *repositoryService) Find(dto domain.Entitier, id uuid.UUID) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.Find(dto, id)
 		return nil, err
@@ -67,7 +67,7 @@ func (r *repositoryService) CountWithFilter(query interface{}, args interface{})
 	return resp.(int64), err
 }
 
-func (r *repositoryService) List(dtos []domain.Copyable) error {
+func (r *repositoryService) List(dtos []domain.Entitier) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.List(dtos)
 		return nil, err
@@ -75,7 +75,7 @@ func (r *repositoryService) List(dtos []domain.Copyable) error {
 	return err
 }
 
-func (r *repositoryService) ListWithFilter(dtos []domain.Copyable, query interface{}, args interface{}) error {
+func (r *repositoryService) ListWithFilter(dtos []domain.Entitier, query interface{}, args interface{}) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.ListWithFilter(dtos, query, args)
 		return nil, err
@@ -83,7 +83,7 @@ func (r *repositoryService) ListWithFilter(dtos []domain.Copyable, query interfa
 	return err
 }
 
-func (r *repositoryService) Remove(entity *domain.Entity) error {
+func (r *repositoryService) Remove(entity domain.Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -94,7 +94,7 @@ func (r *repositoryService) Remove(entity *domain.Entity) error {
 	return err
 }
 
-func (r *repositoryService) RemoveRange(entities []*domain.Entity) error {
+func (r *repositoryService) RemoveRange(entities []domain.Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -105,7 +105,7 @@ func (r *repositoryService) RemoveRange(entities []*domain.Entity) error {
 	return err
 }
 
-func (r *repositoryService) Add(entity *domain.Entity) error {
+func (r *repositoryService) Add(entity domain.Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -116,7 +116,7 @@ func (r *repositoryService) Add(entity *domain.Entity) error {
 	return err
 }
 
-func (r *repositoryService) AddRange(entities []*domain.Entity) error {
+func (r *repositoryService) AddRange(entities []domain.Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -127,7 +127,7 @@ func (r *repositoryService) AddRange(entities []*domain.Entity) error {
 	return err
 }
 
-func (r *repositoryService) Update(entity *domain.Entity) error {
+func (r *repositoryService) Update(entity domain.Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -138,7 +138,7 @@ func (r *repositoryService) Update(entity *domain.Entity) error {
 	return err
 }
 
-func (r *repositoryService) UpdateRange(entities []*domain.Entity) error {
+func (r *repositoryService) UpdateRange(entities []domain.Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 

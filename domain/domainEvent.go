@@ -16,6 +16,31 @@ type DomainEvent struct {
 	PublishedAt             time.Time
 }
 
+type DomainEventer interface {
+	GetID() uuid.UUID
+	GetEventID() uuid.UUID
+	GetTopic() string
+	GetCanPublishToEventsource() bool
+	AddingEvent()
+	PublishingEvent(time.Time)
+}
+
+func (e *DomainEvent) GetID() uuid.UUID {
+	return e.ID
+}
+
+func (e *DomainEvent) GetEventID() uuid.UUID {
+	return e.EventID
+}
+
+func (e *DomainEvent) GetTopic() string {
+	return e.Topic
+}
+
+func (e *DomainEvent) GetCanPublishToEventsource() bool {
+	return e.CanPublishToEventsource
+}
+
 func (e *DomainEvent) AddingEvent() {
 	e.EventID = uuid.New()
 	e.CreatedAt = time.Now()

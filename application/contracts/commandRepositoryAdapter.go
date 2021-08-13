@@ -1,15 +1,13 @@
 package contracts
 
-import (
-	"github.com/jybbang/go-core-architecture/domain"
-)
+import "github.com/jybbang/go-core-architecture/domain"
 
 type CommandRepositoryAdapter interface {
-	SetModel(*domain.Entity)
-	Remove(*domain.Entity) error
-	RemoveRange([]*domain.Entity) error
-	Add(*domain.Entity) error
-	AddRange([]*domain.Entity) error
-	Update(*domain.Entity) error
-	UpdateRange([]*domain.Entity) error
+	SetModel(domain.Entitier)
+	Remove(domain.Entitier) error
+	RemoveRange([]domain.Entitier) error
+	Add(domain.Entitier) error
+	AddRange([]domain.Entitier) error
+	Update(domain.Entitier) error
+	UpdateRange([]domain.Entitier) error
 }

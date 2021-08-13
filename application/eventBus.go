@@ -13,7 +13,7 @@ import (
 type eventBus struct {
 	mediator     *mediator
 	messaging    contracts.MessagingAdapter
-	domainEvents []*domain.DomainEvent
+	domainEvents []domain.DomainEventer
 	cb           *gobreaker.CircuitBreaker
 	sync.RWMutex
 }
@@ -23,7 +23,7 @@ func (e *eventBus) SetMessaingAdapter(messageService contracts.MessagingAdapter)
 	return e
 }
 
-func (e *eventBus) AddDomainEvent(domainEvent *domain.DomainEvent) {
+func (e *eventBus) AddDomainEvent(domainEvent domain.DomainEventer) {
 	e.Lock()
 	defer e.Unlock()
 
@@ -52,7 +52,7 @@ func (e *eventBus) PublishDomainEvents() error {
 				return nil, mediatorErr
 			}
 
-			if !event.CanPublishToEventsource {
+			if !event.GetCanPublishToEventsource() {
 				continue
 			}
 
@@ -67,7 +67,7 @@ func (e *eventBus) PublishDomainEvents() error {
 	return err
 }
 
-func (e *eventBus) dequeueDomainEvent() (*domain.DomainEvent, error) {
+func (e *eventBus) dequeueDomainEvent() (domain.DomainEventer, error) {
 	if len(e.domainEvents) > 0 {
 		result := e.domainEvents[0]
 		e.domainEvents = e.domainEvents[1:]

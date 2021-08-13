@@ -56,7 +56,7 @@ func GetEventBus() *eventBus {
 
 				eventBusInstance = &eventBus{
 					mediator:     GetMediator(),
-					domainEvents: make([]*domain.DomainEvent, 0),
+					domainEvents: make([]domain.DomainEventer, 0),
 					cb:           gobreaker.NewCircuitBreaker(st),
 				}
 				log.Info("eventbus created")

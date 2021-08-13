@@ -16,6 +16,20 @@ type Entity struct {
 	DeletedAt  gorm.DeletedAt `gorm:"index" bson:"deleted_at,omitempty"`
 }
 
+type Entitier interface {
+	GetID() uuid.UUID
+	SetID(uuid.UUID)
+	CopyWith(interface{}) bool
+}
+
+func (e *Entity) GetID() uuid.UUID {
+	return e.ID
+}
+
+func (e *Entity) SetID(id uuid.UUID) {
+	e.ID = id
+}
+
 func (e *Entity) CopyWith(src interface{}) bool {
 	source, ok := src.(*Entity)
 	e.ID = source.ID

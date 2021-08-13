@@ -11,7 +11,7 @@ import (
 )
 
 type adapter struct {
-	model   domain.Entity
+	model   domain.Entitier
 	db      cmap.ConcurrentMap
 	pubsubs cmap.ConcurrentMap
 	states  cmap.ConcurrentMap
@@ -30,7 +30,7 @@ func (a *adapter) Has(key string) (bool, error) {
 	return a.states.Has(key), nil
 }
 
-func (a *adapter) Get(key string, dest domain.Copyable) (bool, error) {
+func (a *adapter) Get(key string, dest domain.Entitier) (bool, error) {
 	log.Println("mock get", key)
 	if resp, ok := a.states.Get(key); ok {
 		dest.CopyWith(resp)
@@ -45,8 +45,8 @@ func (a *adapter) Set(key string, value interface{}) error {
 	return nil
 }
 
-func (a *adapter) Publish(domainEvent *domain.DomainEvent) error {
-	log.Println("mock publish", domainEvent.ID, domainEvent.Topic)
+func (a *adapter) Publish(domainEvent domain.DomainEventer) error {
+	log.Println("mock publish", domainEvent.GetID(), domainEvent.GetTopic())
 	return nil
 }
 
@@ -62,12 +62,12 @@ func (a *adapter) Unsubscribe(topic string) error {
 	return nil
 }
 
-func (a *adapter) SetModel(model domain.Entity) {
+func (a *adapter) SetModel(model domain.Entitier) {
 	log.Println("mock setmodel")
 	a.model = model
 }
 
-func (a *adapter) Find(dto domain.Copyable, id uuid.UUID) error {
+func (a *adapter) Find(dto domain.Entitier, id uuid.UUID) error {
 	log.Println("mock find", id)
 	if resp, ok := a.db.Get(id.String()); ok {
 		dto.CopyWith(resp)
@@ -100,33 +100,33 @@ func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, e
 	return int64(count), nil
 }
 
-func (a *adapter) List(dtos []domain.Copyable) error {
+func (a *adapter) List(dtos []domain.Entitier) error {
 	log.Println("mock list")
 	for _, v := range a.db.Items() {
-		entity := v.(domain.Copyable)
+		entity := v.(domain.Entitier)
 		dtos = append(dtos, entity)
 	}
 
 	return nil
 }
 
-func (a *adapter) ListWithFilter(dtos []domain.Copyable, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(dtos []domain.Entitier, query interface{}, args interface{}) error {
 	log.Println("mock listwithfilter")
 	for _, v := range a.db.Items() {
-		entity := v.(domain.Copyable)
+		entity := v.(domain.Entitier)
 		dtos = append(dtos, entity)
 	}
 
 	return nil
 }
 
-func (a *adapter) Remove(entity *domain.Entity) error {
+func (a *adapter) Remove(entity domain.Entitier) error {
 	log.Println("mock remove", entity)
-	a.db.Remove(entity.ID.String())
+	a.db.Remove(entity.GetID().String())
 	return nil
 }
 
-func (a *adapter) RemoveRange(entities []*domain.Entity) error {
+func (a *adapter) RemoveRange(entities []domain.Entitier) error {
 	log.Println("mock removerange")
 	for _, v := range entities {
 		a.Remove(v)
@@ -134,13 +134,13 @@ func (a *adapter) RemoveRange(entities []*domain.Entity) error {
 	return nil
 }
 
-func (a *adapter) Add(entity *domain.Entity) error {
+func (a *adapter) Add(entity domain.Entitier) error {
 	log.Println("mock add", entity)
-	a.db.Set(entity.ID.String(), entity)
+	a.db.Set(entity.GetID().String(), entity)
 	return nil
 }
 
-func (a *adapter) AddRange(entities []*domain.Entity) error {
+func (a *adapter) AddRange(entities []domain.Entitier) error {
 	log.Println("mock addrange")
 	for _, v := range entities {
 		a.Add(v)
@@ -148,12 +148,12 @@ func (a *adapter) AddRange(entities []*domain.Entity) error {
 	return nil
 }
 
-func (a *adapter) Update(entity *domain.Entity) error {
+func (a *adapter) Update(entity domain.Entitier) error {
 	log.Println("mock update", entity)
 	return a.Add(entity)
 }
 
-func (a *adapter) UpdateRange(entities []*domain.Entity) error {
+func (a *adapter) UpdateRange(entities []domain.Entitier) error {
 	log.Println("mock updaterange")
 	return a.AddRange(entities)
 }

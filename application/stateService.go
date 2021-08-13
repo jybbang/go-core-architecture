@@ -31,7 +31,7 @@ func (s *stateService) Has(key string) (bool, error) {
 	return resp.(bool), err
 }
 
-func (s *stateService) Get(key string, dest domain.Copyable) (bool, error) {
+func (s *stateService) Get(key string, dest domain.Entitier) (bool, error) {
 	resp, err := s.cb.Execute(func() (interface{}, error) {
 		resp, err := s.state.Get(key, dest)
 		if err != nil {

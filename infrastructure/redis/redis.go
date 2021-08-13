@@ -87,7 +87,7 @@ func (a *adapter) Has(key string) (bool, error) {
 	return value > 0, err
 }
 
-func (a *adapter) Get(key string, dest domain.Copyable) (bool, error) {
+func (a *adapter) Get(key string, dest domain.Entitier) (bool, error) {
 	value, err := a.redis.Get(ctx, key).Bytes()
 	if err == redis.Nil {
 		return false, domain.ErrNotFound
@@ -107,8 +107,8 @@ func (a *adapter) Set(key string, value interface{}) error {
 	return a.redis.Set(ctx, key, bytes, 0).Err()
 }
 
-func (a *adapter) Publish(domainEvent *domain.DomainEvent) error {
-	err := a.redis.Publish(ctx, domainEvent.Topic, domainEvent).Err()
+func (a *adapter) Publish(domainEvent domain.DomainEventer) error {
+	err := a.redis.Publish(ctx, domainEvent.GetTopic(), domainEvent).Err()
 	return err
 }
 

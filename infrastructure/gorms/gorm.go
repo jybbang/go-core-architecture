@@ -11,7 +11,7 @@ import (
 
 type adapter struct {
 	conn  *gorm.DB
-	model *domain.Entity
+	model domain.Entitier
 }
 
 type clients struct {
@@ -42,11 +42,11 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func (a *adapter) SetModel(model *domain.Entity) {
+func (a *adapter) SetModel(model domain.Entitier) {
 	a.model = model
 }
 
-func (a *adapter) Find(dto domain.Copyable, id uuid.UUID) error {
+func (a *adapter) Find(dto domain.Entitier, id uuid.UUID) error {
 	a.conn.Take(dto, id)
 	if dto == nil {
 		return domain.ErrNotFound
@@ -79,7 +79,7 @@ func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, e
 	return *count, nil
 }
 
-func (a *adapter) List(dtos []domain.Copyable) error {
+func (a *adapter) List(dtos []domain.Entitier) error {
 	a.conn.Find(dtos)
 	if dtos == nil {
 		return domain.ErrNotFound
@@ -88,7 +88,7 @@ func (a *adapter) List(dtos []domain.Copyable) error {
 	return nil
 }
 
-func (a *adapter) ListWithFilter(dtos []domain.Copyable, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(dtos []domain.Entitier, query interface{}, args interface{}) error {
 	a.conn.Find(dtos).Where(query, args)
 	if dtos == nil {
 		return domain.ErrNotFound
@@ -97,32 +97,32 @@ func (a *adapter) ListWithFilter(dtos []domain.Copyable, query interface{}, args
 	return nil
 }
 
-func (a *adapter) Remove(entity *domain.Entity) error {
-	a.conn.Delete(entity, entity.ID)
+func (a *adapter) Remove(entity domain.Entitier) error {
+	a.conn.Delete(entity, entity.GetID())
 	return nil
 }
 
-func (a *adapter) RemoveRange(entities []*domain.Entity) error {
+func (a *adapter) RemoveRange(entities []domain.Entitier) error {
 	a.conn.Delete(entities)
 	return nil
 }
 
-func (a *adapter) Add(entity *domain.Entity) error {
+func (a *adapter) Add(entity domain.Entitier) error {
 	a.conn.Create(entity)
 	return nil
 }
 
-func (a *adapter) AddRange(entities []*domain.Entity) error {
+func (a *adapter) AddRange(entities []domain.Entitier) error {
 	a.conn.Create(entities)
 	return nil
 }
 
-func (a *adapter) Update(entity *domain.Entity) error {
+func (a *adapter) Update(entity domain.Entitier) error {
 	a.conn.Model(entity).Updates(entity)
 	return nil
 }
 
-func (a *adapter) UpdateRange(entities []*domain.Entity) error {
+func (a *adapter) UpdateRange(entities []domain.Entitier) error {
 	a.conn.Model(a.model).Updates(entities)
 	return nil
 }

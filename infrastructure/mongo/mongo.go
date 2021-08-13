@@ -15,7 +15,7 @@ import (
 )
 
 type adapter struct {
-	model      *domain.Entity
+	model      domain.Entitier
 	conn       *mongo.Client
 	database   *mongo.Database
 	collection *mongo.Collection
@@ -83,7 +83,7 @@ func NewMongoAdapter(connectionUri string, dbName string) *adapter {
 	return mongo
 }
 
-func (a *adapter) SetModel(model *domain.Entity) {
+func (a *adapter) SetModel(model domain.Entitier) {
 	valueOf := reflect.ValueOf(model)
 	key := valueOf.Type().Name()
 
@@ -91,7 +91,7 @@ func (a *adapter) SetModel(model *domain.Entity) {
 	a.collection = a.database.Collection(key)
 }
 
-func (a *adapter) Find(model *domain.Entity, dto domain.Copyable, id uuid.UUID) error {
+func (a *adapter) Find(model domain.Entitier, dto domain.Entitier, id uuid.UUID) error {
 	err := a.collection.FindOne(ctx, bson.M{"_id": id}).Decode(dto)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, e
 	return count, nil
 }
 
-func (a *adapter) List(dtos []domain.Copyable) error {
+func (a *adapter) List(dtos []domain.Entitier) error {
 	cursor, err := a.collection.Find(ctx, bson.M{})
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (a *adapter) List(dtos []domain.Copyable) error {
 	return cursor.All(ctx, dtos)
 }
 
-func (a *adapter) ListWithFilter(dtos []domain.Copyable, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(dtos []domain.Entitier, query interface{}, args interface{}) error {
 	cursor, err := a.collection.Find(ctx, query)
 	if err != nil {
 		return err
@@ -148,8 +148,8 @@ func (a *adapter) ListWithFilter(dtos []domain.Copyable, query interface{}, args
 	return cursor.All(ctx, dtos)
 }
 
-func (a *adapter) Remove(entity *domain.Entity) error {
-	_, err := a.collection.DeleteOne(ctx, bson.M{"_id": entity.ID})
+func (a *adapter) Remove(entity domain.Entitier) error {
+	_, err := a.collection.DeleteOne(ctx, bson.M{"_id": entity.GetID()})
 	if err != nil {
 		return err
 	}
@@ -157,10 +157,10 @@ func (a *adapter) Remove(entity *domain.Entity) error {
 	return nil
 }
 
-func (a *adapter) RemoveRange(entities []*domain.Entity) error {
+func (a *adapter) RemoveRange(entities []domain.Entitier) error {
 	vals := make([]bson.M, len(entities))
 	for i, entity := range entities {
-		vals[i] = bson.M{"_id": entity.ID}
+		vals[i] = bson.M{"_id": entity.GetID()}
 	}
 	_, err := a.collection.DeleteMany(ctx, vals)
 	if err != nil {
@@ -170,7 +170,7 @@ func (a *adapter) RemoveRange(entities []*domain.Entity) error {
 	return nil
 }
 
-func (a *adapter) Add(entity *domain.Entity) error {
+func (a *adapter) Add(entity domain.Entitier) error {
 	_, err := a.collection.InsertOne(ctx, entity)
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (a *adapter) Add(entity *domain.Entity) error {
 	return nil
 }
 
-func (a *adapter) AddRange(entities []*domain.Entity) error {
+func (a *adapter) AddRange(entities []domain.Entitier) error {
 	vals := make([]interface{}, len(entities))
 	for i, entity := range entities {
 		vals[i] = entity
@@ -192,8 +192,8 @@ func (a *adapter) AddRange(entities []*domain.Entity) error {
 	return nil
 }
 
-func (a *adapter) Update(entity *domain.Entity) error {
-	_, err := a.collection.UpdateOne(ctx, bson.M{"_id": entity.ID}, entity)
+func (a *adapter) Update(entity domain.Entitier) error {
+	_, err := a.collection.UpdateOne(ctx, bson.M{"_id": entity.GetID()}, entity)
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func (a *adapter) Update(entity *domain.Entity) error {
 	return nil
 }
 
-func (a *adapter) UpdateRange(entities []*domain.Entity) error {
+func (a *adapter) UpdateRange(entities []domain.Entitier) error {
 	for _, entity := range entities {
 		err := a.Update(entity)
 		if err != nil {
