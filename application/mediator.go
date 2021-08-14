@@ -85,6 +85,6 @@ func (m *mediator) Publish(notification Notification) error {
 func timeMeasurement(start time.Time, typeName string) {
 	elapsed := time.Duration(time.Since(start))
 	if elapsed > 500 {
-		log.Warn("long process time", typeName, elapsed, "ms")
+		Log.Warn("long process time", typeName, elapsed, "ms")
 	}
 }

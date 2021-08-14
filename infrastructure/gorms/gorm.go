@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/jybbang/go-core-architecture/application"
 	"github.com/jybbang/go-core-architecture/domain"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -19,16 +19,9 @@ type clients struct {
 	sync.Mutex
 }
 
-var log *zap.SugaredLogger
-
 var clientsSync sync.Once
 
 var clientsInstance *clients
-
-func init() {
-	logger, _ := zap.NewProduction()
-	log = logger.Sugar()
-}
 
 func getClients() *clients {
 	if clientsInstance == nil {
@@ -49,7 +42,7 @@ func (a *adapter) SetModel(model domain.Entitier) {
 func (a *adapter) Find(dto domain.Entitier, id uuid.UUID) error {
 	a.conn.Take(dto, id)
 	if dto == nil {
-		return domain.ErrNotFound
+		return application.ErrNotFound
 	}
 
 	return nil
@@ -82,7 +75,7 @@ func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, e
 func (a *adapter) List(dtos []domain.Entitier) error {
 	a.conn.Find(dtos)
 	if dtos == nil {
-		return domain.ErrNotFound
+		return application.ErrNotFound
 	}
 
 	return nil
@@ -91,7 +84,7 @@ func (a *adapter) List(dtos []domain.Entitier) error {
 func (a *adapter) ListWithFilter(dtos []domain.Entitier, query interface{}, args interface{}) error {
 	a.conn.Find(dtos).Where(query, args)
 	if dtos == nil {
-		return domain.ErrNotFound
+		return application.ErrNotFound
 	}
 
 	return nil

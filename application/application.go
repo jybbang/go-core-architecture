@@ -10,11 +10,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var log *zap.SugaredLogger
+var Log *zap.SugaredLogger
 
 func init() {
 	logger, _ := zap.NewProduction()
-	log = logger.Sugar()
+	Log = logger.Sugar()
 }
 
 type singletons struct {
@@ -41,7 +41,7 @@ func GetMediator() *mediator {
 					requestHandlers:      cmap.New(),
 					notificationHandlers: cmap.New(),
 				}
-				log.Info("mediator created")
+				Log.Info("mediator created")
 			})
 	}
 	return mediatorInstance
@@ -59,7 +59,7 @@ func GetEventBus() *eventBus {
 					domainEvents: make([]domain.DomainEventer, 0),
 					cb:           gobreaker.NewCircuitBreaker(st),
 				}
-				log.Info("eventbus created")
+				Log.Info("eventbus created")
 			})
 	}
 	return eventBusInstance
@@ -75,13 +75,13 @@ func GetStateService() *stateService {
 				statesInstance = &stateService{
 					cb: gobreaker.NewCircuitBreaker(st),
 				}
-				log.Info("state created")
+				Log.Info("state created")
 			})
 	}
 	return statesInstance
 }
 
-func GetRepositoryService(model *domain.Entity) *repositoryService {
+func GetRepositoryService(model domain.Entitier) *repositoryService {
 	valueOf := reflect.ValueOf(model)
 	key := valueOf.Type().Name()
 

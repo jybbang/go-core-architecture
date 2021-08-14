@@ -7,10 +7,11 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	cmap "github.com/orcaman/concurrent-map"
-	"go.uber.org/zap"
 
+	"github.com/jybbang/go-core-architecture/application"
 	"github.com/jybbang/go-core-architecture/application/contracts"
 	"github.com/jybbang/go-core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/infrastructure"
 )
 
 type adapter struct {
@@ -23,18 +24,11 @@ type clients struct {
 	sync.Mutex
 }
 
-var log *zap.SugaredLogger
-
 var clientsSync sync.Once
 
 var clientsInstance *clients
 
 var ctx context.Context
-
-func init() {
-	logger, _ := zap.NewProduction()
-	log = logger.Sugar()
-}
 
 func getClients() *clients {
 	if clientsInstance == nil {
@@ -62,7 +56,7 @@ func getRedisClient(host string, password string) *redis.Client {
 			Password: password,
 			DB:       0,
 		})
-		log.Info("redisClient created")
+		infrastructure.Log.Info("redisClient created")
 		clientsInstance.clients[host] = redisClient
 	}
 
@@ -82,7 +76,7 @@ func NewRedisAdapter(host string, password string) *adapter {
 func (a *adapter) Has(key string) (bool, error) {
 	value, err := a.redis.Exists(ctx, key).Result()
 	if err == redis.Nil {
-		return false, domain.ErrNotFound
+		return false, application.ErrNotFound
 	}
 	return value > 0, err
 }
@@ -90,7 +84,7 @@ func (a *adapter) Has(key string) (bool, error) {
 func (a *adapter) Get(key string, dest domain.Entitier) (bool, error) {
 	value, err := a.redis.Get(ctx, key).Bytes()
 	if err == redis.Nil {
-		return false, domain.ErrNotFound
+		return false, application.ErrNotFound
 	} else if err != nil {
 		return false, err
 	}
@@ -132,5 +126,5 @@ func (a *adapter) Unsubscribe(topic string) error {
 		}
 	}
 
-	return domain.ErrNotFound
+	return application.ErrNotFound
 }

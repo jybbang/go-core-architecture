@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jybbang/go-core-architecture/domain"
-	"go.uber.org/zap"
+	"github.com/jybbang/go-core-architecture/infrastructure"
 )
 
 type adapter struct {
@@ -26,18 +26,11 @@ type clients struct {
 	sync.Mutex
 }
 
-var log *zap.SugaredLogger
-
 var clientsSync sync.Once
 
 var clientsInstance *clients
 
 var ctx context.Context
-
-func init() {
-	logger, _ := zap.NewProduction()
-	log = logger.Sugar()
-}
 
 func getClients() *clients {
 	if clientsInstance == nil {
@@ -62,10 +55,10 @@ func getMongoClient(connectionUri string) *mongo.Client {
 		ctx = context.Background()
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionUri))
 		if err != nil {
-			log.Fatal(err)
+			infrastructure.Log.Fatal(err)
 		}
 
-		log.Info("mongo database connected")
+		infrastructure.Log.Info("mongo database connected")
 		clientsInstance.clients[connectionUri] = client
 	}
 

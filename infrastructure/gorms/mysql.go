@@ -1,6 +1,7 @@
 package gorms
 
 import (
+	"github.com/jybbang/go-core-architecture/infrastructure"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -20,7 +21,7 @@ func getMySqlClient(connectionString string) *gorm.DB {
 			panic("failed to connect database")
 		}
 
-		log.Info("mySql database connected")
+		infrastructure.Log.Info("mySql database connected")
 		clientsInstance.clients[connectionString] = tx
 	}
 

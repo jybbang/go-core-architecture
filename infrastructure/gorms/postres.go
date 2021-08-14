@@ -1,6 +1,7 @@
 package gorms
 
 import (
+	"github.com/jybbang/go-core-architecture/infrastructure"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -20,7 +21,7 @@ func getPostresClient(connectionString string) *gorm.DB {
 			panic("failed to connect database")
 		}
 
-		log.Info("postgres database connected")
+		infrastructure.Log.Info("postgres database connected")
 		clientsInstance.clients[connectionString] = tx
 	}
 
