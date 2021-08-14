@@ -20,6 +20,10 @@ type Mediator struct {
 	notificationHandlers cmap.ConcurrentMap
 }
 
+func (m *Mediator) Setup() *Mediator {
+	return m
+}
+
 func (m *Mediator) AddMiddleware(middleware Middlewarer) Middlewarer {
 	m.middleware = middleware
 	return m.middleware

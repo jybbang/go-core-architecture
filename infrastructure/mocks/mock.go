@@ -5,6 +5,7 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 
 	"github.com/jybbang/go-core-architecture/core"
+	"gopkg.in/jeevatkm/go-model.v1"
 )
 
 type adapter struct {
@@ -30,7 +31,7 @@ func (a *adapter) Has(key string) (bool, error) {
 func (a *adapter) Get(key string, dest core.Entitier) (bool, error) {
 	core.Log.Info("mock get - ", key)
 	if resp, ok := a.states.Get(key); ok {
-		dest.CopyWith(resp)
+		model.Copy(dest, resp)
 		return true, nil
 	}
 	return false, core.ErrNotFound
@@ -53,6 +54,13 @@ func (a *adapter) Subscribe(topic string, handler core.ReplyHandler) error {
 	return nil
 }
 
+func (a *adapter) FakeSend(topic string, data interface{}) {
+	core.Log.Info("mock fake send - ", topic, data)
+	if resp, ok := a.pubsubs.Get(topic); ok {
+		resp.(core.ReplyHandler)(data)
+	}
+}
+
 func (a *adapter) Unsubscribe(topic string) error {
 	core.Log.Info("mock unsubscribe - ", topic)
 	a.pubsubs.Remove(topic)
@@ -67,7 +75,7 @@ func (a *adapter) SetModel(model core.Entitier) {
 func (a *adapter) Find(dto core.Entitier, id uuid.UUID) error {
 	core.Log.Info("mock find - ", id)
 	if resp, ok := a.db.Get(id.String()); ok {
-		dto.CopyWith(resp)
+		model.Copy(dto, resp)
 		return nil
 	}
 	return core.ErrNotFound
@@ -147,10 +155,14 @@ func (a *adapter) AddRange(entities []core.Entitier) error {
 
 func (a *adapter) Update(entity core.Entitier) error {
 	core.Log.Info("mock update - ", entity)
-	return a.Add(entity)
+	a.db.Set(entity.GetID().String(), entity)
+	return nil
 }
 
 func (a *adapter) UpdateRange(entities []core.Entitier) error {
 	core.Log.Info("mock updaterange")
-	return a.AddRange(entities)
+	for _, v := range entities {
+		a.Update(v)
+	}
+	return nil
 }

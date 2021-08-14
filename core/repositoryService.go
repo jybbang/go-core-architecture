@@ -2,6 +2,7 @@ package core
 
 import (
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sony/gobreaker"
@@ -13,6 +14,10 @@ type RepositoryService struct {
 	commandRepository CommandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
 	sync.RWMutex
+}
+
+func (r *RepositoryService) Setup() *RepositoryService {
+	return r
 }
 
 func (r *RepositoryService) SetQueryRepositoryAdapter(adapter QueryRepositoryAdapter) *RepositoryService {
@@ -107,6 +112,7 @@ func (r *RepositoryService) Add(entity Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
+	entity.SetCreatedAt(time.Now())
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Add(entity)
 		return nil, err
@@ -117,6 +123,11 @@ func (r *RepositoryService) Add(entity Entitier) error {
 func (r *RepositoryService) AddRange(entities []Entitier) error {
 	r.Lock()
 	defer r.Unlock()
+
+	now := time.Now()
+	for _, v := range entities {
+		v.SetCreatedAt(now)
+	}
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.AddRange(entities)
@@ -129,6 +140,8 @@ func (r *RepositoryService) Update(entity Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
+	entity.SetUpdatedAt(time.Now())
+
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Update(entity)
 		return nil, err
@@ -139,6 +152,11 @@ func (r *RepositoryService) Update(entity Entitier) error {
 func (r *RepositoryService) UpdateRange(entities []Entitier) error {
 	r.Lock()
 	defer r.Unlock()
+
+	now := time.Now()
+	for _, v := range entities {
+		v.SetUpdatedAt(now)
+	}
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.UpdateRange(entities)

@@ -1,6 +1,6 @@
 package core
 
-type ReplyHandler func(string)
+type ReplyHandler func(interface{})
 
 type MessagingAdapter interface {
 	Publish(DomainEventer) error

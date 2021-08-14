@@ -7,20 +7,22 @@ import (
 )
 
 type DomainEvent struct {
-	ID                      uuid.UUID
-	EventID                 uuid.UUID
-	Topic                   string
-	CanPublishToEventsource bool
-	IsPublished             bool
-	CreatedAt               time.Time
-	PublishedAt             time.Time
+	ID                         uuid.UUID
+	EventID                    uuid.UUID
+	Topic                      string
+	CanNotPublishToEventsource bool
+	IsPublished                bool
+	CanBuffered                bool
+	CreatedAt                  time.Time
+	PublishedAt                time.Time
 }
 
 type DomainEventer interface {
 	GetID() uuid.UUID
 	GetEventID() uuid.UUID
 	GetTopic() string
-	GetCanPublishToEventsource() bool
+	GetCanNotPublishToEventsource() bool
+	GetCanBuffered() bool
 	AddingEvent()
 	PublishingEvent(time.Time)
 }
@@ -37,8 +39,12 @@ func (e *DomainEvent) GetTopic() string {
 	return e.Topic
 }
 
-func (e *DomainEvent) GetCanPublishToEventsource() bool {
-	return e.CanPublishToEventsource
+func (e *DomainEvent) GetCanNotPublishToEventsource() bool {
+	return e.CanNotPublishToEventsource
+}
+
+func (e *DomainEvent) GetCanBuffered() bool {
+	return e.CanBuffered
 }
 
 func (e *DomainEvent) AddingEvent() {

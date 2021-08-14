@@ -12,6 +12,10 @@ type StateService struct {
 	sync.RWMutex
 }
 
+func (s *StateService) Setup() *StateService {
+	return s
+}
+
 func (s *StateService) SetStateAdapter(adapter StateAdapter) *StateService {
 	s.state = adapter
 	return s

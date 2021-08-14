@@ -17,9 +17,8 @@ type Entity struct {
 type Entitier interface {
 	GetID() uuid.UUID
 	SetID(uuid.UUID)
-	SetCreatedAt(string, time.Time)
-	SetUpdatedAt(string, time.Time)
-	CopyWith(interface{}) bool
+	SetCreatedAt(time.Time)
+	SetUpdatedAt(time.Time)
 }
 
 func (e *Entity) GetID() uuid.UUID {
@@ -30,22 +29,10 @@ func (e *Entity) SetID(id uuid.UUID) {
 	e.ID = id
 }
 
-func (e *Entity) SetCreatedAt(user string, timestamp time.Time) {
-	e.CreateUser = user
+func (e *Entity) SetCreatedAt(timestamp time.Time) {
 	e.CreatedAt = timestamp
 }
 
-func (e *Entity) SetUpdatedAt(user string, timestamp time.Time) {
-	e.UpdateUser = user
+func (e *Entity) SetUpdatedAt(timestamp time.Time) {
 	e.UpdatedAt = timestamp
-}
-
-func (e *Entity) CopyWith(src interface{}) bool {
-	source, ok := src.(*Entity)
-	e.ID = source.ID
-	e.CreateUser = source.CreateUser
-	e.UpdateUser = source.UpdateUser
-	e.CreatedAt = source.CreatedAt
-	e.UpdatedAt = source.UpdatedAt
-	return ok
 }

@@ -33,7 +33,12 @@ func TestRepositoryService_Find(t *testing.T) {
 	dto.ID = uuid.New()
 	dto.Expect = 123
 
+	dto2 := new(testModel)
+	dto2.ID = uuid.New()
+	dto2.Expect = 1234
+
 	r.Add(dto)
+	r.Add(dto2)
 
 	type args struct {
 		dto core.Entitier
@@ -49,7 +54,7 @@ func TestRepositoryService_Find(t *testing.T) {
 			name: "1",
 			r:    r,
 			args: args{
-				dto: dto,
+				dto: dto2,
 				id:  dto.ID,
 			},
 			wantErr: false,

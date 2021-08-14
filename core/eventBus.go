@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
 )
 
@@ -12,8 +13,36 @@ type EventBus struct {
 	mediator     *Mediator
 	messaging    MessagingAdapter
 	domainEvents []DomainEventer
+	ch           chan rxgo.Item
 	cb           *gobreaker.CircuitBreaker
 	sync.RWMutex
+}
+
+type BufferedEvent struct {
+	DomainEvent
+	Events []DomainEventer
+}
+
+func (e *EventBus) Setup() *EventBus {
+	observable := rxgo.FromChannel(e.ch).
+		BufferWithTimeOrCount(rxgo.WithDuration(1*time.Second), 1000)
+
+	go e.SubscribeBufferedEvent(observable)
+
+	return e
+}
+
+func (e *EventBus) SubscribeBufferedEvent(observable rxgo.Observable) {
+	ch := observable.Observe()
+
+	for {
+		vals := <-ch
+		event := &BufferedEvent{
+			Events: vals.V.([]DomainEventer),
+		}
+		e.AddDomainEvent(event)
+		e.PublishDomainEvents()
+	}
 }
 
 func (e *EventBus) SetMessaingAdapter(messageService MessagingAdapter) *EventBus {
@@ -50,7 +79,14 @@ func (e *EventBus) PublishDomainEvents() error {
 				return nil, mediatorErr
 			}
 
-			if !event.GetCanPublishToEventsource() {
+			if event.GetCanNotPublishToEventsource() {
+				continue
+			}
+
+			if event.GetCanBuffered() {
+				e.ch <- rxgo.Item{
+					V: event,
+				}
 				continue
 			}
 

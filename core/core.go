@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"
 )
@@ -42,6 +43,8 @@ func GetMediator() *Mediator {
 					requestHandlers:      cmap.New(),
 					notificationHandlers: cmap.New(),
 				}
+				mediatorInstance.Setup()
+
 				Log.Info("mediator created")
 			})
 	}
@@ -58,8 +61,11 @@ func GetEventBus() *EventBus {
 				eventBusInstance = &EventBus{
 					mediator:     GetMediator(),
 					domainEvents: make([]DomainEventer, 0),
+					ch:           make(chan rxgo.Item, 1),
 					cb:           gobreaker.NewCircuitBreaker(st),
 				}
+				eventBusInstance.Setup()
+
 				Log.Info("eventbus created")
 			})
 	}
@@ -76,6 +82,8 @@ func GetStateService() *StateService {
 				statesInstance = &StateService{
 					cb: gobreaker.NewCircuitBreaker(st),
 				}
+				statesInstance.Setup()
+
 				Log.Info("state created")
 			})
 	}
@@ -89,11 +97,14 @@ func GetRepositoryService(model Entitier) *RepositoryService {
 	if !repositories.Has(key) {
 		var st gobreaker.Settings
 		st.Name = key + "repository"
-		value := &RepositoryService{
+		repository := &RepositoryService{
 			model: model,
 			cb:    gobreaker.NewCircuitBreaker(st),
 		}
-		repositories.Set(key, value)
+		repositories.Set(key, repository)
+		repository.Setup()
+
+		Log.Info("repository created")
 	}
 
 	if value, ok := repositories.Get(key); ok {
