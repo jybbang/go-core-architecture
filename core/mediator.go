@@ -94,8 +94,8 @@ func (m *Mediator) next(request Request, handler RequestHandler) (interface{}, e
 }
 
 func timeMeasurement(start time.Time, typeName string) {
-	elapsed := time.Duration(time.Since(start))
-	if elapsed > 500 {
-		Log.Warn("long process time", typeName, elapsed, "ms")
+	elapsed := time.Since(start)
+	if elapsed > time.Duration(500*time.Millisecond) {
+		Log.Warn("long process time - ", typeName, elapsed)
 	}
 }

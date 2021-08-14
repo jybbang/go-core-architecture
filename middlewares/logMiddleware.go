@@ -13,6 +13,6 @@ func NewLogMiddleware() *logMiddleware {
 }
 
 func (m *logMiddleware) Run(request core.Request) (bool, error) {
-	core.Log.Info("mediator request", request)
+	core.Log.Info("mediator request - ", request)
 	return true, nil
 }

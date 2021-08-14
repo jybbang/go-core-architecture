@@ -18,6 +18,7 @@ type adapter struct {
 
 type clients struct {
 	clients map[string]*redis.Client
+	pubsubs map[string]cmap.ConcurrentMap
 	sync.Mutex
 }
 
@@ -39,7 +40,7 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getRedisClient(host string, password string) *redis.Client {
+func getRedisClient(host string, password string) (*redis.Client, cmap.ConcurrentMap) {
 	clientsInstance := getClients()
 
 	clientsInstance.Lock()
@@ -55,16 +56,19 @@ func getRedisClient(host string, password string) *redis.Client {
 		})
 		core.Log.Info("redisClient created")
 		clientsInstance.clients[host] = redisClient
+		clientsInstance.pubsubs[host] = cmap.New()
 	}
 
 	client := clientsInstance.clients[host]
-	return client
+	pubsub := clientsInstance.pubsubs[host]
+	return client, pubsub
 }
 
 func NewRedisAdapter(host string, password string) *adapter {
+	client, pubsub := getRedisClient(host, password)
 	redisService := &adapter{
-		redis:   getRedisClient(host, password),
-		pubsubs: cmap.New(),
+		redis:   client,
+		pubsubs: pubsub,
 	}
 
 	return redisService
