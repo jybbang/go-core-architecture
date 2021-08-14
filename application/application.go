@@ -10,13 +10,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var Log *zap.SugaredLogger
-
-func init() {
-	logger, _ := zap.NewProduction()
-	Log = logger.Sugar()
-}
-
 type singletons struct {
 	mediator sync.Once
 	eventBus sync.Once
@@ -32,6 +25,15 @@ var eventBusInstance *eventBus
 var statesInstance *stateService
 
 var repositories cmap.ConcurrentMap
+
+var Log *zap.SugaredLogger
+
+func init() {
+	logger, _ := zap.NewProduction()
+	Log = logger.Sugar()
+
+	repositories = cmap.New()
+}
 
 func GetMediator() *mediator {
 	if mediatorInstance == nil {
