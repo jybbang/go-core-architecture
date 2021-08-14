@@ -17,11 +17,11 @@ type singletons struct {
 
 var syncs singletons
 
-var mediatorInstance *mediator
+var mediatorInstance *Mediator
 
-var eventBusInstance *eventBus
+var eventBusInstance *EventBus
 
-var statesInstance *stateService
+var statesInstance *StateService
 
 var repositories cmap.ConcurrentMap
 
@@ -34,11 +34,11 @@ func init() {
 	repositories = cmap.New()
 }
 
-func GetMediator() *mediator {
+func GetMediator() *Mediator {
 	if mediatorInstance == nil {
 		syncs.mediator.Do(
 			func() {
-				mediatorInstance = &mediator{
+				mediatorInstance = &Mediator{
 					requestHandlers:      cmap.New(),
 					notificationHandlers: cmap.New(),
 				}
@@ -48,14 +48,14 @@ func GetMediator() *mediator {
 	return mediatorInstance
 }
 
-func GetEventBus() *eventBus {
+func GetEventBus() *EventBus {
 	if eventBusInstance == nil {
 		syncs.eventBus.Do(
 			func() {
 				var st gobreaker.Settings
 				st.Name = "eventbus"
 
-				eventBusInstance = &eventBus{
+				eventBusInstance = &EventBus{
 					mediator:     GetMediator(),
 					domainEvents: make([]DomainEventer, 0),
 					cb:           gobreaker.NewCircuitBreaker(st),
@@ -66,14 +66,14 @@ func GetEventBus() *eventBus {
 	return eventBusInstance
 }
 
-func GetStateService() *stateService {
+func GetStateService() *StateService {
 	if statesInstance == nil {
 		syncs.states.Do(
 			func() {
 				var st gobreaker.Settings
 				st.Name = "state"
 
-				statesInstance = &stateService{
+				statesInstance = &StateService{
 					cb: gobreaker.NewCircuitBreaker(st),
 				}
 				Log.Info("state created")
@@ -82,14 +82,14 @@ func GetStateService() *stateService {
 	return statesInstance
 }
 
-func GetRepositoryService(model Entitier) *repositoryService {
+func GetRepositoryService(model Entitier) *RepositoryService {
 	valueOf := reflect.ValueOf(model)
 	key := valueOf.Type().Name()
 
 	if !repositories.Has(key) {
 		var st gobreaker.Settings
 		st.Name = key + "repository"
-		value := &repositoryService{
+		value := &RepositoryService{
 			model: model,
 			cb:    gobreaker.NewCircuitBreaker(st),
 		}
@@ -97,7 +97,7 @@ func GetRepositoryService(model Entitier) *repositoryService {
 	}
 
 	if value, ok := repositories.Get(key); ok {
-		return value.(*repositoryService)
+		return value.(*RepositoryService)
 	}
 
 	panic("repository not found exception")

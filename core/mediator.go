@@ -14,18 +14,18 @@ type RequestHandler func(interface{}) interface{}
 type Notification interface{}
 type NotificationHandler func(interface{})
 
-type mediator struct {
-	next                 Middlewarer
+type Mediator struct {
+	middleware           Middlewarer
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
 }
 
-func (m *mediator) AddMiddleware(middleware Middlewarer) Middlewarer {
-	m.next = middleware
-	return m.next
+func (m *Mediator) AddMiddleware(middleware Middlewarer) Middlewarer {
+	m.middleware = middleware
+	return m.middleware
 }
 
-func (m *mediator) AddHandler(request Request, handler RequestHandler) *mediator {
+func (m *Mediator) AddHandler(request Request, handler RequestHandler) *Mediator {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
 
@@ -33,7 +33,7 @@ func (m *mediator) AddHandler(request Request, handler RequestHandler) *mediator
 	return m
 }
 
-func (m *mediator) AddNotificationHandler(notification Notification, handler NotificationHandler) *mediator {
+func (m *Mediator) AddNotificationHandler(notification Notification, handler NotificationHandler) *Mediator {
 	valueOf := reflect.ValueOf(notification)
 	typeName := valueOf.Type().Name()
 
@@ -41,7 +41,7 @@ func (m *mediator) AddNotificationHandler(notification Notification, handler Not
 	return m
 }
 
-func (m *mediator) Send(request Request) (interface{}, error) {
+func (m *Mediator) Send(request Request) (interface{}, error) {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
 
@@ -57,14 +57,10 @@ func (m *mediator) Send(request Request) (interface{}, error) {
 
 	defer timeMeasurement(time.Now(), typeName)
 
-	if m.next != nil {
-		return m.next.Next(request, handlerFn)
-	} else {
-		return handlerFn(request), nil
-	}
+	return m.next(request, handlerFn)
 }
 
-func (m *mediator) Publish(notification Notification) error {
+func (m *Mediator) Publish(notification Notification) error {
 	valueOf := reflect.ValueOf(notification)
 	typeName := valueOf.Type().Name()
 
@@ -80,6 +76,21 @@ func (m *mediator) Publish(notification Notification) error {
 
 	handlerFn(notification)
 	return nil
+}
+
+func (m *Mediator) next(request Request, handler RequestHandler) (interface{}, error) {
+	if m.middleware != nil {
+		ok, err := m.middleware.Run(request)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("middleware block this request")
+		}
+		return m.middleware.Next(request, handler)
+	} else {
+		return handler(request), nil
+	}
 }
 
 func timeMeasurement(start time.Time, typeName string) {

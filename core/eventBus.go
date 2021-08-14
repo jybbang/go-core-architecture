@@ -8,20 +8,20 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-type eventBus struct {
-	mediator     *mediator
+type EventBus struct {
+	mediator     *Mediator
 	messaging    MessagingAdapter
 	domainEvents []DomainEventer
 	cb           *gobreaker.CircuitBreaker
 	sync.RWMutex
 }
 
-func (e *eventBus) SetMessaingAdapter(messageService MessagingAdapter) *eventBus {
+func (e *EventBus) SetMessaingAdapter(messageService MessagingAdapter) *EventBus {
 	e.messaging = messageService
 	return e
 }
 
-func (e *eventBus) AddDomainEvent(domainEvent DomainEventer) {
+func (e *EventBus) AddDomainEvent(domainEvent DomainEventer) {
 	e.Lock()
 	defer e.Unlock()
 
@@ -30,7 +30,7 @@ func (e *eventBus) AddDomainEvent(domainEvent DomainEventer) {
 	e.domainEvents = append(e.domainEvents, domainEvent)
 }
 
-func (e *eventBus) PublishDomainEvents() error {
+func (e *EventBus) PublishDomainEvents() error {
 	e.Lock()
 	defer e.Unlock()
 
@@ -65,7 +65,7 @@ func (e *eventBus) PublishDomainEvents() error {
 	return err
 }
 
-func (e *eventBus) dequeueDomainEvent() (DomainEventer, error) {
+func (e *EventBus) dequeueDomainEvent() (DomainEventer, error) {
 	if len(e.domainEvents) > 0 {
 		result := e.domainEvents[0]
 		e.domainEvents = e.domainEvents[1:]
@@ -75,6 +75,6 @@ func (e *eventBus) dequeueDomainEvent() (DomainEventer, error) {
 	return nil, fmt.Errorf("domainEvents empty exception")
 }
 
-func (e *eventBus) empty() bool {
+func (e *EventBus) empty() bool {
 	return len(e.domainEvents) == 0
 }
