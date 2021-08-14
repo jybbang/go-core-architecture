@@ -1,29 +1,27 @@
-package application
+package core
 
 import (
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/jybbang/go-core-architecture/application/contracts"
-	"github.com/jybbang/go-core-architecture/domain"
 	"github.com/sony/gobreaker"
 )
 
 type eventBus struct {
 	mediator     *mediator
-	messaging    contracts.MessagingAdapter
-	domainEvents []domain.DomainEventer
+	messaging    MessagingAdapter
+	domainEvents []DomainEventer
 	cb           *gobreaker.CircuitBreaker
 	sync.RWMutex
 }
 
-func (e *eventBus) SetMessaingAdapter(messageService contracts.MessagingAdapter) *eventBus {
+func (e *eventBus) SetMessaingAdapter(messageService MessagingAdapter) *eventBus {
 	e.messaging = messageService
 	return e
 }
 
-func (e *eventBus) AddDomainEvent(domainEvent domain.DomainEventer) {
+func (e *eventBus) AddDomainEvent(domainEvent DomainEventer) {
 	e.Lock()
 	defer e.Unlock()
 
@@ -67,7 +65,7 @@ func (e *eventBus) PublishDomainEvents() error {
 	return err
 }
 
-func (e *eventBus) dequeueDomainEvent() (domain.DomainEventer, error) {
+func (e *eventBus) dequeueDomainEvent() (DomainEventer, error) {
 	if len(e.domainEvents) > 0 {
 		result := e.domainEvents[0]
 		e.domainEvents = e.domainEvents[1:]

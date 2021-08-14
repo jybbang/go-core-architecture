@@ -1,10 +1,9 @@
-package application
+package core
 
 import (
 	"reflect"
 	"sync"
 
-	"github.com/jybbang/go-core-architecture/domain"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"
@@ -58,7 +57,7 @@ func GetEventBus() *eventBus {
 
 				eventBusInstance = &eventBus{
 					mediator:     GetMediator(),
-					domainEvents: make([]domain.DomainEventer, 0),
+					domainEvents: make([]DomainEventer, 0),
 					cb:           gobreaker.NewCircuitBreaker(st),
 				}
 				Log.Info("eventbus created")
@@ -83,7 +82,7 @@ func GetStateService() *stateService {
 	return statesInstance
 }
 
-func GetRepositoryService(model domain.Entitier) *repositoryService {
+func GetRepositoryService(model Entitier) *repositoryService {
 	valueOf := reflect.ValueOf(model)
 	key := valueOf.Type().Name()
 

@@ -4,14 +4,13 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/jybbang/go-core-architecture/application"
-	"github.com/jybbang/go-core-architecture/domain"
+	"github.com/jybbang/go-core-architecture/core"
 	"gorm.io/gorm"
 )
 
 type adapter struct {
 	conn  *gorm.DB
-	model domain.Entitier
+	model core.Entitier
 }
 
 type clients struct {
@@ -35,14 +34,14 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func (a *adapter) SetModel(model domain.Entitier) {
+func (a *adapter) SetModel(model core.Entitier) {
 	a.model = model
 }
 
-func (a *adapter) Find(dto domain.Entitier, id uuid.UUID) error {
+func (a *adapter) Find(dto core.Entitier, id uuid.UUID) error {
 	a.conn.Take(dto, id)
 	if dto == nil {
-		return application.ErrNotFound
+		return core.ErrNotFound
 	}
 
 	return nil
@@ -72,50 +71,50 @@ func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, e
 	return *count, nil
 }
 
-func (a *adapter) List(dtos []domain.Entitier) error {
+func (a *adapter) List(dtos []core.Entitier) error {
 	a.conn.Find(dtos)
 	if dtos == nil {
-		return application.ErrNotFound
+		return core.ErrNotFound
 	}
 
 	return nil
 }
 
-func (a *adapter) ListWithFilter(dtos []domain.Entitier, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(dtos []core.Entitier, query interface{}, args interface{}) error {
 	a.conn.Find(dtos).Where(query, args)
 	if dtos == nil {
-		return application.ErrNotFound
+		return core.ErrNotFound
 	}
 
 	return nil
 }
 
-func (a *adapter) Remove(entity domain.Entitier) error {
+func (a *adapter) Remove(entity core.Entitier) error {
 	a.conn.Delete(entity, entity.GetID())
 	return nil
 }
 
-func (a *adapter) RemoveRange(entities []domain.Entitier) error {
+func (a *adapter) RemoveRange(entities []core.Entitier) error {
 	a.conn.Delete(entities)
 	return nil
 }
 
-func (a *adapter) Add(entity domain.Entitier) error {
+func (a *adapter) Add(entity core.Entitier) error {
 	a.conn.Create(entity)
 	return nil
 }
 
-func (a *adapter) AddRange(entities []domain.Entitier) error {
+func (a *adapter) AddRange(entities []core.Entitier) error {
 	a.conn.Create(entities)
 	return nil
 }
 
-func (a *adapter) Update(entity domain.Entitier) error {
+func (a *adapter) Update(entity core.Entitier) error {
 	a.conn.Model(entity).Updates(entity)
 	return nil
 }
 
-func (a *adapter) UpdateRange(entities []domain.Entitier) error {
+func (a *adapter) UpdateRange(entities []core.Entitier) error {
 	a.conn.Model(a.model).Updates(entities)
 	return nil
 }

@@ -8,10 +8,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	cmap "github.com/orcaman/concurrent-map"
 
-	"github.com/jybbang/go-core-architecture/application"
-	"github.com/jybbang/go-core-architecture/application/contracts"
-	"github.com/jybbang/go-core-architecture/domain"
-	"github.com/jybbang/go-core-architecture/infrastructure"
+	"github.com/jybbang/go-core-architecture/core"
 )
 
 type adapter struct {
@@ -56,7 +53,7 @@ func getRedisClient(host string, password string) *redis.Client {
 			Password: password,
 			DB:       0,
 		})
-		infrastructure.Log.Info("redisClient created")
+		core.Log.Info("redisClient created")
 		clientsInstance.clients[host] = redisClient
 	}
 
@@ -76,15 +73,15 @@ func NewRedisAdapter(host string, password string) *adapter {
 func (a *adapter) Has(key string) (bool, error) {
 	value, err := a.redis.Exists(ctx, key).Result()
 	if err == redis.Nil {
-		return false, application.ErrNotFound
+		return false, core.ErrNotFound
 	}
 	return value > 0, err
 }
 
-func (a *adapter) Get(key string, dest domain.Entitier) (bool, error) {
+func (a *adapter) Get(key string, dest core.Entitier) (bool, error) {
 	value, err := a.redis.Get(ctx, key).Bytes()
 	if err == redis.Nil {
-		return false, application.ErrNotFound
+		return false, core.ErrNotFound
 	} else if err != nil {
 		return false, err
 	}
@@ -101,12 +98,12 @@ func (a *adapter) Set(key string, value interface{}) error {
 	return a.redis.Set(ctx, key, bytes, 0).Err()
 }
 
-func (a *adapter) Publish(domainEvent domain.DomainEventer) error {
-	err := a.redis.Publish(ctx, domainEvent.GetTopic(), domainEvent).Err()
+func (a *adapter) Publish(coreEvent core.DomainEventer) error {
+	err := a.redis.Publish(ctx, coreEvent.GetTopic(), coreEvent).Err()
 	return err
 }
 
-func (a *adapter) Subscribe(topic string, handler contracts.ReplyHandler) error {
+func (a *adapter) Subscribe(topic string, handler core.ReplyHandler) error {
 	pubsub := a.redis.Subscribe(ctx, topic)
 	a.pubsubs.Set(topic, pubsub)
 
@@ -126,5 +123,5 @@ func (a *adapter) Unsubscribe(topic string) error {
 		}
 	}
 
-	return application.ErrNotFound
+	return core.ErrNotFound
 }

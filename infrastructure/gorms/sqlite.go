@@ -1,7 +1,7 @@
 package gorms
 
 import (
-	"github.com/jybbang/go-core-architecture/infrastructure"
+	"github.com/jybbang/go-core-architecture/core"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -21,7 +21,7 @@ func getSqliteClient(connectionString string) *gorm.DB {
 			panic("failed to connect database")
 		}
 
-		infrastructure.Log.Info("sqlite database connected")
+		core.Log.Info("sqlite database connected")
 		clientsInstance.clients[connectionString] = tx
 	}
 

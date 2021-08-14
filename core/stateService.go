@@ -1,20 +1,18 @@
-package application
+package core
 
 import (
 	"sync"
 
-	"github.com/jybbang/go-core-architecture/application/contracts"
-	"github.com/jybbang/go-core-architecture/domain"
 	"github.com/sony/gobreaker"
 )
 
 type stateService struct {
-	state contracts.StateAdapter
+	state StateAdapter
 	cb    *gobreaker.CircuitBreaker
 	sync.RWMutex
 }
 
-func (s *stateService) SetStateAdapter(adapter contracts.StateAdapter) *stateService {
+func (s *stateService) SetStateAdapter(adapter StateAdapter) *stateService {
 	s.state = adapter
 	return s
 }
@@ -31,7 +29,7 @@ func (s *stateService) Has(key string) (bool, error) {
 	return resp.(bool), err
 }
 
-func (s *stateService) Get(key string, dest domain.Entitier) (bool, error) {
+func (s *stateService) Get(key string, dest Entitier) (bool, error) {
 	resp, err := s.cb.Execute(func() (interface{}, error) {
 		resp, err := s.state.Get(key, dest)
 		if err != nil {

@@ -1,7 +1,7 @@
 package gorms
 
 import (
-	"github.com/jybbang/go-core-architecture/infrastructure"
+	"github.com/jybbang/go-core-architecture/core"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 )
@@ -21,7 +21,7 @@ func getSqlServerClient(connectionString string) *gorm.DB {
 			panic("failed to connect database")
 		}
 
-		infrastructure.Log.Info("sqlserver database connected")
+		core.Log.Info("sqlserver database connected")
 		clientsInstance.clients[connectionString] = tx
 	}
 

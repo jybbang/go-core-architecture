@@ -1,37 +1,35 @@
-package application
+package core
 
 import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/jybbang/go-core-architecture/application/contracts"
-	"github.com/jybbang/go-core-architecture/domain"
 	"github.com/sony/gobreaker"
 )
 
 type repositoryService struct {
-	model             domain.Entitier
-	queryRepository   contracts.QueryRepositoryAdapter
-	commandRepository contracts.CommandRepositoryAdapter
+	model             Entitier
+	queryRepository   QueryRepositoryAdapter
+	commandRepository CommandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
 	sync.RWMutex
 }
 
-func (r *repositoryService) SetQueryRepositoryAdapter(adapter contracts.QueryRepositoryAdapter) *repositoryService {
+func (r *repositoryService) SetQueryRepositoryAdapter(adapter QueryRepositoryAdapter) *repositoryService {
 	r.queryRepository = adapter
 	r.model.SetID(uuid.Nil)
 	r.queryRepository.SetModel(r.model)
 	return r
 }
 
-func (r *repositoryService) SetCommandRepositoryAdapter(adapter contracts.CommandRepositoryAdapter) *repositoryService {
+func (r *repositoryService) SetCommandRepositoryAdapter(adapter CommandRepositoryAdapter) *repositoryService {
 	r.commandRepository = adapter
 	r.model.SetID(uuid.Nil)
 	r.commandRepository.SetModel(r.model)
 	return r
 }
 
-func (r *repositoryService) Find(dto domain.Entitier, id uuid.UUID) error {
+func (r *repositoryService) Find(dto Entitier, id uuid.UUID) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.Find(dto, id)
 		return nil, err
@@ -67,7 +65,7 @@ func (r *repositoryService) CountWithFilter(query interface{}, args interface{})
 	return resp.(int64), err
 }
 
-func (r *repositoryService) List(dtos []domain.Entitier) error {
+func (r *repositoryService) List(dtos []Entitier) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.List(dtos)
 		return nil, err
@@ -75,7 +73,7 @@ func (r *repositoryService) List(dtos []domain.Entitier) error {
 	return err
 }
 
-func (r *repositoryService) ListWithFilter(dtos []domain.Entitier, query interface{}, args interface{}) error {
+func (r *repositoryService) ListWithFilter(dtos []Entitier, query interface{}, args interface{}) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.ListWithFilter(dtos, query, args)
 		return nil, err
@@ -83,7 +81,7 @@ func (r *repositoryService) ListWithFilter(dtos []domain.Entitier, query interfa
 	return err
 }
 
-func (r *repositoryService) Remove(entity domain.Entitier) error {
+func (r *repositoryService) Remove(entity Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -94,7 +92,7 @@ func (r *repositoryService) Remove(entity domain.Entitier) error {
 	return err
 }
 
-func (r *repositoryService) RemoveRange(entities []domain.Entitier) error {
+func (r *repositoryService) RemoveRange(entities []Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -105,7 +103,7 @@ func (r *repositoryService) RemoveRange(entities []domain.Entitier) error {
 	return err
 }
 
-func (r *repositoryService) Add(entity domain.Entitier) error {
+func (r *repositoryService) Add(entity Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -116,7 +114,7 @@ func (r *repositoryService) Add(entity domain.Entitier) error {
 	return err
 }
 
-func (r *repositoryService) AddRange(entities []domain.Entitier) error {
+func (r *repositoryService) AddRange(entities []Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -127,7 +125,7 @@ func (r *repositoryService) AddRange(entities []domain.Entitier) error {
 	return err
 }
 
-func (r *repositoryService) Update(entity domain.Entitier) error {
+func (r *repositoryService) Update(entity Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -138,7 +136,7 @@ func (r *repositoryService) Update(entity domain.Entitier) error {
 	return err
 }
 
-func (r *repositoryService) UpdateRange(entities []domain.Entitier) error {
+func (r *repositoryService) UpdateRange(entities []Entitier) error {
 	r.Lock()
 	defer r.Unlock()
 
