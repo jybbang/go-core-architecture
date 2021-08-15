@@ -1,13 +1,24 @@
 package core
 
 import (
+	"net/http"
 	"reflect"
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"
 )
+
+type MetricsSettings struct {
+	Endpoint   string
+	ListenAddr string
+}
+
+var defaultMetricsSettings = MetricsSettings{
+	Endpoint: "/metrics",
+}
 
 var mediatorInstance *mediator
 
@@ -37,6 +48,13 @@ func onCbStateChange(name string, from gobreaker.State, to gobreaker.State) {
 
 func SetLogger(logger *zap.Logger) {
 	Log = logger.Sugar()
+}
+
+func AddMetrics(settings *MetricsSettings) {
+	if settings == nil {
+		settings = &defaultMetricsSettings
+	}
+	http.Handle(settings.Endpoint, promhttp.Handler())
 }
 
 func GetMediator() *mediator {

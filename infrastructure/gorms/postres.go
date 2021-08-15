@@ -37,8 +37,9 @@ func getPostresClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 func NewPostresAdapter(ctx context.Context, settings GormSettings) *adapter {
 	conn, mutex := getMySqlClient(settings)
 	postgres := &adapter{
-		conn: conn,
-		rw:   mutex,
+		conn:     conn,
+		rw:       mutex,
+		settings: settings,
 	}
 
 	return postgres

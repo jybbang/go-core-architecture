@@ -37,8 +37,9 @@ func getSqliteClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 func NewSqliteAdapter(ctx context.Context, settings GormSettings) *adapter {
 	conn, mutex := getMySqlClient(settings)
 	sqlite := &adapter{
-		conn: conn,
-		rw:   mutex,
+		conn:     conn,
+		rw:       mutex,
+		settings: settings,
 	}
 
 	return sqlite

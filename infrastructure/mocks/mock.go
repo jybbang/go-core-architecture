@@ -62,6 +62,17 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	return nil
 }
 
+func (a *adapter) Delete(ctx context.Context, key string) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	core.Log.Debugw("mock delete", "key", key)
+	a.states.Remove(key)
+	return nil
+}
+
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {

@@ -37,8 +37,9 @@ func getMySqlClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 func NewMySqlAdapter(ctx context.Context, settings GormSettings) *adapter {
 	conn, mutex := getMySqlClient(settings)
 	mysql := &adapter{
-		conn: conn,
-		rw:   mutex,
+		conn:     conn,
+		rw:       mutex,
+		settings: settings,
 	}
 
 	return mysql

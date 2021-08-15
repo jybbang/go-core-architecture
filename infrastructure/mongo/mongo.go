@@ -85,6 +85,7 @@ func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
 		conn:     client,
 		database: client.Database(settings.DatabaseName),
 		rw:       mutex,
+		settings: settings,
 	}
 
 	return mongo

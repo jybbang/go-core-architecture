@@ -96,3 +96,28 @@ func TestStateService_Set(t *testing.T) {
 		})
 	}
 }
+
+func TestStateService_Delete(t *testing.T) {
+	s := core.NewStateServiceBuilder().
+		StateAdapter(mocks.NewMockAdapter()).
+		Build()
+
+	type args struct {
+		ctx context.Context
+		key string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := s.Delete(tt.args.ctx, tt.args.key); (err != nil) != tt.wantErr {
+				t.Errorf("StateService.Set() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

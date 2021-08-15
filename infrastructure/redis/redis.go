@@ -78,8 +78,9 @@ func getRedisClient(ctx context.Context, settings RedisSettings) (*redis.Client,
 func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
 	client, pubsub := getRedisClient(ctx, settings)
 	redisService := &adapter{
-		redis:   client,
-		pubsubs: pubsub,
+		redis:    client,
+		pubsubs:  pubsub,
+		settings: settings,
 	}
 
 	return redisService
@@ -113,8 +114,16 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	return a.redis.Set(ctx, key, bytes, 0).Err()
 }
 
+func (a *adapter) Delete(ctx context.Context, key string) error {
+	return a.redis.Del(ctx, key).Err()
+}
+
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
-	err := a.redis.Publish(ctx, coreEvent.GetTopic(), coreEvent).Err()
+	bytes, err := json.Marshal(coreEvent)
+	if err != nil {
+		return err
+	}
+	err = a.redis.Publish(ctx, coreEvent.GetTopic(), bytes).Err()
 	return err
 }
 

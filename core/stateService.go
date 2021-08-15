@@ -47,3 +47,14 @@ func (s *stateService) Set(ctx context.Context, key string, value interface{}) e
 	})
 	return err
 }
+
+func (s *stateService) Delete(ctx context.Context, key string) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	_, err := s.cb.Execute(func() (interface{}, error) {
+		err := s.state.Delete(ctx, key)
+		return nil, err
+	})
+	return err
+}
