@@ -28,7 +28,7 @@ func Test_mediator_Send(t *testing.T) {
 		AddHandler(new(testCommand), testCommandHandler).
 		Build()
 
-	m.AddMiddleware(middlewares.NewZapLogMiddleware(logger)).
+	m.AddMiddleware(middlewares.NewLogMiddleware(logger)).
 		AddMiddleware(middlewares.NewValidationMiddleware())
 
 	core.NewEventbusBuilder().Build()

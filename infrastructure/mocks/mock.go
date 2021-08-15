@@ -29,7 +29,15 @@ var mock = &adapter{
 	states:  cmap.New(),
 }
 
-func NewMockAdapter(setting MockSettings) *adapter {
+func NewMockAdapter() *adapter {
+	logger, _ := zap.NewDevelopment()
+	mock.setting = MockSettings{
+		Log: logger.Sugar(),
+	}
+	return mock
+}
+
+func NewMockAdapterWithSettings(setting MockSettings) *adapter {
 	mock.setting = setting
 	return mock
 }

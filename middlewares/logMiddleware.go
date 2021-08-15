@@ -7,18 +7,18 @@ import (
 	"go.uber.org/zap"
 )
 
-type zapLogMiddleware struct {
+type logMiddleware struct {
 	core.Middleware
 	log *zap.Logger
 }
 
-func NewZapLogMiddleware(logger *zap.Logger) *zapLogMiddleware {
-	return &zapLogMiddleware{
+func NewLogMiddleware(logger *zap.Logger) *logMiddleware {
+	return &logMiddleware{
 		log: logger,
 	}
 }
 
-func (m *zapLogMiddleware) Run(ctx context.Context, request core.Request) (ok bool, err error) {
+func (m *logMiddleware) Run(ctx context.Context, request core.Request) (ok bool, err error) {
 	m.log.Info("mediator request log",
 		zap.Reflect("request", request))
 	return true, nil
