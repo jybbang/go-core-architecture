@@ -20,7 +20,7 @@ func NewValidationMiddleware() *validationMiddleware {
 
 func (m *validationMiddleware) Run(ctx context.Context, request core.Request) (ok bool, err error) {
 	if err = m.validate.Struct(request); err != nil {
-		return false, err
+		return false, core.ErrBadRequest
 	}
 	return true, nil
 }

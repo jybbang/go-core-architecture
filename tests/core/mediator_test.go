@@ -10,11 +10,11 @@ import (
 )
 
 type testCommand struct {
-	expect int `validate:"eq=100"`
+	Expect int `validate:"eq=100"`
 }
 
 func testCommandHandler(ctx context.Context, request interface{}) core.Result {
-	return core.Result{V: request.(*testCommand).expect}
+	return core.Result{V: request.(*testCommand).Expect}
 }
 
 func Test_mediator_Send(t *testing.T) {
@@ -42,25 +42,25 @@ func Test_mediator_Send(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				request: &testCommand{
-					expect: 123,
+					Expect: 100,
 				},
 			},
-			want: core.Result{V: 123},
+			want: core.Result{V: 100},
 		},
 		{
 			name: "2",
 			args: args{
 				ctx: context.Background(),
 				request: &testCommand{
-					expect: 99,
+					Expect: 99,
 				},
 			},
-			want: core.Result{V: 99},
+			want: core.Result{E: core.ErrBadRequest},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Send(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got.V, tt.want.V) {
+			if got := m.Send(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Mediator.Send() = %v, want %v", got, tt.want)
 			}
 		})
