@@ -19,22 +19,6 @@ func (m *mediator) initialize() *mediator {
 	return m
 }
 
-func (m *mediator) AddHandler(request Request, handler RequestHandler) *mediator {
-	valueOf := reflect.ValueOf(request)
-	typeName := valueOf.Type().Name()
-
-	m.requestHandlers.Set(typeName, handler)
-	return m
-}
-
-func (m *mediator) AddNotificationHandler(notification Notification, handler NotificationHandler) *mediator {
-	valueOf := reflect.ValueOf(notification)
-	typeName := valueOf.Type().Name()
-
-	m.notificationHandlers.Set(typeName, handler)
-	return m
-}
-
 func (m *mediator) Send(ctx context.Context, request Request) Result {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
