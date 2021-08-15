@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,7 +25,7 @@ type DomainEventer interface {
 	GetCanNotPublishToEventsource() bool
 	GetCanBuffered() bool
 	AddingEvent()
-	PublishingEvent(time.Time)
+	PublishingEvent(ctx context.Context, publishedAt time.Time)
 }
 
 func (e *DomainEvent) GetID() uuid.UUID {
@@ -52,7 +53,7 @@ func (e *DomainEvent) AddingEvent() {
 	e.CreatedAt = time.Now()
 }
 
-func (e *DomainEvent) PublishingEvent(requestAt time.Time) {
+func (e *DomainEvent) PublishingEvent(ctx context.Context, publishedAt time.Time) {
 	e.IsPublished = true
-	e.PublishedAt = requestAt
+	e.PublishedAt = publishedAt
 }

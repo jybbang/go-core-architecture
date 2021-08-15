@@ -1,6 +1,8 @@
 package middlewares
 
 import (
+	"context"
+
 	"github.com/jybbang/go-core-architecture/core"
 )
 
@@ -12,7 +14,7 @@ func NewLogMiddleware() *logMiddleware {
 	return &logMiddleware{}
 }
 
-func (m *logMiddleware) Run(request core.Request) (bool, error) {
+func (m *logMiddleware) Run(ctx context.Context, request core.Request) (ok bool, err error) {
 	core.Log.Info("mediator request - ", request)
 	return true, nil
 }

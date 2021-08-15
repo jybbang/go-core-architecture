@@ -15,11 +15,10 @@ func getSqlServerClient(connectionString string) *gorm.DB {
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {
 		db, err := gorm.Open(sqlserver.Open(connectionString), &gorm.Config{})
-		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
-
 		if err != nil {
-			panic("failed to connect database")
+			panic(err)
 		}
+		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
 		core.Log.Info("sqlserver database connected")
 		clientsInstance.clients[connectionString] = tx

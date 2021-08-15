@@ -15,11 +15,10 @@ func getMySqlClient(connectionString string) *gorm.DB {
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {
 		db, err := gorm.Open(mysql.Open(connectionString), &gorm.Config{})
-		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
-
 		if err != nil {
-			panic("failed to connect database")
+			panic(err)
 		}
+		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
 		core.Log.Info("mySql database connected")
 		clientsInstance.clients[connectionString] = tx

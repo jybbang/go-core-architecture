@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"sync"
 
 	"github.com/sony/gobreaker"
@@ -21,36 +22,26 @@ func (s *StateService) SetStateAdapter(adapter StateAdapter) *StateService {
 	return s
 }
 
-func (s *StateService) Has(key string) (bool, error) {
+func (s *StateService) Has(ctx context.Context, key string) (ok bool, err error) {
 	resp, err := s.cb.Execute(func() (interface{}, error) {
-		resp, err := s.state.Has(key)
-		if err != nil {
-			return false, err
-		}
-
-		return resp, nil
+		return s.state.Has(ctx, key)
 	})
 	return resp.(bool), err
 }
 
-func (s *StateService) Get(key string, dest Entitier) (bool, error) {
+func (s *StateService) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
 	resp, err := s.cb.Execute(func() (interface{}, error) {
-		resp, err := s.state.Get(key, dest)
-		if err != nil {
-			return false, err
-		}
-
-		return resp, nil
+		return s.state.Get(ctx, key, dest)
 	})
 	return resp.(bool), err
 }
 
-func (s *StateService) Set(key string, item interface{}) error {
+func (s *StateService) Set(ctx context.Context, key string, value interface{}) error {
 	s.Lock()
 	defer s.Unlock()
 
 	_, err := s.cb.Execute(func() (interface{}, error) {
-		err := s.state.Set(key, item)
+		err := s.state.Set(ctx, key, value)
 		return nil, err
 	})
 	return err

@@ -1,6 +1,8 @@
 package mocks
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 	cmap "github.com/orcaman/concurrent-map"
 
@@ -23,13 +25,23 @@ func NewMockAdapter() *adapter {
 	}
 }
 
-func (a *adapter) Has(key string) (bool, error) {
-	core.Log.Info("mock has - ", key)
+func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+
+	core.Log.Info("mock has - {}", key)
 	return a.states.Has(key), nil
 }
 
-func (a *adapter) Get(key string, dest core.Entitier) (bool, error) {
-	core.Log.Info("mock get - ", key)
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+
+	core.Log.Info("mock get - {}", key)
 	if resp, ok := a.states.Get(key); ok {
 		model.Copy(dest, resp)
 		return true, nil
@@ -37,34 +49,54 @@ func (a *adapter) Get(key string, dest core.Entitier) (bool, error) {
 	return false, core.ErrNotFound
 }
 
-func (a *adapter) Set(key string, value interface{}) error {
-	core.Log.Info("mock set - ", key, value)
+func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	core.Log.Info("mock set - {}", key, value)
 	a.states.Set(key, value)
 	return nil
 }
 
-func (a *adapter) Publish(coreEvent core.DomainEventer) error {
-	core.Log.Info("mock publish - ", coreEvent.GetID(), coreEvent.GetTopic())
+func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	core.Log.Info("mock publish - {} {}", coreEvent.GetID(), coreEvent.GetTopic())
 	return nil
 }
 
-func (a *adapter) Subscribe(topic string, handler core.ReplyHandler) error {
-	core.Log.Info("mock subscribe - ", topic)
+func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	core.Log.Info("mock subscribe - {}", topic)
 	a.pubsubs.Set(topic, handler)
 	return nil
 }
 
-func (a *adapter) FakeSend(topic string, data interface{}) {
-	core.Log.Info("mock fake send - ", topic, data)
-	if resp, ok := a.pubsubs.Get(topic); ok {
-		resp.(core.ReplyHandler)(data)
+func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-}
 
-func (a *adapter) Unsubscribe(topic string) error {
-	core.Log.Info("mock unsubscribe - ", topic)
+	core.Log.Info("mock unsubscribe - {}", topic)
 	a.pubsubs.Remove(topic)
 	return nil
+}
+
+func (a *adapter) FakeSend(topic string, receivedData interface{}) {
+	core.Log.Info("mock fake send - {} {}", topic, receivedData)
+	if resp, ok := a.pubsubs.Get(topic); ok {
+		resp.(core.ReplyHandler)(receivedData)
+	}
 }
 
 func (a *adapter) SetModel(model core.Entitier) {
@@ -72,97 +104,162 @@ func (a *adapter) SetModel(model core.Entitier) {
 	a.model = model
 }
 
-func (a *adapter) Find(dto core.Entitier, id uuid.UUID) error {
-	core.Log.Info("mock find - ", id)
-	if resp, ok := a.db.Get(id.String()); ok {
-		model.Copy(dto, resp)
-		return nil
+func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {
+	// Check context cancellation
+	if err = ctx.Err(); err != nil {
+		return false, err
 	}
-	return core.ErrNotFound
+
+	core.Log.Info("mock find - {}", id)
+	if resp, ok := a.db.Get(id.String()); ok {
+		model.Copy(dest, resp)
+		return true, nil
+	}
+	return false, core.ErrNotFound
 }
 
-func (a *adapter) Any() (bool, error) {
+func (a *adapter) Any(ctx context.Context) (ok bool, err error) {
+	// Check context cancellation
+	if err = ctx.Err(); err != nil {
+		return false, err
+	}
+
 	core.Log.Info("mock any")
-	count, err := a.Count()
+	count, err := a.Count(ctx)
 	return count > 0, err
 }
 
-func (a *adapter) AnyWithFilter(query interface{}, args interface{}) (bool, error) {
+func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args interface{}) (ok bool, err error) {
+	// Check context cancellation
+	if err = ctx.Err(); err != nil {
+		return false, err
+	}
+
 	core.Log.Info("mock anywithfilter")
-	count, err := a.CountWithFilter(query, args)
+	count, err := a.CountWithFilter(ctx, query, args)
 	return count > 0, err
 }
 
-func (a *adapter) Count() (int64, error) {
+func (a *adapter) Count(ctx context.Context) (count int64, err error) {
+	// Check context cancellation
+	if err = ctx.Err(); err != nil {
+		return 0, err
+	}
+
 	core.Log.Info("mock count")
-	count := a.db.Count()
-	return int64(count), nil
+	resp := a.db.Count()
+	return int64(resp), nil
 }
 
-func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, error) {
+func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
+	// Check context cancellation
+	if err = ctx.Err(); err != nil {
+		return 0, err
+	}
+
 	core.Log.Info("mock countwithfilter")
-	count := a.db.Count()
-	return int64(count), nil
+	resp := a.db.Count()
+	return int64(resp), nil
 }
 
-func (a *adapter) List(dtos []core.Entitier) error {
+func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	core.Log.Info("mock list")
 	for _, v := range a.db.Items() {
 		entity := v.(core.Entitier)
-		dtos = append(dtos, entity)
+		dest = append(dest, entity)
 	}
 
 	return nil
 }
 
-func (a *adapter) ListWithFilter(dtos []core.Entitier, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, query interface{}, args interface{}) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	core.Log.Info("mock listwithfilter")
 	for _, v := range a.db.Items() {
 		entity := v.(core.Entitier)
-		dtos = append(dtos, entity)
+		dest = append(dest, entity)
 	}
 
 	return nil
 }
 
-func (a *adapter) Remove(entity core.Entitier) error {
-	core.Log.Info("mock remove - ", entity)
+func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	core.Log.Info("mock remove - {}", entity)
 	a.db.Remove(entity.GetID().String())
 	return nil
 }
 
-func (a *adapter) RemoveRange(entities []core.Entitier) error {
+func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	core.Log.Info("mock removerange")
 	for _, v := range entities {
-		a.Remove(v)
+		a.Remove(ctx, v)
 	}
 	return nil
 }
 
-func (a *adapter) Add(entity core.Entitier) error {
+func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	core.Log.Info("mock add - ", entity)
 	a.db.Set(entity.GetID().String(), entity)
 	return nil
 }
 
-func (a *adapter) AddRange(entities []core.Entitier) error {
+func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	core.Log.Info("mock addrange")
 	for _, v := range entities {
-		a.Add(v)
+		a.Add(ctx, v)
 	}
 	return nil
 }
 
-func (a *adapter) Update(entity core.Entitier) error {
+func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	core.Log.Info("mock update - ", entity)
 	a.db.Set(entity.GetID().String(), entity)
 	return nil
 }
 
-func (a *adapter) UpdateRange(entities []core.Entitier) error {
+func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	core.Log.Info("mock updaterange")
 	for _, v := range entities {
-		a.Update(v)
+		a.Update(ctx, v)
 	}
 	return nil
 }

@@ -29,8 +29,6 @@ var clientsSync sync.Once
 
 var clientsInstance *clients
 
-var ctx context.Context
-
 func getClients() *clients {
 	if clientsInstance == nil {
 		clientsSync.Do(
@@ -43,7 +41,7 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getMongoClient(connectionUri string) *mongo.Client {
+func getMongoClient(ctx context.Context, connectionUri string) *mongo.Client {
 	clientsInstance := getClients()
 
 	clientsInstance.Lock()
@@ -51,10 +49,13 @@ func getMongoClient(connectionUri string) *mongo.Client {
 
 	_, ok := clientsInstance.clients[connectionUri]
 	if !ok {
-		ctx = context.Background()
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionUri))
 		if err != nil {
-			core.Log.Fatal(err)
+			panic(err)
+		}
+		// Check context cancellation
+		if err := ctx.Err(); err != nil {
+			panic(err)
 		}
 
 		core.Log.Info("mongo database connected")
@@ -65,8 +66,8 @@ func getMongoClient(connectionUri string) *mongo.Client {
 	return client
 }
 
-func NewMongoAdapter(connectionUri string, dbName string) *adapter {
-	client := getMongoClient(connectionUri)
+func NewMongoAdapter(ctx context.Context, connectionUri string, dbName string) *adapter {
+	client := getMongoClient(ctx, connectionUri)
 	mongo := &adapter{
 		conn:     client,
 		database: client.Database(dbName),
@@ -83,27 +84,27 @@ func (a *adapter) SetModel(model core.Entitier) {
 	a.collection = a.database.Collection(key)
 }
 
-func (a *adapter) Find(model core.Entitier, dto core.Entitier, id uuid.UUID) error {
-	err := a.collection.FindOne(ctx, bson.M{"_id": id}).Decode(dto)
+func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {
+	err = a.collection.FindOne(ctx, bson.M{"_id": id}).Decode(dest)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
-func (a *adapter) Any() (bool, error) {
-	count, err := a.Count()
+func (a *adapter) Any(ctx context.Context) (ok bool, err error) {
+	count, err := a.Count(ctx)
 	return count > 0, err
 }
 
-func (a *adapter) AnyWithFilter(query interface{}, args interface{}) (bool, error) {
-	count, err := a.CountWithFilter(query, args)
+func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args interface{}) (ok bool, err error) {
+	count, err := a.CountWithFilter(ctx, query, args)
 	return count > 0, err
 }
 
-func (a *adapter) Count() (int64, error) {
-	count, err := a.collection.CountDocuments(ctx, bson.M{})
+func (a *adapter) Count(ctx context.Context) (count int64, err error) {
+	count, err = a.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return 0, err
 	}
@@ -111,8 +112,8 @@ func (a *adapter) Count() (int64, error) {
 	return count, nil
 }
 
-func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, error) {
-	count, err := a.collection.CountDocuments(ctx, query)
+func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
+	count, err = a.collection.CountDocuments(ctx, query)
 	if err != nil {
 		return 0, err
 	}
@@ -120,27 +121,27 @@ func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, e
 	return count, nil
 }
 
-func (a *adapter) List(dtos []core.Entitier) error {
+func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
 	cursor, err := a.collection.Find(ctx, bson.M{})
 	if err != nil {
 		return err
 	}
 
 	defer cursor.Close(ctx)
-	return cursor.All(ctx, dtos)
+	return cursor.All(ctx, dest)
 }
 
-func (a *adapter) ListWithFilter(dtos []core.Entitier, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, query interface{}, args interface{}) error {
 	cursor, err := a.collection.Find(ctx, query)
 	if err != nil {
 		return err
 	}
 
 	defer cursor.Close(ctx)
-	return cursor.All(ctx, dtos)
+	return cursor.All(ctx, dest)
 }
 
-func (a *adapter) Remove(entity core.Entitier) error {
+func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
 	_, err := a.collection.DeleteOne(ctx, bson.M{"_id": entity.GetID()})
 	if err != nil {
 		return err
@@ -149,7 +150,7 @@ func (a *adapter) Remove(entity core.Entitier) error {
 	return nil
 }
 
-func (a *adapter) RemoveRange(entities []core.Entitier) error {
+func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
 	vals := make([]bson.M, len(entities))
 	for i, entity := range entities {
 		vals[i] = bson.M{"_id": entity.GetID()}
@@ -162,7 +163,7 @@ func (a *adapter) RemoveRange(entities []core.Entitier) error {
 	return nil
 }
 
-func (a *adapter) Add(entity core.Entitier) error {
+func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
 	_, err := a.collection.InsertOne(ctx, entity)
 	if err != nil {
 		return err
@@ -171,7 +172,7 @@ func (a *adapter) Add(entity core.Entitier) error {
 	return nil
 }
 
-func (a *adapter) AddRange(entities []core.Entitier) error {
+func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
 	vals := make([]interface{}, len(entities))
 	for i, entity := range entities {
 		vals[i] = entity
@@ -184,7 +185,7 @@ func (a *adapter) AddRange(entities []core.Entitier) error {
 	return nil
 }
 
-func (a *adapter) Update(entity core.Entitier) error {
+func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
 	_, err := a.collection.UpdateOne(ctx, bson.M{"_id": entity.GetID()}, entity)
 	if err != nil {
 		return err
@@ -193,9 +194,9 @@ func (a *adapter) Update(entity core.Entitier) error {
 	return nil
 }
 
-func (a *adapter) UpdateRange(entities []core.Entitier) error {
+func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) error {
 	for _, entity := range entities {
-		err := a.Update(entity)
+		err := a.Update(ctx, entity)
 		if err != nil {
 			return err
 		}

@@ -17,8 +17,8 @@ type Entity struct {
 type Entitier interface {
 	GetID() uuid.UUID
 	SetID(uuid.UUID)
-	SetCreatedAt(time.Time)
-	SetUpdatedAt(time.Time)
+	SetCreatedAt(user string, timestamp time.Time)
+	SetUpdatedAt(user string, timestamp time.Time)
 }
 
 func (e *Entity) GetID() uuid.UUID {
@@ -29,10 +29,10 @@ func (e *Entity) SetID(id uuid.UUID) {
 	e.ID = id
 }
 
-func (e *Entity) SetCreatedAt(timestamp time.Time) {
+func (e *Entity) SetCreatedAt(user string, timestamp time.Time) {
 	e.CreatedAt = timestamp
 }
 
-func (e *Entity) SetUpdatedAt(timestamp time.Time) {
+func (e *Entity) SetUpdatedAt(user string, timestamp time.Time) {
 	e.UpdatedAt = timestamp
 }

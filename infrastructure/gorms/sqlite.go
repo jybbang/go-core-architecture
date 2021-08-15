@@ -15,11 +15,10 @@ func getSqliteClient(connectionString string) *gorm.DB {
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {
 		db, err := gorm.Open(sqlite.Open(connectionString), &gorm.Config{})
-		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
-
 		if err != nil {
-			panic("failed to connect database")
+			panic(err)
 		}
+		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
 		core.Log.Info("sqlite database connected")
 		clientsInstance.clients[connectionString] = tx

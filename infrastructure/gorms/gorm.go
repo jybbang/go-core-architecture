@@ -1,6 +1,7 @@
 package gorms
 
 import (
+	"context"
 	"sync"
 
 	"github.com/google/uuid"
@@ -38,83 +39,83 @@ func (a *adapter) SetModel(model core.Entitier) {
 	a.model = model
 }
 
-func (a *adapter) Find(dto core.Entitier, id uuid.UUID) error {
-	a.conn.Take(dto, id)
-	if dto == nil {
-		return core.ErrNotFound
+func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {
+	a.conn.WithContext(ctx).Take(dest, id)
+	if dest == nil {
+		return false, core.ErrNotFound
 	}
 
-	return nil
+	return true, nil
 }
 
-func (a *adapter) Any() (bool, error) {
-	count, err := a.Count()
+func (a *adapter) Any(ctx context.Context) (ok bool, err error) {
+	count, err := a.Count(ctx)
 	return count > 0, err
 }
 
-func (a *adapter) AnyWithFilter(query interface{}, args interface{}) (bool, error) {
-	count, err := a.CountWithFilter(query, args)
+func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args interface{}) (ok bool, err error) {
+	count, err := a.CountWithFilter(ctx, query, args)
 	return count > 0, err
 }
 
-func (a *adapter) Count() (int64, error) {
-	count := new(int64)
-	a.conn.Model(a.model).Count(count)
+func (a *adapter) Count(ctx context.Context) (count int64, err error) {
+	resp := new(int64)
+	a.conn.WithContext(ctx).Model(a.model).Count(resp)
 
-	return *count, nil
+	return *resp, nil
 }
 
-func (a *adapter) CountWithFilter(query interface{}, args interface{}) (int64, error) {
-	count := new(int64)
-	a.conn.Model(a.model).Count(count).Where(query, args)
+func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
+	resp := new(int64)
+	a.conn.WithContext(ctx).Model(a.model).Count(resp).Where(query, args)
 
-	return *count, nil
+	return *resp, nil
 }
 
-func (a *adapter) List(dtos []core.Entitier) error {
-	a.conn.Find(dtos)
-	if dtos == nil {
+func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
+	a.conn.WithContext(ctx).Find(dest)
+	if dest == nil {
 		return core.ErrNotFound
 	}
 
 	return nil
 }
 
-func (a *adapter) ListWithFilter(dtos []core.Entitier, query interface{}, args interface{}) error {
-	a.conn.Find(dtos).Where(query, args)
-	if dtos == nil {
+func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, query interface{}, args interface{}) error {
+	a.conn.WithContext(ctx).Find(dest).Where(query, args)
+	if dest == nil {
 		return core.ErrNotFound
 	}
 
 	return nil
 }
 
-func (a *adapter) Remove(entity core.Entitier) error {
-	a.conn.Delete(entity, entity.GetID())
+func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
+	a.conn.WithContext(ctx).Delete(entity, entity.GetID())
 	return nil
 }
 
-func (a *adapter) RemoveRange(entities []core.Entitier) error {
-	a.conn.Delete(entities)
+func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
+	a.conn.WithContext(ctx).Delete(entities)
 	return nil
 }
 
-func (a *adapter) Add(entity core.Entitier) error {
-	a.conn.Create(entity)
+func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
+	a.conn.WithContext(ctx).Create(entity)
 	return nil
 }
 
-func (a *adapter) AddRange(entities []core.Entitier) error {
-	a.conn.Create(entities)
+func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
+	a.conn.WithContext(ctx).Create(entities)
 	return nil
 }
 
-func (a *adapter) Update(entity core.Entitier) error {
-	a.conn.Model(entity).Updates(entity)
+func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
+	a.conn.WithContext(ctx).Model(entity).Updates(entity)
 	return nil
 }
 
-func (a *adapter) UpdateRange(entities []core.Entitier) error {
-	a.conn.Model(a.model).Updates(entities)
+func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) error {
+	a.conn.WithContext(ctx).Model(a.model).Updates(entities)
 	return nil
 }

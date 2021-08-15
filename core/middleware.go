@@ -1,8 +1,6 @@
 package core
 
-import (
-	"fmt"
-)
+import "context"
 
 type Middleware struct {
 	next Middlewarer
@@ -10,8 +8,8 @@ type Middleware struct {
 
 type Middlewarer interface {
 	AddMiddleware(Middlewarer) Middlewarer
-	Next(Request, RequestHandler) (interface{}, error)
-	Run(Request) (bool, error)
+	Next(ctx context.Context, request Request, handler RequestHandler) Result
+	Run(ctx context.Context, request Request) (ok bool, err error)
 }
 
 func (m *Middleware) AddMiddleware(middleware Middlewarer) Middlewarer {
@@ -19,17 +17,28 @@ func (m *Middleware) AddMiddleware(middleware Middlewarer) Middlewarer {
 	return m.next
 }
 
-func (m *Middleware) Next(request Request, handler RequestHandler) (interface{}, error) {
+func (m *Middleware) Next(ctx context.Context, request Request, handler RequestHandler) Result {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return Result{E: err}
+	}
+
 	if m.next != nil {
-		ok, err := m.next.Run(request)
+		ok, err := m.next.Run(ctx, request)
 		if err != nil {
-			return nil, err
+			return Result{
+				V: nil,
+				E: err,
+			}
 		}
 		if !ok {
-			return nil, fmt.Errorf("middleware block this request")
+			return Result{
+				V: nil,
+				E: ErrForbiddenAcccess,
+			}
 		}
-		return m.next.Next(request, handler)
+		return m.next.Next(ctx, request, handler)
 	} else {
-		return handler(request), nil
+		return handler(ctx, request)
 	}
 }

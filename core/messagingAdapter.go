@@ -1,9 +1,11 @@
 package core
 
-type ReplyHandler func(interface{})
+import "context"
+
+type ReplyHandler func(receivedData interface{})
 
 type MessagingAdapter interface {
-	Publish(DomainEventer) error
-	Subscribe(string, ReplyHandler) error
-	Unsubscribe(string) error
+	Publish(ctx context.Context, event DomainEventer) error
+	Subscribe(ctx context.Context, topic string, handler ReplyHandler) error
+	Unsubscribe(ctx context.Context, topic string) error
 }

@@ -1,7 +1,7 @@
 package core
 
 import (
-	"fmt"
+	"context"
 	"sync"
 	"time"
 
@@ -20,7 +20,7 @@ type EventBus struct {
 
 type BufferedEvent struct {
 	DomainEvent
-	Events []DomainEventer
+	BufferedEvents []DomainEventer
 }
 
 func (e *EventBus) Setup() *EventBus {
@@ -38,10 +38,11 @@ func (e *EventBus) SubscribeBufferedEvent(observable rxgo.Observable) {
 	for {
 		vals := <-ch
 		event := &BufferedEvent{
-			Events: vals.V.([]DomainEventer),
+			BufferedEvents: vals.V.([]DomainEventer),
 		}
+		timeout, _ := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
 		e.AddDomainEvent(event)
-		e.PublishDomainEvents()
+		e.PublishDomainEvents(timeout)
 	}
 }
 
@@ -59,7 +60,7 @@ func (e *EventBus) AddDomainEvent(domainEvent DomainEventer) {
 	e.domainEvents = append(e.domainEvents, domainEvent)
 }
 
-func (e *EventBus) PublishDomainEvents() error {
+func (e *EventBus) PublishDomainEvents(ctx context.Context) error {
 	e.Lock()
 	defer e.Unlock()
 
@@ -67,14 +68,10 @@ func (e *EventBus) PublishDomainEvents() error {
 	_, err := e.cb.Execute(func() (interface{}, error) {
 
 		for !e.empty() {
-			event, eventErr := e.dequeueDomainEvent()
-			if eventErr != nil {
-				return nil, eventErr
-			}
+			event := e.dequeueDomainEvent()
+			event.PublishingEvent(ctx, now)
 
-			event.PublishingEvent(now)
-
-			mediatorErr := e.mediator.Publish(event)
+			mediatorErr := e.mediator.Publish(ctx, event)
 			if mediatorErr != nil {
 				return nil, mediatorErr
 			}
@@ -90,7 +87,7 @@ func (e *EventBus) PublishDomainEvents() error {
 				continue
 			}
 
-			msgErr := e.messaging.Publish(event)
+			msgErr := e.messaging.Publish(ctx, event)
 			if msgErr != nil {
 				return nil, msgErr
 			}
@@ -98,17 +95,14 @@ func (e *EventBus) PublishDomainEvents() error {
 
 		return nil, nil
 	})
+
 	return err
 }
 
-func (e *EventBus) dequeueDomainEvent() (DomainEventer, error) {
-	if len(e.domainEvents) > 0 {
-		result := e.domainEvents[0]
-		e.domainEvents = e.domainEvents[1:]
-		return result, nil
-	}
-
-	return nil, fmt.Errorf("domainEvents empty exception")
+func (e *EventBus) dequeueDomainEvent() DomainEventer {
+	result := e.domainEvents[0]
+	e.domainEvents = e.domainEvents[1:]
+	return result
 }
 
 func (e *EventBus) empty() bool {

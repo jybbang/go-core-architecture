@@ -1,6 +1,7 @@
-package tests
+package core
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -11,17 +12,6 @@ import (
 type testModel struct {
 	core.Entity
 	Expect int `bson:"expect,omitempty"`
-}
-
-func (e *testModel) CopyWith(src interface{}) bool {
-	source, ok := src.(*testModel)
-	e.ID = source.ID
-	e.CreateUser = source.CreateUser
-	e.UpdateUser = source.UpdateUser
-	e.CreatedAt = source.CreatedAt
-	e.UpdatedAt = source.UpdatedAt
-	e.Expect = source.Expect
-	return ok
 }
 
 func TestRepositoryService_Find(t *testing.T) {
@@ -37,56 +27,71 @@ func TestRepositoryService_Find(t *testing.T) {
 	dto2.ID = uuid.New()
 	dto2.Expect = 1234
 
-	r.Add(dto)
-	r.Add(dto2)
+	ctx := context.Background()
+
+	r.Add(ctx, dto)
+	r.Add(ctx, dto2)
 
 	type args struct {
-		dto core.Entitier
-		id  uuid.UUID
+		ctx  context.Context
+		dest core.Entitier
+		id   uuid.UUID
 	}
 	tests := []struct {
 		name    string
 		r       *core.RepositoryService
 		args    args
+		wantOk  bool
 		wantErr bool
 	}{
 		{
 			name: "1",
 			r:    r,
 			args: args{
-				dto: dto2,
-				id:  dto.ID,
+				ctx:  context.Background(),
+				dest: dto2,
+				id:   dto.ID,
 			},
+			wantOk:  true,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.Find(tt.args.dto, tt.args.id); (err != nil) != tt.wantErr {
+			gotOk, err := tt.r.Find(tt.args.ctx, tt.args.dest, tt.args.id)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.Find() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("RepositoryService.Find() = %v, want %v", gotOk, tt.wantOk)
 			}
 		})
 	}
 }
 
 func TestRepositoryService_Any(t *testing.T) {
+	type args struct {
+		ctx context.Context
+	}
 	tests := []struct {
 		name    string
 		r       *core.RepositoryService
-		want    bool
+		args    args
+		wantOk  bool
 		wantErr bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.r.Any()
+			gotOk, err := tt.r.Any(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.Any() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("RepositoryService.Any() = %v, want %v", got, tt.want)
+			if gotOk != tt.wantOk {
+				t.Errorf("RepositoryService.Any() = %v, want %v", gotOk, tt.wantOk)
 			}
 		})
 	}
@@ -94,6 +99,7 @@ func TestRepositoryService_Any(t *testing.T) {
 
 func TestRepositoryService_AnyWithFilter(t *testing.T) {
 	type args struct {
+		ctx   context.Context
 		query interface{}
 		args  interface{}
 	}
@@ -101,43 +107,47 @@ func TestRepositoryService_AnyWithFilter(t *testing.T) {
 		name    string
 		r       *core.RepositoryService
 		args    args
-		want    bool
+		wantOk  bool
 		wantErr bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.r.AnyWithFilter(tt.args.query, tt.args.args)
+			gotOk, err := tt.r.AnyWithFilter(tt.args.ctx, tt.args.query, tt.args.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.AnyWithFilter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("RepositoryService.AnyWithFilter() = %v, want %v", got, tt.want)
+			if gotOk != tt.wantOk {
+				t.Errorf("RepositoryService.AnyWithFilter() = %v, want %v", gotOk, tt.wantOk)
 			}
 		})
 	}
 }
 
 func TestRepositoryService_Count(t *testing.T) {
+	type args struct {
+		ctx context.Context
+	}
 	tests := []struct {
-		name    string
-		r       *core.RepositoryService
-		want    int64
-		wantErr bool
+		name      string
+		r         *core.RepositoryService
+		args      args
+		wantCount int64
+		wantErr   bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.r.Count()
+			gotCount, err := tt.r.Count(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.Count() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("RepositoryService.Count() = %v, want %v", got, tt.want)
+			if gotCount != tt.wantCount {
+				t.Errorf("RepositoryService.Count() = %v, want %v", gotCount, tt.wantCount)
 			}
 		})
 	}
@@ -145,27 +155,28 @@ func TestRepositoryService_Count(t *testing.T) {
 
 func TestRepositoryService_CountWithFilter(t *testing.T) {
 	type args struct {
+		ctx   context.Context
 		query interface{}
 		args  interface{}
 	}
 	tests := []struct {
-		name    string
-		r       *core.RepositoryService
-		args    args
-		want    int64
-		wantErr bool
+		name      string
+		r         *core.RepositoryService
+		args      args
+		wantCount int64
+		wantErr   bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.r.CountWithFilter(tt.args.query, tt.args.args)
+			gotCount, err := tt.r.CountWithFilter(tt.args.ctx, tt.args.query, tt.args.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.CountWithFilter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("RepositoryService.CountWithFilter() = %v, want %v", got, tt.want)
+			if gotCount != tt.wantCount {
+				t.Errorf("RepositoryService.CountWithFilter() = %v, want %v", gotCount, tt.wantCount)
 			}
 		})
 	}
@@ -173,7 +184,8 @@ func TestRepositoryService_CountWithFilter(t *testing.T) {
 
 func TestRepositoryService_List(t *testing.T) {
 	type args struct {
-		dtos []core.Entitier
+		ctx  context.Context
+		dest []core.Entitier
 	}
 	tests := []struct {
 		name    string
@@ -185,7 +197,7 @@ func TestRepositoryService_List(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.List(tt.args.dtos); (err != nil) != tt.wantErr {
+			if err := tt.r.List(tt.args.ctx, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.List() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -194,7 +206,8 @@ func TestRepositoryService_List(t *testing.T) {
 
 func TestRepositoryService_ListWithFilter(t *testing.T) {
 	type args struct {
-		dtos  []core.Entitier
+		ctx   context.Context
+		dest  []core.Entitier
 		query interface{}
 		args  interface{}
 	}
@@ -208,7 +221,7 @@ func TestRepositoryService_ListWithFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.ListWithFilter(tt.args.dtos, tt.args.query, tt.args.args); (err != nil) != tt.wantErr {
+			if err := tt.r.ListWithFilter(tt.args.ctx, tt.args.dest, tt.args.query, tt.args.args); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.ListWithFilter() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -217,6 +230,7 @@ func TestRepositoryService_ListWithFilter(t *testing.T) {
 
 func TestRepositoryService_Remove(t *testing.T) {
 	type args struct {
+		ctx    context.Context
 		entity core.Entitier
 	}
 	tests := []struct {
@@ -229,7 +243,7 @@ func TestRepositoryService_Remove(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.Remove(tt.args.entity); (err != nil) != tt.wantErr {
+			if err := tt.r.Remove(tt.args.ctx, tt.args.entity); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.Remove() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -238,6 +252,7 @@ func TestRepositoryService_Remove(t *testing.T) {
 
 func TestRepositoryService_RemoveRange(t *testing.T) {
 	type args struct {
+		ctx      context.Context
 		entities []core.Entitier
 	}
 	tests := []struct {
@@ -250,7 +265,7 @@ func TestRepositoryService_RemoveRange(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.RemoveRange(tt.args.entities); (err != nil) != tt.wantErr {
+			if err := tt.r.RemoveRange(tt.args.ctx, tt.args.entities); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.RemoveRange() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -259,6 +274,7 @@ func TestRepositoryService_RemoveRange(t *testing.T) {
 
 func TestRepositoryService_Add(t *testing.T) {
 	type args struct {
+		ctx    context.Context
 		entity core.Entitier
 	}
 	tests := []struct {
@@ -271,7 +287,7 @@ func TestRepositoryService_Add(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.Add(tt.args.entity); (err != nil) != tt.wantErr {
+			if err := tt.r.Add(tt.args.ctx, tt.args.entity); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.Add() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -280,6 +296,7 @@ func TestRepositoryService_Add(t *testing.T) {
 
 func TestRepositoryService_AddRange(t *testing.T) {
 	type args struct {
+		ctx      context.Context
 		entities []core.Entitier
 	}
 	tests := []struct {
@@ -292,7 +309,7 @@ func TestRepositoryService_AddRange(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.AddRange(tt.args.entities); (err != nil) != tt.wantErr {
+			if err := tt.r.AddRange(tt.args.ctx, tt.args.entities); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.AddRange() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -301,6 +318,7 @@ func TestRepositoryService_AddRange(t *testing.T) {
 
 func TestRepositoryService_Update(t *testing.T) {
 	type args struct {
+		ctx    context.Context
 		entity core.Entitier
 	}
 	tests := []struct {
@@ -313,7 +331,7 @@ func TestRepositoryService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.Update(tt.args.entity); (err != nil) != tt.wantErr {
+			if err := tt.r.Update(tt.args.ctx, tt.args.entity); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.Update() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -322,6 +340,7 @@ func TestRepositoryService_Update(t *testing.T) {
 
 func TestRepositoryService_UpdateRange(t *testing.T) {
 	type args struct {
+		ctx      context.Context
 		entities []core.Entitier
 	}
 	tests := []struct {
@@ -334,7 +353,7 @@ func TestRepositoryService_UpdateRange(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.UpdateRange(tt.args.entities); (err != nil) != tt.wantErr {
+			if err := tt.r.UpdateRange(tt.args.ctx, tt.args.entities); (err != nil) != tt.wantErr {
 				t.Errorf("RepositoryService.UpdateRange() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -1,7 +1,8 @@
 package core
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"reflect"
 	"time"
 
@@ -9,24 +10,19 @@ import (
 )
 
 type Request interface{}
-type RequestHandler func(interface{}) interface{}
+type RequestHandler func(ctx context.Context, request interface{}) Result
 
 type Notification interface{}
-type NotificationHandler func(interface{})
+type NotificationHandler func(ctx context.Context, notification interface{}) error
 
 type Mediator struct {
-	middleware           Middlewarer
+	Middleware
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
 }
 
 func (m *Mediator) Setup() *Mediator {
 	return m
-}
-
-func (m *Mediator) AddMiddleware(middleware Middlewarer) Middlewarer {
-	m.middleware = middleware
-	return m.middleware
 }
 
 func (m *Mediator) AddHandler(request Request, handler RequestHandler) *Mediator {
@@ -45,61 +41,43 @@ func (m *Mediator) AddNotificationHandler(notification Notification, handler Not
 	return m
 }
 
-func (m *Mediator) Send(request Request) (interface{}, error) {
+func (m *Mediator) Send(ctx context.Context, request Request) Result {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
 
-	handler, ok := m.requestHandlers.Get(typeName)
+	item, ok := m.requestHandlers.Get(typeName)
 	if !ok {
-		return nil, fmt.Errorf("handler not found exception")
+		return Result{E: errors.New("request handler not found")}
 	}
 
-	handlerFn, ok := handler.(RequestHandler)
-	if !ok {
-		return nil, fmt.Errorf("handler not func exception")
-	}
+	handler := item.(RequestHandler)
 
 	defer timeMeasurement(time.Now(), typeName)
 
-	return m.next(request, handlerFn)
+	return m.Next(ctx, request, handler)
 }
 
-func (m *Mediator) Publish(notification Notification) error {
+func (m *Mediator) Publish(ctx context.Context, notification Notification) error {
 	valueOf := reflect.ValueOf(notification)
 	typeName := valueOf.Type().Name()
 
-	handler, ok := m.notificationHandlers.Get(typeName)
+	item, ok := m.notificationHandlers.Get(typeName)
 	if !ok {
-		return fmt.Errorf("handler not found exception")
+		return errors.New("request handler not found")
 	}
 
-	handlerFn, ok := handler.(NotificationHandler)
-	if !ok {
-		return fmt.Errorf("handler not func exception")
-	}
+	handler := item.(NotificationHandler)
 
-	handlerFn(notification)
-	return nil
+	return handler(ctx, notification)
 }
 
-func (m *Mediator) next(request Request, handler RequestHandler) (interface{}, error) {
-	if m.middleware != nil {
-		ok, err := m.middleware.Run(request)
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			return nil, fmt.Errorf("middleware block this request")
-		}
-		return m.middleware.Next(request, handler)
-	} else {
-		return handler(request), nil
-	}
+func (m *Mediator) Run(ctx context.Context, request Request) (ok bool, err error) {
+	return true, nil
 }
 
 func timeMeasurement(start time.Time, typeName string) {
 	elapsed := time.Since(start)
 	if elapsed > time.Duration(500*time.Millisecond) {
-		Log.Warn("long process time - ", typeName, elapsed)
+		Log.Warn("send request long running {} ({})", typeName, elapsed)
 	}
 }

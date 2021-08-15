@@ -26,8 +26,6 @@ var clientsSync sync.Once
 
 var clientsInstance *clients
 
-var ctx context.Context
-
 func getClients() *clients {
 	if clientsInstance == nil {
 		clientsSync.Do(
@@ -40,7 +38,7 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getRedisClient(host string, password string) (*redis.Client, cmap.ConcurrentMap) {
+func getRedisClient(ctx context.Context, host string, password string) (*redis.Client, cmap.ConcurrentMap) {
 	clientsInstance := getClients()
 
 	clientsInstance.Lock()
@@ -48,12 +46,17 @@ func getRedisClient(host string, password string) (*redis.Client, cmap.Concurren
 
 	_, ok := clientsInstance.clients[host]
 	if !ok {
-		ctx = context.Background()
 		redisClient := redis.NewClient(&redis.Options{
 			Addr:     host,
 			Password: password,
 			DB:       0,
 		})
+		redisClient.Conn(ctx)
+		// Check context cancellation
+		if err := ctx.Err(); err != nil {
+			panic(err)
+		}
+
 		core.Log.Info("redisClient created")
 		clientsInstance.clients[host] = redisClient
 		clientsInstance.pubsubs[host] = cmap.New()
@@ -64,8 +67,8 @@ func getRedisClient(host string, password string) (*redis.Client, cmap.Concurren
 	return client, pubsub
 }
 
-func NewRedisAdapter(host string, password string) *adapter {
-	client, pubsub := getRedisClient(host, password)
+func NewRedisAdapter(ctx context.Context, host string, password string) *adapter {
+	client, pubsub := getRedisClient(ctx, host, password)
 	redisService := &adapter{
 		redis:   client,
 		pubsubs: pubsub,
@@ -74,7 +77,7 @@ func NewRedisAdapter(host string, password string) *adapter {
 	return redisService
 }
 
-func (a *adapter) Has(key string) (bool, error) {
+func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 	value, err := a.redis.Exists(ctx, key).Result()
 	if err == redis.Nil {
 		return false, core.ErrNotFound
@@ -82,7 +85,7 @@ func (a *adapter) Has(key string) (bool, error) {
 	return value > 0, err
 }
 
-func (a *adapter) Get(key string, dest core.Entitier) (bool, error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
 	value, err := a.redis.Get(ctx, key).Bytes()
 	if err == redis.Nil {
 		return false, core.ErrNotFound
@@ -93,7 +96,7 @@ func (a *adapter) Get(key string, dest core.Entitier) (bool, error) {
 	return true, json.Unmarshal(value, dest)
 }
 
-func (a *adapter) Set(key string, value interface{}) error {
+func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
 	bytes, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -102,12 +105,12 @@ func (a *adapter) Set(key string, value interface{}) error {
 	return a.redis.Set(ctx, key, bytes, 0).Err()
 }
 
-func (a *adapter) Publish(coreEvent core.DomainEventer) error {
+func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
 	err := a.redis.Publish(ctx, coreEvent.GetTopic(), coreEvent).Err()
 	return err
 }
 
-func (a *adapter) Subscribe(topic string, handler core.ReplyHandler) error {
+func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {
 	pubsub := a.redis.Subscribe(ctx, topic)
 	a.pubsubs.Set(topic, pubsub)
 
@@ -120,7 +123,7 @@ func (a *adapter) Subscribe(topic string, handler core.ReplyHandler) error {
 	return nil
 }
 
-func (a *adapter) Unsubscribe(topic string) error {
+func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
 	if pubsub, ok := a.pubsubs.Get(topic); ok {
 		if pubsub, ok := pubsub.(*redis.PubSub); ok {
 			pubsub.Unsubscribe(ctx)
