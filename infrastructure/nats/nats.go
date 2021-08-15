@@ -24,7 +24,7 @@ type clients struct {
 }
 
 type NatsSettings struct {
-	url string
+	Url string
 }
 
 var clientsSync sync.Once
@@ -49,7 +49,7 @@ func getNatsClient(ctx context.Context, settings NatsSettings) (*nats.Conn, cmap
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
-	url := settings.url
+	url := settings.Url
 	_, ok := clientsInstance.clients[url]
 	if !ok {
 		natsClient, err := nats.Connect(url)

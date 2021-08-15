@@ -17,8 +17,8 @@ type adapter struct {
 }
 
 type DaprSettings struct {
-	storeName  string
-	pubsubName string
+	StoreName  string
+	PubsubName string
 }
 
 var daprClient dapr.Client
@@ -54,7 +54,7 @@ func NewDaprAdapter(ctx context.Context, settings DaprSettings) *adapter {
 }
 
 func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
-	value, err := a.dapr.GetState(ctx, a.settings.storeName, key)
+	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
 	if err != nil {
 		return false, err
 	}
@@ -62,7 +62,7 @@ func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
-	value, err := a.dapr.GetState(ctx, a.settings.storeName, key)
+	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
 	if err != nil {
 		return false, err
 	}
@@ -75,7 +75,7 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	if err != nil {
 		return err
 	}
-	err = a.dapr.SaveState(ctx, a.settings.storeName, key, bytes)
+	err = a.dapr.SaveState(ctx, a.settings.StoreName, key, bytes)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	return a.dapr.DeleteState(ctx, a.settings.storeName, key)
+	return a.dapr.DeleteState(ctx, a.settings.StoreName, key)
 }
 
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
@@ -91,7 +91,7 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 	if err != nil {
 		return err
 	}
-	err = a.dapr.PublishEvent(ctx, a.settings.pubsubName, coreEvent.GetTopic(), bytes)
+	err = a.dapr.PublishEvent(ctx, a.settings.PubsubName, coreEvent.GetTopic(), bytes)
 	return err
 }
 
