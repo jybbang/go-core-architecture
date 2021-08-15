@@ -19,12 +19,19 @@ type adapter struct {
 	database   *mongo.Database
 	collection *mongo.Collection
 	rw         *sync.RWMutex
+	settings   MongoSettings
 }
 
 type clients struct {
 	clients map[string]*mongo.Client
 	mutexes map[string]*sync.RWMutex
 	mutex   sync.Mutex
+}
+
+type MongoSettings struct {
+	ConnectionUri       string
+	DatabaseName        string
+	CanCreateCollection bool
 }
 
 var clientsSync sync.Once
@@ -44,15 +51,16 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getMongoClient(ctx context.Context, connectionUri string) (*mongo.Client, *sync.RWMutex) {
+func getMongoClient(ctx context.Context, settings MongoSettings) (*mongo.Client, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
-	_, ok := clientsInstance.clients[connectionUri]
+	uri := settings.ConnectionUri
+	_, ok := clientsInstance.clients[uri]
 	if !ok {
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionUri))
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 		if err != nil {
 			panic(err)
 		}
@@ -62,20 +70,20 @@ func getMongoClient(ctx context.Context, connectionUri string) (*mongo.Client, *
 		}
 
 		core.Log.Infow("mongo database connected")
-		clientsInstance.clients[connectionUri] = client
-		clientsInstance.mutexes[connectionUri] = new(sync.RWMutex)
+		clientsInstance.clients[uri] = client
+		clientsInstance.mutexes[uri] = new(sync.RWMutex)
 	}
 
-	client := clientsInstance.clients[connectionUri]
-	mutex := clientsInstance.mutexes[connectionUri]
+	client := clientsInstance.clients[uri]
+	mutex := clientsInstance.mutexes[uri]
 	return client, mutex
 }
 
-func NewMongoAdapter(ctx context.Context, connectionUri string, dbName string) *adapter {
-	client, mutex := getMongoClient(ctx, connectionUri)
+func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
+	client, mutex := getMongoClient(ctx, settings)
 	mongo := &adapter{
 		conn:     client,
-		database: client.Database(dbName),
+		database: client.Database(settings.DatabaseName),
 		rw:       mutex,
 	}
 
@@ -87,6 +95,33 @@ func (a *adapter) SetModel(model core.Entitier) {
 	key := valueOf.Type().Name()
 
 	a.model = model
+
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
+	ctx := context.Background()
+	names, err := a.database.ListCollectionNames(
+		ctx,
+		bson.D{})
+	if err != nil {
+		panic(err)
+	}
+
+	hasCollection := false
+	for _, name := range names {
+		if name == key {
+			hasCollection = true
+			break
+		}
+	}
+
+	if !hasCollection && a.settings.CanCreateCollection {
+		err := a.database.CreateCollection(ctx, key)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	a.collection = a.database.Collection(key)
 }
 

@@ -9,12 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func getMySqlClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
+func getMySqlClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
+	connectionString := settings.ConnectionString
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {
 		db, err := gorm.Open(mysql.Open(connectionString), &gorm.Config{})
@@ -33,8 +34,8 @@ func getMySqlClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	return client, mutex
 }
 
-func NewMySqlAdapter(ctx context.Context, connectionString string) *adapter {
-	conn, mutex := getMySqlClient(connectionString)
+func NewMySqlAdapter(ctx context.Context, settings GormSettings) *adapter {
+	conn, mutex := getMySqlClient(settings)
 	mysql := &adapter{
 		conn: conn,
 		rw:   mutex,

@@ -27,9 +27,9 @@ func NewEventbusBuilder() *eventbusBuilder {
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
 	o.setting = EventbusSettings{
-		bufferedEventBufferTime:  time.Duration(1 * time.Second),
-		bufferedEventBufferCount: 1000,
-		bufferedEventTimeout:     time.Duration(2 * time.Second),
+		BufferedEventBufferTime:  time.Duration(1 * time.Second),
+		BufferedEventBufferCount: 1000,
+		BufferedEventTimeout:     time.Duration(2 * time.Second),
 	}
 
 	return o
@@ -47,7 +47,7 @@ func (b *eventbusBuilder) Build() *eventbus {
 		ch:           make(chan rxgo.Item, 1),
 		messaging:    b.messaging,
 		cb:           b.cb,
-		setting:      b.setting,
+		settings:     b.setting,
 	}
 	eventBusInstance.initialize()
 

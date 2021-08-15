@@ -9,12 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func getSqlServerClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
+func getSqlServerClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
+	connectionString := settings.ConnectionString
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {
 		db, err := gorm.Open(sqlserver.Open(connectionString), &gorm.Config{})
@@ -33,8 +34,8 @@ func getSqlServerClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	return client, mutex
 }
 
-func NewSqlServerAdapter(ctx context.Context, connectionString string) *adapter {
-	conn, mutex := getMySqlClient(connectionString)
+func NewSqlServerAdapter(ctx context.Context, settings GormSettings) *adapter {
+	conn, mutex := getMySqlClient(settings)
 	sqlserver := &adapter{
 		conn: conn,
 		rw:   mutex,

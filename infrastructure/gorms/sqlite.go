@@ -9,12 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func getSqliteClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
+func getSqliteClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
+	connectionString := settings.ConnectionString
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {
 		db, err := gorm.Open(sqlite.Open(connectionString), &gorm.Config{})
@@ -33,8 +34,8 @@ func getSqliteClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	return client, mutex
 }
 
-func NewSqliteAdapter(ctx context.Context, connectionString string) *adapter {
-	conn, mutex := getMySqlClient(connectionString)
+func NewSqliteAdapter(ctx context.Context, settings GormSettings) *adapter {
+	conn, mutex := getMySqlClient(settings)
 	sqlite := &adapter{
 		conn: conn,
 		rw:   mutex,

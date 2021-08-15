@@ -16,13 +16,13 @@ type eventbus struct {
 	ch           chan rxgo.Item
 	cb           *gobreaker.CircuitBreaker
 	mutex        sync.Mutex
-	setting      EventbusSettings
+	settings     EventbusSettings
 }
 
 type EventbusSettings struct {
-	bufferedEventBufferTime  time.Duration
-	bufferedEventBufferCount int
-	bufferedEventTimeout     time.Duration
+	BufferedEventBufferTime  time.Duration
+	BufferedEventBufferCount int
+	BufferedEventTimeout     time.Duration
 }
 
 type bufferedEvent struct {
@@ -32,7 +32,7 @@ type bufferedEvent struct {
 
 func (e *eventbus) initialize() *eventbus {
 	observable := rxgo.FromChannel(e.ch).
-		BufferWithTimeOrCount(rxgo.WithDuration(e.setting.bufferedEventBufferTime), e.setting.bufferedEventBufferCount)
+		BufferWithTimeOrCount(rxgo.WithDuration(e.settings.BufferedEventBufferTime), e.settings.BufferedEventBufferCount)
 
 	go e.subscribeBufferedEvent(observable)
 
@@ -43,18 +43,21 @@ func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 	ch := observable.Observe()
 
 	for {
-		vals := <-ch
-		if vals.V == nil {
-			continue
+		items := <-ch
+		if events, ok := items.V.([]DomainEventer); ok {
+			if len(events) == 0 {
+				continue
+			}
+
+			event := &bufferedEvent{
+				BufferedEvents: events,
+			}
+			event.Topic = "BufferedEvents"
+			timeout, cancel := context.WithTimeout(context.Background(), e.settings.BufferedEventTimeout)
+			e.AddDomainEvent(event)
+			e.PublishDomainEvents(timeout)
+			cancel()
 		}
-		event := &bufferedEvent{
-			BufferedEvents: vals.V.([]DomainEventer),
-		}
-		event.Topic = "BufferedEvents"
-		timeout, cancel := context.WithTimeout(context.Background(), e.setting.bufferedEventTimeout)
-		e.AddDomainEvent(event)
-		e.PublishDomainEvents(timeout)
-		cancel()
 	}
 }
 

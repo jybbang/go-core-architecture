@@ -10,9 +10,15 @@ import (
 )
 
 type adapter struct {
-	model core.Entitier
-	conn  *gorm.DB
-	rw    *sync.RWMutex
+	model    core.Entitier
+	conn     *gorm.DB
+	rw       *sync.RWMutex
+	settings GormSettings
+}
+
+type GormSettings struct {
+	ConnectionString string
+	CanCreateTable   bool
 }
 
 type clients struct {
@@ -40,6 +46,10 @@ func getClients() *clients {
 
 func (a *adapter) SetModel(model core.Entitier) {
 	a.model = model
+
+	if !a.conn.Migrator().HasTable(model) && a.settings.CanCreateTable {
+		a.conn.Migrator().CreateTable(model)
+	}
 }
 
 func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {

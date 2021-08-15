@@ -12,14 +12,20 @@ import (
 )
 
 type adapter struct {
-	redis   *redis.Client
-	pubsubs cmap.ConcurrentMap
+	redis    *redis.Client
+	pubsubs  cmap.ConcurrentMap
+	settings RedisSettings
 }
 
 type clients struct {
 	clients map[string]*redis.Client
 	pubsubs map[string]cmap.ConcurrentMap
 	mutex   sync.Mutex
+}
+
+type RedisSettings struct {
+	Host     string
+	Password string
 }
 
 var clientsSync sync.Once
@@ -38,12 +44,14 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getRedisClient(ctx context.Context, host string, password string) (*redis.Client, cmap.ConcurrentMap) {
+func getRedisClient(ctx context.Context, settings RedisSettings) (*redis.Client, cmap.ConcurrentMap) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
+	host := settings.Host
+	password := settings.Password
 	_, ok := clientsInstance.clients[host]
 	if !ok {
 		redisClient := redis.NewClient(&redis.Options{
@@ -67,8 +75,8 @@ func getRedisClient(ctx context.Context, host string, password string) (*redis.C
 	return client, pubsub
 }
 
-func NewRedisAdapter(ctx context.Context, host string, password string) *adapter {
-	client, pubsub := getRedisClient(ctx, host, password)
+func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
+	client, pubsub := getRedisClient(ctx, settings)
 	redisService := &adapter{
 		redis:   client,
 		pubsubs: pubsub,
