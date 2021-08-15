@@ -18,8 +18,9 @@ func testCommandHandler(ctx context.Context, request interface{}) core.Result {
 }
 
 func Test_mediator_Send(t *testing.T) {
-	m := core.NewMediatorBuilder().Build().
-		AddHandler(new(testCommand), testCommandHandler)
+	m := core.NewMediatorBuilder().
+		AddHandler(new(testCommand), testCommandHandler).
+		Build()
 	m.AddMiddleware(middlewares.NewLogMiddleware())
 
 	type args struct {
@@ -69,8 +70,9 @@ func testNotificationHandler(ctx context.Context, notification interface{}) erro
 }
 
 func Test_mediator_Publish(t *testing.T) {
-	m := core.NewMediatorBuilder().Build().
-		AddNotificationHandler(new(testNotification), testNotificationHandler)
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(testNotification), testNotificationHandler).
+		Build()
 
 	type args struct {
 		ctx          context.Context

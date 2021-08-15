@@ -12,8 +12,8 @@ import (
 func getSqlServerClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	clientsInstance := getClients()
 
-	clientsInstance.Lock()
-	defer clientsInstance.Unlock()
+	clientsInstance.mutex.Lock()
+	defer clientsInstance.mutex.Unlock()
 
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {

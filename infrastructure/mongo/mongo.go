@@ -24,7 +24,7 @@ type adapter struct {
 type clients struct {
 	clients map[string]*mongo.Client
 	mutexes map[string]*sync.RWMutex
-	sync.Mutex
+	mutex   sync.Mutex
 }
 
 var clientsSync sync.Once
@@ -47,8 +47,8 @@ func getClients() *clients {
 func getMongoClient(ctx context.Context, connectionUri string) (*mongo.Client, *sync.RWMutex) {
 	clientsInstance := getClients()
 
-	clientsInstance.Lock()
-	defer clientsInstance.Unlock()
+	clientsInstance.mutex.Lock()
+	defer clientsInstance.mutex.Unlock()
 
 	_, ok := clientsInstance.clients[connectionUri]
 	if !ok {

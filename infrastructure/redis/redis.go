@@ -19,7 +19,7 @@ type adapter struct {
 type clients struct {
 	clients map[string]*redis.Client
 	pubsubs map[string]cmap.ConcurrentMap
-	sync.Mutex
+	mutex   sync.Mutex
 }
 
 var clientsSync sync.Once
@@ -41,8 +41,8 @@ func getClients() *clients {
 func getRedisClient(ctx context.Context, host string, password string) (*redis.Client, cmap.ConcurrentMap) {
 	clientsInstance := getClients()
 
-	clientsInstance.Lock()
-	defer clientsInstance.Unlock()
+	clientsInstance.mutex.Lock()
+	defer clientsInstance.mutex.Unlock()
 
 	_, ok := clientsInstance.clients[host]
 	if !ok {

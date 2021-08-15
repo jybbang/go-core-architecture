@@ -15,6 +15,6 @@ func NewLogMiddleware() *logMiddleware {
 }
 
 func (m *logMiddleware) Run(ctx context.Context, request core.Request) (ok bool, err error) {
-	core.Log.Infow("mediator request", "request", request)
+	core.Log.Infow("mediator request log", "request", request)
 	return true, nil
 }

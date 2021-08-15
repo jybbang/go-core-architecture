@@ -32,7 +32,7 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 
 	defer timeMeasurement(time.Now(), typeName)
 
-	return m.Next(ctx, request, handler)
+	return m.nextRun(ctx, request, handler)
 }
 
 func (m *mediator) Publish(ctx context.Context, notification Notification) error {
@@ -47,10 +47,6 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 	handler := item.(NotificationHandler)
 
 	return handler(ctx, notification)
-}
-
-func (m *mediator) Run(ctx context.Context, request Request) (ok bool, err error) {
-	return true, nil
 }
 
 func timeMeasurement(start time.Time, typeName string) {

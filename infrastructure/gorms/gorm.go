@@ -18,7 +18,7 @@ type adapter struct {
 type clients struct {
 	clients map[string]*gorm.DB
 	mutexes map[string]*sync.RWMutex
-	sync.Mutex
+	mutex   sync.Mutex
 }
 
 var clientsSync sync.Once

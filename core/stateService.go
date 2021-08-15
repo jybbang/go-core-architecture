@@ -10,7 +10,7 @@ import (
 type stateService struct {
 	state stateAdapter
 	cb    *gobreaker.CircuitBreaker
-	sync.RWMutex
+	mutex sync.RWMutex
 }
 
 func (s *stateService) initialize() *stateService {
@@ -18,8 +18,8 @@ func (s *stateService) initialize() *stateService {
 }
 
 func (s *stateService) Has(ctx context.Context, key string) (ok bool, err error) {
-	s.RLocker()
-	defer s.RUnlock()
+	s.mutex.RLocker()
+	defer s.mutex.RUnlock()
 
 	resp, err := s.cb.Execute(func() (interface{}, error) {
 		return s.state.Has(ctx, key)
@@ -28,8 +28,8 @@ func (s *stateService) Has(ctx context.Context, key string) (ok bool, err error)
 }
 
 func (s *stateService) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
-	s.RLocker()
-	defer s.RUnlock()
+	s.mutex.RLocker()
+	defer s.mutex.RUnlock()
 
 	resp, err := s.cb.Execute(func() (interface{}, error) {
 		return s.state.Get(ctx, key, dest)
@@ -38,8 +38,8 @@ func (s *stateService) Get(ctx context.Context, key string, dest interface{}) (o
 }
 
 func (s *stateService) Set(ctx context.Context, key string, value interface{}) error {
-	s.Lock()
-	defer s.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	_, err := s.cb.Execute(func() (interface{}, error) {
 		err := s.state.Set(ctx, key, value)

@@ -3,21 +3,21 @@ package core
 import "context"
 
 type Middleware struct {
-	next Middlewarer
+	next middlewarer
 }
 
-type Middlewarer interface {
-	AddMiddleware(Middlewarer) Middlewarer
-	Next(ctx context.Context, request Request, handler RequestHandler) Result
+type middlewarer interface {
+	AddMiddleware(middlewarer) middlewarer
 	Run(ctx context.Context, request Request) (ok bool, err error)
+	nextRun(ctx context.Context, request Request, handler RequestHandler) Result
 }
 
-func (m *Middleware) AddMiddleware(middleware Middlewarer) Middlewarer {
+func (m *Middleware) AddMiddleware(middleware middlewarer) middlewarer {
 	m.next = middleware
 	return m.next
 }
 
-func (m *Middleware) Next(ctx context.Context, request Request, handler RequestHandler) Result {
+func (m *Middleware) nextRun(ctx context.Context, request Request, handler RequestHandler) Result {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return Result{E: err}
@@ -37,7 +37,7 @@ func (m *Middleware) Next(ctx context.Context, request Request, handler RequestH
 				E: ErrForbiddenAcccess,
 			}
 		}
-		return m.next.Next(ctx, request, handler)
+		return m.next.nextRun(ctx, request, handler)
 	} else {
 		return handler(ctx, request)
 	}

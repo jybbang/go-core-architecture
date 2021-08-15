@@ -15,7 +15,7 @@ type eventbus struct {
 	domainEvents []DomainEventer
 	ch           chan rxgo.Item
 	cb           *gobreaker.CircuitBreaker
-	sync.Mutex
+	mutex        sync.Mutex
 }
 
 type bufferedEvent struct {
@@ -57,8 +57,8 @@ func (e *eventbus) empty() bool {
 }
 
 func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
-	e.Lock()
-	defer e.Unlock()
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	domainEvent.AddingEvent()
 
@@ -66,8 +66,8 @@ func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
 }
 
 func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
-	e.Lock()
-	defer e.Unlock()
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	now := time.Now()
 	_, err := e.cb.Execute(func() (interface{}, error) {
