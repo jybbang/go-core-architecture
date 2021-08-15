@@ -13,7 +13,7 @@ type testCommand struct {
 	expect int
 }
 
-func testCommandHandler(ctx context.Context, services core.Services, request interface{}) core.Result {
+func testCommandHandler(ctx context.Context, request interface{}) core.Result {
 	return core.Result{V: request.(*testCommand).expect}
 }
 
@@ -58,7 +58,7 @@ func Test_mediator_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Send(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
+			if got := m.Send(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got.V, tt.want.V) {
 				t.Errorf("Mediator.Send() = %v, want %v", got, tt.want)
 			}
 		})

@@ -40,9 +40,10 @@ func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 		event := &bufferedEvent{
 			BufferedEvents: vals.V.([]DomainEventer),
 		}
-		timeout, _ := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
+		timeout, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
 		e.AddDomainEvent(event)
 		e.PublishDomainEvents(timeout)
+		cancel()
 	}
 }
 

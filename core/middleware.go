@@ -9,7 +9,7 @@ type Middleware struct {
 type middlewarer interface {
 	AddMiddleware(middlewarer) middlewarer
 	Run(ctx context.Context, request Request) (ok bool, err error)
-	nextRun(ctx context.Context, services Services, request Request, handler RequestHandler) Result
+	nextRun(ctx context.Context, request Request, handler RequestHandler) Result
 }
 
 func (m *Middleware) AddMiddleware(middleware middlewarer) middlewarer {
@@ -17,7 +17,7 @@ func (m *Middleware) AddMiddleware(middleware middlewarer) middlewarer {
 	return m.next
 }
 
-func (m *Middleware) nextRun(ctx context.Context, services Services, request Request, handler RequestHandler) Result {
+func (m *Middleware) nextRun(ctx context.Context, request Request, handler RequestHandler) Result {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return Result{E: err}
@@ -37,8 +37,8 @@ func (m *Middleware) nextRun(ctx context.Context, services Services, request Req
 				E: ErrForbiddenAcccess,
 			}
 		}
-		return m.next.nextRun(ctx, services, request, handler)
+		return m.next.nextRun(ctx, request, handler)
 	} else {
-		return handler(ctx, services, request)
+		return handler(ctx, request)
 	}
 }

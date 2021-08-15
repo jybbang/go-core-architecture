@@ -30,13 +30,11 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 	}
 	handler := item.(RequestHandler)
 
-	services := Services{
-		Eventbus: GetEventbus(),
-	}
+	eventbus := GetEventbus()
 
-	result := m.nextRun(ctx, services, request, handler)
+	result := m.nextRun(ctx, request, handler)
 
-	services.Eventbus.PublishDomainEvents(ctx)
+	eventbus.PublishDomainEvents(ctx)
 
 	return result
 }
