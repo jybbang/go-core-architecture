@@ -17,12 +17,14 @@ type adapter struct {
 	states  cmap.ConcurrentMap
 }
 
+var mock = &adapter{
+	db:      cmap.New(),
+	pubsubs: cmap.New(),
+	states:  cmap.New(),
+}
+
 func NewMockAdapter() *adapter {
-	return &adapter{
-		db:      cmap.New(),
-		pubsubs: cmap.New(),
-		states:  cmap.New(),
-	}
+	return mock
 }
 
 func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {

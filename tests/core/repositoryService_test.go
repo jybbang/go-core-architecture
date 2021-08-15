@@ -15,9 +15,8 @@ type testModel struct {
 }
 
 func TestRepositoryService_Find(t *testing.T) {
-	mock := mocks.NewMockAdapter()
 	r := core.GetRepositoryService(new(testModel))
-	r.SetCommandRepositoryAdapter(mock).SetQueryRepositoryAdapter(mock)
+	r.SetCommandRepositoryAdapter(mocks.NewMockAdapter()).SetQueryRepositoryAdapter(mocks.NewMockAdapter())
 
 	dto := new(testModel)
 	dto.ID = uuid.New()
