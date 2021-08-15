@@ -7,6 +7,7 @@ import (
 
 	"github.com/jybbang/go-core-architecture/core"
 	"github.com/jybbang/go-core-architecture/middlewares"
+	"go.uber.org/zap"
 )
 
 type testCommand struct {
@@ -18,11 +19,16 @@ func testCommandHandler(ctx context.Context, request interface{}) core.Result {
 }
 
 func Test_mediator_Send(t *testing.T) {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+
 	m := core.NewMediatorBuilder().
 		AddHandler(new(testCommand), testCommandHandler).
 		Build()
 
-	m.AddMiddleware(middlewares.NewLogMiddleware()).
+	m.AddMiddleware(middlewares.NewZapLogMiddleware(logger)).
 		AddMiddleware(middlewares.NewValidationMiddleware())
 
 	core.NewEventbusBuilder().Build()

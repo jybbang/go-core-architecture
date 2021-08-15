@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	cmap "github.com/orcaman/concurrent-map"
+	"go.uber.org/zap"
 
 	"github.com/jybbang/go-core-architecture/core"
 	"gopkg.in/jeevatkm/go-model.v1"
@@ -23,7 +24,15 @@ var mock = &adapter{
 	states:  cmap.New(),
 }
 
+var log *zap.SugaredLogger
+
 func NewMockAdapter() *adapter {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	log = logger.Sugar()
+
 	return mock
 }
 
@@ -33,7 +42,7 @@ func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 		return false, err
 	}
 
-	core.Log.Debugw("mock has", "key", key)
+	log.Debugw("mock has", "key", key)
 	return a.states.Has(key), nil
 }
 
@@ -43,7 +52,7 @@ func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (ok boo
 		return false, err
 	}
 
-	core.Log.Debugw("mock get", "key", key)
+	log.Debugw("mock get", "key", key)
 	if resp, ok := a.states.Get(key); ok {
 		model.Copy(dest, resp)
 		return true, nil
@@ -57,7 +66,7 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 		return err
 	}
 
-	core.Log.Debugw("mock set", "key", key, "value", value)
+	log.Debugw("mock set", "key", key, "value", value)
 	a.states.Set(key, value)
 	return nil
 }
@@ -68,7 +77,7 @@ func (a *adapter) Delete(ctx context.Context, key string) error {
 		return err
 	}
 
-	core.Log.Debugw("mock delete", "key", key)
+	log.Debugw("mock delete", "key", key)
 	a.states.Remove(key)
 	return nil
 }
@@ -79,7 +88,7 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 		return err
 	}
 
-	core.Log.Debugw("mock publish", "id", coreEvent.GetID(), "topic", coreEvent.GetTopic())
+	log.Debugw("mock publish", "id", coreEvent.GetID(), "topic", coreEvent.GetTopic())
 	return nil
 }
 
@@ -89,7 +98,7 @@ func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.Repl
 		return err
 	}
 
-	core.Log.Debugw("mock subscribe", "topic", topic)
+	log.Debugw("mock subscribe", "topic", topic)
 	a.pubsubs.Set(topic, handler)
 	return nil
 }
@@ -100,20 +109,20 @@ func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
 		return err
 	}
 
-	core.Log.Debugw("mock unsubscribe", "topic", topic)
+	log.Debugw("mock unsubscribe", "topic", topic)
 	a.pubsubs.Remove(topic)
 	return nil
 }
 
 func (a *adapter) FakeSend(topic string, receivedData interface{}) {
-	core.Log.Debugw("mock fake send - {} {}", topic, receivedData)
+	log.Debugw("mock fake send - {} {}", topic, receivedData)
 	if resp, ok := a.pubsubs.Get(topic); ok {
 		resp.(core.ReplyHandler)(receivedData)
 	}
 }
 
 func (a *adapter) SetModel(model core.Entitier) {
-	core.Log.Debugw("mock setmodel")
+	log.Debugw("mock setmodel")
 	a.model = model
 }
 
@@ -123,7 +132,7 @@ func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (o
 		return false, err
 	}
 
-	core.Log.Debugw("mock find", "id", id)
+	log.Debugw("mock find", "id", id)
 	if resp, ok := a.db.Get(id.String()); ok {
 		model.Copy(dest, resp)
 		return true, nil
@@ -137,7 +146,7 @@ func (a *adapter) Any(ctx context.Context) (ok bool, err error) {
 		return false, err
 	}
 
-	core.Log.Debugw("mock any")
+	log.Debugw("mock any")
 	count, err := a.Count(ctx)
 	return count > 0, err
 }
@@ -148,7 +157,7 @@ func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args int
 		return false, err
 	}
 
-	core.Log.Debugw("mock anywithfilter")
+	log.Debugw("mock anywithfilter")
 	count, err := a.CountWithFilter(ctx, query, args)
 	return count > 0, err
 }
@@ -159,7 +168,7 @@ func (a *adapter) Count(ctx context.Context) (count int64, err error) {
 		return 0, err
 	}
 
-	core.Log.Debugw("mock count")
+	log.Debugw("mock count")
 	resp := a.db.Count()
 	return int64(resp), nil
 }
@@ -170,7 +179,7 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 		return 0, err
 	}
 
-	core.Log.Debugw("mock countwithfilter")
+	log.Debugw("mock countwithfilter")
 	resp := a.db.Count()
 	return int64(resp), nil
 }
@@ -181,7 +190,7 @@ func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
 		return err
 	}
 
-	core.Log.Debugw("mock list")
+	log.Debugw("mock list")
 	for _, v := range a.db.Items() {
 		entity := v.(core.Entitier)
 		dest = append(dest, entity)
@@ -196,7 +205,7 @@ func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, quer
 		return err
 	}
 
-	core.Log.Debugw("mock listwithfilter")
+	log.Debugw("mock listwithfilter")
 	for _, v := range a.db.Items() {
 		entity := v.(core.Entitier)
 		dest = append(dest, entity)
@@ -211,7 +220,7 @@ func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
 		return err
 	}
 
-	core.Log.Debugw("mock remove", "entity", entity)
+	log.Debugw("mock remove", "entity", entity)
 	a.db.Remove(entity.GetID().String())
 	return nil
 }
@@ -222,7 +231,7 @@ func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) err
 		return err
 	}
 
-	core.Log.Debugw("mock removerange")
+	log.Debugw("mock removerange")
 	for _, v := range entities {
 		a.Remove(ctx, v)
 	}
@@ -235,7 +244,7 @@ func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
 		return err
 	}
 
-	core.Log.Debugw("mock add", "entity", entity)
+	log.Debugw("mock add", "entity", entity)
 	a.db.Set(entity.GetID().String(), entity)
 	return nil
 }
@@ -246,7 +255,7 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 		return err
 	}
 
-	core.Log.Debugw("mock addrange")
+	log.Debugw("mock addrange")
 	for _, v := range entities {
 		a.Add(ctx, v)
 	}
@@ -259,7 +268,7 @@ func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
 		return err
 	}
 
-	core.Log.Debugw("mock update", "entity", entity)
+	log.Debugw("mock update", "entity", entity)
 	a.db.Set(entity.GetID().String(), entity)
 	return nil
 }
@@ -270,7 +279,7 @@ func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) err
 		return err
 	}
 
-	core.Log.Debugw("mock updaterange")
+	log.Debugw("mock updaterange")
 	for _, v := range entities {
 		a.Update(ctx, v)
 	}

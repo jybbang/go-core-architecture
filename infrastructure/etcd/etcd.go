@@ -7,8 +7,6 @@ import (
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
-
-	"github.com/jybbang/go-core-architecture/core"
 )
 
 type adapter struct {
@@ -65,8 +63,6 @@ func getEtcdClient(ctx context.Context, settings EtcdSettings) *etcd.Client {
 		if err := ctx.Err(); err != nil {
 			panic(err)
 		}
-
-		core.Log.Infow("etcdClient created")
 		clientsInstance.clients[endpoint] = etcdClient
 	}
 

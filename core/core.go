@@ -8,10 +8,8 @@ import (
 	"github.com/opentracing/opentracing-go"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sony/gobreaker"
 	"github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-lib/metrics/prometheus"
-	"go.uber.org/zap"
 )
 
 type MetricsSettings struct {
@@ -30,29 +28,11 @@ var statesInstance *stateService
 
 var repositories cmap.ConcurrentMap = cmap.New()
 
-var Log *zap.SugaredLogger
-
 var openTracer opentracing.Tracer
 
 const cbDefaultTimeout = time.Duration(30 * time.Second)
 
 const cbDefaultAllowedRequests = 3
-
-func init() {
-	logger, err := zap.NewProduction()
-	if err != nil {
-		panic(err)
-	}
-	Log = logger.Sugar()
-}
-
-func onCbStateChange(name string, from gobreaker.State, to gobreaker.State) {
-	Log.Infow("circuit breaker state changed", "name", name, "from", from.String(), "to", to.String())
-}
-
-func SetLogger(logger *zap.Logger) {
-	Log = logger.Sugar()
-}
 
 func AddMetrics(settings MetricsSettings) {
 	http.Handle(settings.Endpoint, promhttp.Handler())

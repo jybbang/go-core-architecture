@@ -65,7 +65,6 @@ func getRedisClient(ctx context.Context, settings RedisSettings) (*redis.Client,
 			panic(err)
 		}
 
-		core.Log.Infow("redisClient created")
 		clientsInstance.clients[host] = redisClient
 		clientsInstance.pubsubs[host] = cmap.New()
 	}

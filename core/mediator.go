@@ -7,12 +7,14 @@ import (
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
+	"go.uber.org/zap"
 )
 
 type mediator struct {
 	Middleware
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
+	log                  *zap.Logger
 }
 
 func (m *mediator) initialize() *mediator {
@@ -22,7 +24,10 @@ func (m *mediator) initialize() *mediator {
 func (m *mediator) Send(ctx context.Context, request Request) Result {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
-	defer timeMeasurement(time.Now(), typeName)
+
+	if m.log != nil {
+		defer m.timeMeasurement(time.Now(), typeName)
+	}
 
 	if openTracer != nil {
 		span := openTracer.StartSpan(typeName)
@@ -38,6 +43,10 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 	eventbus := GetEventbus()
 
 	result := m.nextRun(ctx, request, handler)
+
+	if result.E != nil {
+		return result
+	}
 
 	eventbus.PublishDomainEvents(ctx)
 
@@ -63,9 +72,9 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 	return handler(ctx, notification)
 }
 
-func timeMeasurement(start time.Time, typeName string) {
+func (m *mediator) timeMeasurement(start time.Time, typeName string) {
 	elapsed := time.Since(start)
 	if elapsed > time.Duration(500*time.Millisecond) {
-		Log.Warnw("send request long running", "request", typeName, "measure", elapsed)
+		m.log.Warn("send request long running", zap.String("request", typeName), zap.Duration("measure", elapsed))
 	}
 }

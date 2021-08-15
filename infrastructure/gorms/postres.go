@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/jybbang/go-core-architecture/core"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -24,7 +23,6 @@ func getPostresClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 		}
 		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
-		core.Log.Infow("postgres database connected")
 		clientsInstance.clients[connectionString] = tx
 		clientsInstance.mutexes[connectionString] = new(sync.RWMutex)
 	}

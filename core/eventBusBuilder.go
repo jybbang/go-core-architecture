@@ -19,10 +19,9 @@ func NewEventbusBuilder() *eventbusBuilder {
 	o := new(eventbusBuilder)
 
 	st := gobreaker.Settings{
-		Name:          "eventbus",
-		OnStateChange: onCbStateChange,
-		Timeout:       cbDefaultTimeout,
-		MaxRequests:   cbDefaultAllowedRequests,
+		Name:        "eventbus",
+		Timeout:     cbDefaultTimeout,
+		MaxRequests: cbDefaultAllowedRequests,
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -69,9 +68,6 @@ func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBui
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventbusBuilder) CircuitBreaker(setting gobreaker.Settings) *eventbusBuilder {
 	setting.Name = b.cb.Name()
-	if setting.OnStateChange == nil {
-		setting.OnStateChange = onCbStateChange
-	}
 	b.cb = gobreaker.NewCircuitBreaker(setting)
 	return b
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type Entity struct {
-	ID         uuid.UUID `validate:"required" gorm:"primaryKey" bson:"_id,omitempty"`
+	ID         uuid.UUID `gorm:"primaryKey" bson:"_id,omitempty"`
 	CreateUser string    `bson:"create_user,omitempty"`
 	UpdateUser string    `bson:"update_user,omitempty"`
 	CreatedAt  time.Time `bson:"created_at,omitempty"`

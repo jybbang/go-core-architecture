@@ -69,7 +69,6 @@ func getMongoClient(ctx context.Context, settings MongoSettings) (*mongo.Client,
 			panic(err)
 		}
 
-		core.Log.Infow("mongo database connected")
 		clientsInstance.clients[uri] = client
 		clientsInstance.mutexes[uri] = new(sync.RWMutex)
 	}

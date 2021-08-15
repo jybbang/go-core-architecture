@@ -4,12 +4,14 @@ import (
 	"reflect"
 
 	cmap "github.com/orcaman/concurrent-map"
+	"go.uber.org/zap"
 )
 
 // Builder Object for Mediator
 type mediatorBuilder struct {
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
+	log                  *zap.Logger
 }
 
 // Constructor for MediatorBuilder
@@ -18,6 +20,11 @@ func NewMediatorBuilder() *mediatorBuilder {
 	o.requestHandlers = cmap.New()
 	o.notificationHandlers = cmap.New()
 	return o
+}
+
+func (b *mediatorBuilder) AddPerformanceMeasure(logger *zap.Logger) *mediatorBuilder {
+	b.log = logger
+	return b
 }
 
 func (b *mediatorBuilder) AddHandler(request Request, handler RequestHandler) *mediatorBuilder {
@@ -45,6 +52,7 @@ func (b *mediatorBuilder) Build() *mediator {
 	mediatorInstance = &mediator{
 		requestHandlers:      b.requestHandlers,
 		notificationHandlers: b.notificationHandlers,
+		log:                  b.log,
 	}
 	mediatorInstance.initialize()
 

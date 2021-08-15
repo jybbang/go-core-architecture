@@ -61,7 +61,6 @@ func getNatsClient(ctx context.Context, settings NatsSettings) (*nats.Conn, cmap
 			panic(err)
 		}
 
-		core.Log.Infow("natsClient created")
 		clientsInstance.clients[url] = natsClient
 		clientsInstance.pubsubs[url] = cmap.New()
 	}
