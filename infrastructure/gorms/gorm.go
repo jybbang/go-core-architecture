@@ -10,12 +10,14 @@ import (
 )
 
 type adapter struct {
-	conn  *gorm.DB
 	model core.Entitier
+	conn  *gorm.DB
+	rw    *sync.RWMutex
 }
 
 type clients struct {
 	clients map[string]*gorm.DB
+	mutexes map[string]*sync.RWMutex
 	sync.Mutex
 }
 
@@ -29,6 +31,7 @@ func getClients() *clients {
 			func() {
 				clientsInstance = &clients{
 					clients: make(map[string]*gorm.DB),
+					mutexes: make(map[string]*sync.RWMutex),
 				}
 			})
 	}
@@ -91,31 +94,49 @@ func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, quer
 }
 
 func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	a.conn.WithContext(ctx).Delete(entity, entity.GetID())
 	return nil
 }
 
 func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	a.conn.WithContext(ctx).Delete(entities)
 	return nil
 }
 
 func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	a.conn.WithContext(ctx).Create(entity)
 	return nil
 }
 
 func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	a.conn.WithContext(ctx).Create(entities)
 	return nil
 }
 
 func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	a.conn.WithContext(ctx).Model(entity).Updates(entity)
 	return nil
 }
 
 func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	a.conn.WithContext(ctx).Model(a.model).Updates(entities)
 	return nil
 }

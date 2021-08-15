@@ -1,12 +1,14 @@
 package gorms
 
 import (
+	"sync"
+
 	"github.com/jybbang/go-core-architecture/core"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 )
 
-func getSqlServerClient(connectionString string) *gorm.DB {
+func getSqlServerClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.Lock()
@@ -22,15 +24,19 @@ func getSqlServerClient(connectionString string) *gorm.DB {
 
 		core.Log.Info("sqlserver database connected")
 		clientsInstance.clients[connectionString] = tx
+		clientsInstance.mutexes[connectionString] = new(sync.RWMutex)
 	}
 
 	client := clientsInstance.clients[connectionString]
-	return client
+	mutex := clientsInstance.mutexes[connectionString]
+	return client, mutex
 }
 
 func NewSqlServerAdapter(connectionString string) *adapter {
+	conn, mutex := getMySqlClient(connectionString)
 	sqlserver := &adapter{
-		conn: getSqlServerClient(connectionString),
+		conn: conn,
+		rw:   mutex,
 	}
 
 	return sqlserver

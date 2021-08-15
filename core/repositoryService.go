@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,7 +13,6 @@ type RepositoryService struct {
 	queryRepository   QueryRepositoryAdapter
 	commandRepository CommandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
-	sync.RWMutex
 }
 
 func (r *RepositoryService) Setup() *RepositoryService {
@@ -87,9 +85,6 @@ func (r *RepositoryService) ListWithFilter(ctx context.Context, dest []Entitier,
 }
 
 func (r *RepositoryService) Remove(ctx context.Context, entity Entitier) error {
-	r.Lock()
-	defer r.Unlock()
-
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Remove(ctx, entity)
 		return nil, err
@@ -98,9 +93,6 @@ func (r *RepositoryService) Remove(ctx context.Context, entity Entitier) error {
 }
 
 func (r *RepositoryService) RemoveRange(ctx context.Context, entities []Entitier) error {
-	r.Lock()
-	defer r.Unlock()
-
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.RemoveRange(ctx, entities)
 		return nil, err
@@ -109,9 +101,6 @@ func (r *RepositoryService) RemoveRange(ctx context.Context, entities []Entitier
 }
 
 func (r *RepositoryService) Add(ctx context.Context, entity Entitier) error {
-	r.Lock()
-	defer r.Unlock()
-
 	entity.SetCreatedAt("", time.Now())
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Add(ctx, entity)
@@ -121,9 +110,6 @@ func (r *RepositoryService) Add(ctx context.Context, entity Entitier) error {
 }
 
 func (r *RepositoryService) AddRange(ctx context.Context, entities []Entitier) error {
-	r.Lock()
-	defer r.Unlock()
-
 	user := ""
 	now := time.Now()
 	for _, v := range entities {
@@ -138,9 +124,6 @@ func (r *RepositoryService) AddRange(ctx context.Context, entities []Entitier) e
 }
 
 func (r *RepositoryService) Update(ctx context.Context, entity Entitier) error {
-	r.Lock()
-	defer r.Unlock()
-
 	entity.SetUpdatedAt("", time.Now())
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
@@ -151,9 +134,6 @@ func (r *RepositoryService) Update(ctx context.Context, entity Entitier) error {
 }
 
 func (r *RepositoryService) UpdateRange(ctx context.Context, entities []Entitier) error {
-	r.Lock()
-	defer r.Unlock()
-
 	user := ""
 	now := time.Now()
 	for _, v := range entities {

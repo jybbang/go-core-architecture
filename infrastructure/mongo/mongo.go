@@ -18,10 +18,12 @@ type adapter struct {
 	conn       *mongo.Client
 	database   *mongo.Database
 	collection *mongo.Collection
+	rw         *sync.RWMutex
 }
 
 type clients struct {
 	clients map[string]*mongo.Client
+	mutexes map[string]*sync.RWMutex
 	sync.Mutex
 }
 
@@ -35,13 +37,14 @@ func getClients() *clients {
 			func() {
 				clientsInstance = &clients{
 					clients: make(map[string]*mongo.Client),
+					mutexes: make(map[string]*sync.RWMutex),
 				}
 			})
 	}
 	return clientsInstance
 }
 
-func getMongoClient(ctx context.Context, connectionUri string) *mongo.Client {
+func getMongoClient(ctx context.Context, connectionUri string) (*mongo.Client, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.Lock()
@@ -60,17 +63,20 @@ func getMongoClient(ctx context.Context, connectionUri string) *mongo.Client {
 
 		core.Log.Info("mongo database connected")
 		clientsInstance.clients[connectionUri] = client
+		clientsInstance.mutexes[connectionUri] = new(sync.RWMutex)
 	}
 
 	client := clientsInstance.clients[connectionUri]
-	return client
+	mutex := clientsInstance.mutexes[connectionUri]
+	return client, mutex
 }
 
 func NewMongoAdapter(ctx context.Context, connectionUri string, dbName string) *adapter {
-	client := getMongoClient(ctx, connectionUri)
+	client, mutex := getMongoClient(ctx, connectionUri)
 	mongo := &adapter{
 		conn:     client,
 		database: client.Database(dbName),
+		rw:       mutex,
 	}
 
 	return mongo
@@ -142,6 +148,9 @@ func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, quer
 }
 
 func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	_, err := a.collection.DeleteOne(ctx, bson.M{"_id": entity.GetID()})
 	if err != nil {
 		return err
@@ -151,6 +160,9 @@ func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
 }
 
 func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	vals := make([]bson.M, len(entities))
 	for i, entity := range entities {
 		vals[i] = bson.M{"_id": entity.GetID()}
@@ -164,6 +176,9 @@ func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) err
 }
 
 func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	_, err := a.collection.InsertOne(ctx, entity)
 	if err != nil {
 		return err
@@ -173,6 +188,9 @@ func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
 }
 
 func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	vals := make([]interface{}, len(entities))
 	for i, entity := range entities {
 		vals[i] = entity
@@ -186,6 +204,9 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 }
 
 func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
+	a.rw.Lock()
+	defer a.rw.Unlock()
+
 	_, err := a.collection.UpdateOne(ctx, bson.M{"_id": entity.GetID()}, entity)
 	if err != nil {
 		return err

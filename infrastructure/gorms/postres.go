@@ -1,12 +1,14 @@
 package gorms
 
 import (
+	"sync"
+
 	"github.com/jybbang/go-core-architecture/core"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func getPostresClient(connectionString string) *gorm.DB {
+func getPostresClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.Lock()
@@ -22,16 +24,20 @@ func getPostresClient(connectionString string) *gorm.DB {
 
 		core.Log.Info("postgres database connected")
 		clientsInstance.clients[connectionString] = tx
+		clientsInstance.mutexes[connectionString] = new(sync.RWMutex)
 	}
 
 	client := clientsInstance.clients[connectionString]
-	return client
+	mutex := clientsInstance.mutexes[connectionString]
+	return client, mutex
 }
 
 func NewPostresAdapter(connectionString string) *adapter {
-	sqlite := &adapter{
-		conn: getPostresClient(connectionString),
+	conn, mutex := getMySqlClient(connectionString)
+	postgres := &adapter{
+		conn: conn,
+		rw:   mutex,
 	}
 
-	return sqlite
+	return postgres
 }

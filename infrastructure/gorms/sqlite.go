@@ -1,12 +1,14 @@
 package gorms
 
 import (
+	"sync"
+
 	"github.com/jybbang/go-core-architecture/core"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func getSqliteClient(connectionString string) *gorm.DB {
+func getSqliteClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	clientsInstance := getClients()
 
 	clientsInstance.Lock()
@@ -22,15 +24,19 @@ func getSqliteClient(connectionString string) *gorm.DB {
 
 		core.Log.Info("sqlite database connected")
 		clientsInstance.clients[connectionString] = tx
+		clientsInstance.mutexes[connectionString] = new(sync.RWMutex)
 	}
 
 	client := clientsInstance.clients[connectionString]
-	return client
+	mutex := clientsInstance.mutexes[connectionString]
+	return client, mutex
 }
 
 func NewSqliteAdapter(connectionString string) *adapter {
+	conn, mutex := getMySqlClient(connectionString)
 	sqlite := &adapter{
-		conn: getSqliteClient(connectionString),
+		conn: conn,
+		rw:   mutex,
 	}
 
 	return sqlite
