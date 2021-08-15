@@ -32,7 +32,6 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 
 	services := Services{
 		Eventbus: GetEventbus(),
-		States:   GetStateService(),
 	}
 
 	result := m.nextRun(ctx, services, request, handler)

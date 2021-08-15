@@ -4,7 +4,6 @@ import "context"
 
 type Services struct {
 	Eventbus *eventbus
-	States   *stateService
 }
 
 type Request interface{}
