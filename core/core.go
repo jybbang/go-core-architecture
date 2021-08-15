@@ -2,11 +2,11 @@ package core
 
 import (
 	"reflect"
+	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var mediatorInstance *mediator
@@ -19,25 +19,12 @@ var repositories cmap.ConcurrentMap = cmap.New()
 
 var Log *zap.SugaredLogger
 
+const cbDefaultTimeout = time.Duration(30 * time.Second)
+
+const cbDefaultAllowedRequests = 3
+
 func init() {
-	logger, err := zap.Config{
-		Encoding:         "json",
-		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
-		EncoderConfig: zapcore.EncoderConfig{
-			MessageKey: "message",
-
-			LevelKey:    "level",
-			EncodeLevel: zapcore.CapitalLevelEncoder,
-
-			TimeKey:    "time",
-			EncodeTime: zapcore.ISO8601TimeEncoder,
-
-			CallerKey:    "caller",
-			EncodeCaller: zapcore.ShortCallerEncoder,
-		},
-	}.Build()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic(err)
 	}

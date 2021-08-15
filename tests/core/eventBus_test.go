@@ -9,7 +9,9 @@ import (
 )
 
 func TestEventBus_PublishDomainEvents(t *testing.T) {
-	e := core.NewEventBusBuilder().MessaingAdapter(mocks.NewMockAdapter()).Build()
+	core.NewMediatorBuilder().Build()
+
+	e := core.NewEventbusBuilder().MessaingAdapter(mocks.NewMockAdapter()).Build()
 
 	type args struct {
 		ctx context.Context

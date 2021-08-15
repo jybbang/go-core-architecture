@@ -6,18 +6,20 @@ import (
 )
 
 // Builder Object for EventBus
-type eventBusBuilder struct {
+type eventbusBuilder struct {
 	messaging messagingAdapter
 	cb        *gobreaker.CircuitBreaker
 }
 
 // Constructor for EventBusBuilder
-func NewEventBusBuilder() *eventBusBuilder {
-	o := new(eventBusBuilder)
+func NewEventbusBuilder() *eventbusBuilder {
+	o := new(eventbusBuilder)
 
 	st := gobreaker.Settings{
 		Name:          "eventbus",
 		OnStateChange: onCbStateChange,
+		Timeout:       cbDefaultTimeout,
+		MaxRequests:   cbDefaultAllowedRequests,
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -25,7 +27,7 @@ func NewEventBusBuilder() *eventBusBuilder {
 }
 
 // Build Method which creates EventBus
-func (b *eventBusBuilder) Build() *eventbus {
+func (b *eventbusBuilder) Build() *eventbus {
 	if eventBusInstance != nil {
 		panic("eventbus already created")
 	}
@@ -43,15 +45,17 @@ func (b *eventBusBuilder) Build() *eventbus {
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventBusBuilder) MessaingAdapter(adapter messagingAdapter) *eventBusBuilder {
+func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBuilder {
 	b.messaging = adapter
 	return b
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventBusBuilder) CircuitBreaker(setting gobreaker.Settings) *eventBusBuilder {
+func (b *eventbusBuilder) CircuitBreaker(setting gobreaker.Settings) *eventbusBuilder {
 	setting.Name = b.cb.Name()
-	setting.OnStateChange = onCbStateChange
+	if setting.OnStateChange == nil {
+		setting.OnStateChange = onCbStateChange
+	}
 	b.cb = gobreaker.NewCircuitBreaker(setting)
 	return b
 }

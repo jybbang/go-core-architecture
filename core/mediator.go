@@ -22,17 +22,20 @@ func (m *mediator) initialize() *mediator {
 func (m *mediator) Send(ctx context.Context, request Request) Result {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
+	defer timeMeasurement(time.Now(), typeName)
 
 	item, ok := m.requestHandlers.Get(typeName)
 	if !ok {
 		return Result{E: errors.New("request handler not found")}
 	}
-
 	handler := item.(RequestHandler)
 
-	defer timeMeasurement(time.Now(), typeName)
+	services := Services{
+		eventbus: GetEventbus(),
+		states:   GetStateService(),
+	}
 
-	return m.nextRun(ctx, request, handler)
+	return m.nextRun(ctx, services, request, handler)
 }
 
 func (m *mediator) Publish(ctx context.Context, notification Notification) error {
@@ -46,7 +49,12 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 
 	handler := item.(NotificationHandler)
 
-	return handler(ctx, notification)
+	services := Services{
+		eventbus: GetEventbus(),
+		states:   GetStateService(),
+	}
+
+	return handler(ctx, services, notification)
 }
 
 func timeMeasurement(start time.Time, typeName string) {

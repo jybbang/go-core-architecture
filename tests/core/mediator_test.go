@@ -13,7 +13,7 @@ type testCommand struct {
 	expect int
 }
 
-func testCommandHandler(ctx context.Context, request interface{}) core.Result {
+func testCommandHandler(ctx context.Context, services core.Services, request interface{}) core.Result {
 	return core.Result{V: request.(*testCommand).expect}
 }
 
@@ -22,6 +22,9 @@ func Test_mediator_Send(t *testing.T) {
 		AddHandler(new(testCommand), testCommandHandler).
 		Build()
 	m.AddMiddleware(middlewares.NewLogMiddleware())
+
+	core.NewEventbusBuilder().Build()
+	core.NewStateServiceBuilder().Build()
 
 	type args struct {
 		ctx     context.Context
@@ -65,7 +68,7 @@ func Test_mediator_Send(t *testing.T) {
 type testNotification struct {
 }
 
-func testNotificationHandler(ctx context.Context, notification interface{}) error {
+func testNotificationHandler(ctx context.Context, services core.Services, notification interface{}) error {
 	return nil
 }
 
@@ -73,6 +76,9 @@ func Test_mediator_Publish(t *testing.T) {
 	m := core.NewMediatorBuilder().
 		AddNotificationHandler(new(testNotification), testNotificationHandler).
 		Build()
+
+	core.NewEventbusBuilder().Build()
+	core.NewStateServiceBuilder().Build()
 
 	type args struct {
 		ctx          context.Context

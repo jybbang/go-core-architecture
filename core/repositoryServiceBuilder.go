@@ -28,6 +28,8 @@ func NewRepositoryServiceBuilder(model Entitier) *repositoryServiceBuilder {
 	st := gobreaker.Settings{
 		Name:          key + "-repository",
 		OnStateChange: onCbStateChange,
+		Timeout:       cbDefaultTimeout,
+		MaxRequests:   cbDefaultAllowedRequests,
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -71,7 +73,9 @@ func (b *repositoryServiceBuilder) CommandRepositoryAdapter(adapter commandRepos
 // Builder method to set the field messaging in RepositoryServiceBuilder
 func (b *repositoryServiceBuilder) CircuitBreaker(setting gobreaker.Settings) *repositoryServiceBuilder {
 	setting.Name = b.cb.Name()
-	setting.OnStateChange = onCbStateChange
+	if setting.OnStateChange == nil {
+		setting.OnStateChange = onCbStateChange
+	}
 	b.cb = gobreaker.NewCircuitBreaker(setting)
 	return b
 }
