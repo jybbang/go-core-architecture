@@ -43,6 +43,9 @@ func (a *adapter) SetModel(model core.Entitier) {
 }
 
 func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	a.conn.WithContext(ctx).Take(dest, id)
 	if dest == nil {
 		return false, core.ErrNotFound
@@ -62,6 +65,9 @@ func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args int
 }
 
 func (a *adapter) Count(ctx context.Context) (count int64, err error) {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	resp := new(int64)
 	a.conn.WithContext(ctx).Model(a.model).Count(resp)
 
@@ -69,6 +75,9 @@ func (a *adapter) Count(ctx context.Context) (count int64, err error) {
 }
 
 func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	resp := new(int64)
 	a.conn.WithContext(ctx).Model(a.model).Count(resp).Where(query, args)
 
@@ -76,6 +85,9 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 }
 
 func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	a.conn.WithContext(ctx).Find(dest)
 	if dest == nil {
 		return core.ErrNotFound
@@ -85,6 +97,9 @@ func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
 }
 
 func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, query interface{}, args interface{}) error {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	a.conn.WithContext(ctx).Find(dest).Where(query, args)
 	if dest == nil {
 		return core.ErrNotFound

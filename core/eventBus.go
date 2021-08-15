@@ -15,7 +15,7 @@ type EventBus struct {
 	domainEvents []DomainEventer
 	ch           chan rxgo.Item
 	cb           *gobreaker.CircuitBreaker
-	sync.RWMutex
+	sync.Mutex
 }
 
 type BufferedEvent struct {
@@ -23,12 +23,19 @@ type BufferedEvent struct {
 	BufferedEvents []DomainEventer
 }
 
-func (e *EventBus) Setup() *EventBus {
+func (e *EventBus) Initialize() *EventBus {
 	observable := rxgo.FromChannel(e.ch).
 		BufferWithTimeOrCount(rxgo.WithDuration(1*time.Second), 1000)
 
 	go e.SubscribeBufferedEvent(observable)
 
+	return e
+}
+
+func (e *EventBus) SetupCb(setting gobreaker.Settings) *EventBus {
+	setting.Name = e.cb.Name()
+	setting.OnStateChange = OnCbStateChange
+	e.cb = gobreaker.NewCircuitBreaker(setting)
 	return e
 }
 

@@ -61,7 +61,7 @@ func getMongoClient(ctx context.Context, connectionUri string) (*mongo.Client, *
 			panic(err)
 		}
 
-		core.Log.Info("mongo database connected")
+		core.Log.Infow("mongo database connected")
 		clientsInstance.clients[connectionUri] = client
 		clientsInstance.mutexes[connectionUri] = new(sync.RWMutex)
 	}
@@ -91,6 +91,9 @@ func (a *adapter) SetModel(model core.Entitier) {
 }
 
 func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	err = a.collection.FindOne(ctx, bson.M{"_id": id}).Decode(dest)
 	if err != nil {
 		return false, err
@@ -110,6 +113,9 @@ func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args int
 }
 
 func (a *adapter) Count(ctx context.Context) (count int64, err error) {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	count, err = a.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return 0, err
@@ -119,6 +125,9 @@ func (a *adapter) Count(ctx context.Context) (count int64, err error) {
 }
 
 func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	count, err = a.collection.CountDocuments(ctx, query)
 	if err != nil {
 		return 0, err
@@ -128,6 +137,9 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 }
 
 func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	cursor, err := a.collection.Find(ctx, bson.M{})
 	if err != nil {
 		return err
@@ -138,6 +150,9 @@ func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
 }
 
 func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, query interface{}, args interface{}) error {
+	a.rw.RLock()
+	defer a.rw.RUnlock()
+
 	cursor, err := a.collection.Find(ctx, query)
 	if err != nil {
 		return err

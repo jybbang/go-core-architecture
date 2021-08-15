@@ -13,7 +13,14 @@ type StateService struct {
 	sync.RWMutex
 }
 
-func (s *StateService) Setup() *StateService {
+func (s *StateService) Initialize() *StateService {
+	return s
+}
+
+func (s *StateService) SetupCb(setting gobreaker.Settings) *StateService {
+	setting.Name = s.cb.Name()
+	setting.OnStateChange = OnCbStateChange
+	s.cb = gobreaker.NewCircuitBreaker(setting)
 	return s
 }
 
@@ -23,6 +30,9 @@ func (s *StateService) SetStateAdapter(adapter StateAdapter) *StateService {
 }
 
 func (s *StateService) Has(ctx context.Context, key string) (ok bool, err error) {
+	s.RLocker()
+	defer s.RUnlock()
+
 	resp, err := s.cb.Execute(func() (interface{}, error) {
 		return s.state.Has(ctx, key)
 	})
@@ -30,6 +40,9 @@ func (s *StateService) Has(ctx context.Context, key string) (ok bool, err error)
 }
 
 func (s *StateService) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
+	s.RLocker()
+	defer s.RUnlock()
+
 	resp, err := s.cb.Execute(func() (interface{}, error) {
 		return s.state.Get(ctx, key, dest)
 	})

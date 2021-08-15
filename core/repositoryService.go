@@ -15,7 +15,14 @@ type RepositoryService struct {
 	cb                *gobreaker.CircuitBreaker
 }
 
-func (r *RepositoryService) Setup() *RepositoryService {
+func (r *RepositoryService) Initialize() *RepositoryService {
+	return r
+}
+
+func (r *RepositoryService) SetupCb(setting gobreaker.Settings) *RepositoryService {
+	setting.Name = r.cb.Name()
+	setting.OnStateChange = OnCbStateChange
+	r.cb = gobreaker.NewCircuitBreaker(setting)
 	return r
 }
 

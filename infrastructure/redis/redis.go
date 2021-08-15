@@ -57,7 +57,7 @@ func getRedisClient(ctx context.Context, host string, password string) (*redis.C
 			panic(err)
 		}
 
-		core.Log.Info("redisClient created")
+		core.Log.Infow("redisClient created")
 		clientsInstance.clients[host] = redisClient
 		clientsInstance.pubsubs[host] = cmap.New()
 	}

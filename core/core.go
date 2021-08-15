@@ -8,12 +8,14 @@ import (
 	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type singletons struct {
 	mediator sync.Once
 	eventBus sync.Once
 	states   sync.Once
+	logger   sync.Mutex
 }
 
 var syncs singletons
@@ -24,15 +26,43 @@ var eventBusInstance *EventBus
 
 var statesInstance *StateService
 
-var repositories cmap.ConcurrentMap
+var repositories cmap.ConcurrentMap = cmap.New()
 
 var Log *zap.SugaredLogger
 
 func init() {
-	logger, _ := zap.NewProduction()
-	Log = logger.Sugar()
+	logger, err := zap.Config{
+		Encoding:         "json",
+		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey: "message",
 
-	repositories = cmap.New()
+			LevelKey:    "level",
+			EncodeLevel: zapcore.CapitalLevelEncoder,
+
+			TimeKey:    "time",
+			EncodeTime: zapcore.ISO8601TimeEncoder,
+
+			CallerKey:    "caller",
+			EncodeCaller: zapcore.ShortCallerEncoder,
+		},
+	}.Build()
+	if err != nil {
+		panic(err)
+	}
+	Log = logger.Sugar()
+}
+
+func SetupLogger(logger *zap.Logger) {
+	syncs.logger.Lock()
+	defer syncs.logger.Unlock()
+	Log = logger.Sugar()
+}
+
+func OnCbStateChange(name string, from gobreaker.State, to gobreaker.State) {
+	Log.Infow("circuit breaker state changed", "name", name, "from", from.String(), "to", to.String())
 }
 
 func GetMediator() *Mediator {
@@ -45,7 +75,7 @@ func GetMediator() *Mediator {
 				}
 				mediatorInstance.Setup()
 
-				Log.Info("mediator created")
+				Log.Infow("mediator created")
 			})
 	}
 	return mediatorInstance
@@ -55,8 +85,11 @@ func GetEventBus() *EventBus {
 	if eventBusInstance == nil {
 		syncs.eventBus.Do(
 			func() {
-				var st gobreaker.Settings
-				st.Name = "eventbus"
+				st := gobreaker.Settings{
+					Name:          "eventbus",
+					MaxRequests:   3,
+					OnStateChange: OnCbStateChange,
+				}
 
 				eventBusInstance = &EventBus{
 					mediator:     GetMediator(),
@@ -64,9 +97,9 @@ func GetEventBus() *EventBus {
 					ch:           make(chan rxgo.Item, 1),
 					cb:           gobreaker.NewCircuitBreaker(st),
 				}
-				eventBusInstance.Setup()
+				eventBusInstance.Initialize()
 
-				Log.Info("eventbus created")
+				Log.Infow("eventbus created")
 			})
 	}
 	return eventBusInstance
@@ -76,15 +109,18 @@ func GetStateService() *StateService {
 	if statesInstance == nil {
 		syncs.states.Do(
 			func() {
-				var st gobreaker.Settings
-				st.Name = "state"
+				st := gobreaker.Settings{
+					Name:          "state-service",
+					MaxRequests:   3,
+					OnStateChange: OnCbStateChange,
+				}
 
 				statesInstance = &StateService{
 					cb: gobreaker.NewCircuitBreaker(st),
 				}
-				statesInstance.Setup()
+				statesInstance.Initialize()
 
-				Log.Info("state created")
+				Log.Infow("state created")
 			})
 	}
 	return statesInstance
@@ -95,16 +131,20 @@ func GetRepositoryService(model Entitier) *RepositoryService {
 	key := valueOf.Type().Name()
 
 	if !repositories.Has(key) {
-		var st gobreaker.Settings
-		st.Name = key + "repository"
+		st := gobreaker.Settings{
+			Name:          key + "-repository",
+			MaxRequests:   3,
+			OnStateChange: OnCbStateChange,
+		}
+
 		repository := &RepositoryService{
 			model: model,
 			cb:    gobreaker.NewCircuitBreaker(st),
 		}
-		repositories.Set(key, repository)
-		repository.Setup()
+		repository.Initialize()
 
-		Log.Info("repository created")
+		repositories.Set(key, repository)
+		Log.Infow("repository created")
 	}
 
 	if value, ok := repositories.Get(key); ok {

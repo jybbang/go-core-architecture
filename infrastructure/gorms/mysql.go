@@ -1,6 +1,7 @@
 package gorms
 
 import (
+	"context"
 	"sync"
 
 	"github.com/jybbang/go-core-architecture/core"
@@ -22,7 +23,7 @@ func getMySqlClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 		}
 		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
-		core.Log.Info("mySql database connected")
+		core.Log.Infow("mySql database connected")
 		clientsInstance.clients[connectionString] = tx
 		clientsInstance.mutexes[connectionString] = new(sync.RWMutex)
 	}
@@ -32,7 +33,7 @@ func getMySqlClient(connectionString string) (*gorm.DB, *sync.RWMutex) {
 	return client, mutex
 }
 
-func NewMySqlAdapter(connectionString string) *adapter {
+func NewMySqlAdapter(ctx context.Context, connectionString string) *adapter {
 	conn, mutex := getMySqlClient(connectionString)
 	mysql := &adapter{
 		conn: conn,

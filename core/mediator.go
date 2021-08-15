@@ -78,6 +78,6 @@ func (m *Mediator) Run(ctx context.Context, request Request) (ok bool, err error
 func timeMeasurement(start time.Time, typeName string) {
 	elapsed := time.Since(start)
 	if elapsed > time.Duration(500*time.Millisecond) {
-		Log.Warn("send request long running {} ({})", typeName, elapsed)
+		Log.Warnw("send request long running", "request", typeName, "measure", elapsed)
 	}
 }
