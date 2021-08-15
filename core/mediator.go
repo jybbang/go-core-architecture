@@ -24,6 +24,11 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 	typeName := valueOf.Type().Name()
 	defer timeMeasurement(time.Now(), typeName)
 
+	if openTracer != nil {
+		span := openTracer.StartSpan(typeName)
+		defer span.Finish()
+	}
+
 	item, ok := m.requestHandlers.Get(typeName)
 	if !ok {
 		return Result{E: errors.New("request handler not found")}
@@ -42,6 +47,11 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 func (m *mediator) Publish(ctx context.Context, notification Notification) error {
 	valueOf := reflect.ValueOf(notification)
 	typeName := valueOf.Type().Name()
+
+	if openTracer != nil {
+		span := openTracer.StartSpan(typeName)
+		defer span.Finish()
+	}
 
 	item, ok := m.notificationHandlers.Get(typeName)
 	if !ok {

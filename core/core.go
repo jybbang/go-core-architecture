@@ -5,9 +5,12 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sony/gobreaker"
+	"github.com/uber/jaeger-client-go/config"
+	"github.com/uber/jaeger-lib/metrics/prometheus"
 	"go.uber.org/zap"
 )
 
@@ -16,8 +19,8 @@ type MetricsSettings struct {
 	ListenAddr string
 }
 
-var defaultMetricsSettings = MetricsSettings{
-	Endpoint: "/metrics",
+type TracingSettings struct {
+	ServiceName string
 }
 
 var mediatorInstance *mediator
@@ -30,12 +33,14 @@ var repositories cmap.ConcurrentMap = cmap.New()
 
 var Log *zap.SugaredLogger
 
+var openTracer opentracing.Tracer
+
 const cbDefaultTimeout = time.Duration(30 * time.Second)
 
 const cbDefaultAllowedRequests = 3
 
 func init() {
-	logger, err := zap.NewDevelopment()
+	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
 	}
@@ -50,11 +55,21 @@ func SetLogger(logger *zap.Logger) {
 	Log = logger.Sugar()
 }
 
-func AddMetrics(settings *MetricsSettings) {
-	if settings == nil {
-		settings = &defaultMetricsSettings
-	}
+func AddMetrics(settings MetricsSettings) {
 	http.Handle(settings.Endpoint, promhttp.Handler())
+}
+
+func AddTracing(settings TracingSettings) {
+	metricsFactory := prometheus.New()
+	tracer, _, err := config.Configuration{
+		ServiceName: settings.ServiceName,
+	}.NewTracer(
+		config.Metrics(metricsFactory),
+	)
+	if err != nil {
+		panic(err)
+	}
+	openTracer = tracer
 }
 
 func GetMediator() *mediator {
