@@ -14,7 +14,7 @@ func NewStateServiceBuilder() *stateServiceBuilder {
 
 	st := gobreaker.Settings{
 		Name:          "state service",
-		OnStateChange: OnCbStateChange,
+		OnStateChange: onCbStateChange,
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -45,7 +45,7 @@ func (b *stateServiceBuilder) StateAdapter(adapter stateAdapter) *stateServiceBu
 // Builder method to set the field cb in StateServiceBuilder
 func (b *stateServiceBuilder) CircuitBreaker(setting gobreaker.Settings) *stateServiceBuilder {
 	setting.Name = b.cb.Name()
-	setting.OnStateChange = OnCbStateChange
+	setting.OnStateChange = onCbStateChange
 	b.cb = gobreaker.NewCircuitBreaker(setting)
 	return b
 }

@@ -44,12 +44,12 @@ func init() {
 	Log = logger.Sugar()
 }
 
-func SetLogger(logger *zap.Logger) {
-	Log = logger.Sugar()
+func onCbStateChange(name string, from gobreaker.State, to gobreaker.State) {
+	Log.Infow("circuit breaker state changed", "name", name, "from", from.String(), "to", to.String())
 }
 
-func OnCbStateChange(name string, from gobreaker.State, to gobreaker.State) {
-	Log.Infow("circuit breaker state changed", "name", name, "from", from.String(), "to", to.String())
+func SetLogger(logger *zap.Logger) {
+	Log = logger.Sugar()
 }
 
 func GetMediator() *mediator {
@@ -59,7 +59,7 @@ func GetMediator() *mediator {
 	return mediatorInstance
 }
 
-func Geteventbus() *eventbus {
+func GetEventbus() *eventbus {
 	if eventBusInstance == nil {
 		panic("you should create event bus before use it")
 	}

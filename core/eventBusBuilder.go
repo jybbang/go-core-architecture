@@ -17,7 +17,7 @@ func NewEventBusBuilder() *eventBusBuilder {
 
 	st := gobreaker.Settings{
 		Name:          "eventbus",
-		OnStateChange: OnCbStateChange,
+		OnStateChange: onCbStateChange,
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -51,7 +51,7 @@ func (b *eventBusBuilder) MessaingAdapter(adapter messagingAdapter) *eventBusBui
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventBusBuilder) CircuitBreaker(setting gobreaker.Settings) *eventBusBuilder {
 	setting.Name = b.cb.Name()
-	setting.OnStateChange = OnCbStateChange
+	setting.OnStateChange = onCbStateChange
 	b.cb = gobreaker.NewCircuitBreaker(setting)
 	return b
 }
