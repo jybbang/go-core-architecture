@@ -3,8 +3,8 @@ package core
 import "context"
 
 type Services struct {
-	eventbus *eventbus
-	states   *stateService
+	Eventbus *eventbus
+	States   *stateService
 }
 
 type Request interface{}
@@ -16,7 +16,6 @@ type RequestHandler func(
 type Notification interface{}
 type NotificationHandler func(
 	ctx context.Context,
-	services Services,
 	notification interface{}) error
 
 type ReplyHandler func(receivedData interface{})

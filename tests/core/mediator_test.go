@@ -68,7 +68,7 @@ func Test_mediator_Send(t *testing.T) {
 type testNotification struct {
 }
 
-func testNotificationHandler(ctx context.Context, services core.Services, notification interface{}) error {
+func testNotificationHandler(ctx context.Context, notification interface{}) error {
 	return nil
 }
 

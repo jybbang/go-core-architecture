@@ -31,11 +31,15 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 	handler := item.(RequestHandler)
 
 	services := Services{
-		eventbus: GetEventbus(),
-		states:   GetStateService(),
+		Eventbus: GetEventbus(),
+		States:   GetStateService(),
 	}
 
-	return m.nextRun(ctx, services, request, handler)
+	result := m.nextRun(ctx, services, request, handler)
+
+	services.Eventbus.PublishDomainEvents(ctx)
+
+	return result
 }
 
 func (m *mediator) Publish(ctx context.Context, notification Notification) error {
@@ -49,12 +53,7 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 
 	handler := item.(NotificationHandler)
 
-	services := Services{
-		eventbus: GetEventbus(),
-		states:   GetStateService(),
-	}
-
-	return handler(ctx, services, notification)
+	return handler(ctx, notification)
 }
 
 func timeMeasurement(start time.Time, typeName string) {
