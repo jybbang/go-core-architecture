@@ -44,6 +44,9 @@ func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 
 	for {
 		vals := <-ch
+		if vals.V == nil {
+			continue
+		}
 		event := &bufferedEvent{
 			BufferedEvents: vals.V.([]DomainEventer),
 		}

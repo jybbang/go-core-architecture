@@ -47,6 +47,7 @@ func (b *eventbusBuilder) Build() *eventbus {
 		ch:           make(chan rxgo.Item, 1),
 		messaging:    b.messaging,
 		cb:           b.cb,
+		setting:      b.setting,
 	}
 	eventBusInstance.initialize()
 
