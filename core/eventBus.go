@@ -47,6 +47,7 @@ func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 		event := &bufferedEvent{
 			BufferedEvents: vals.V.([]DomainEventer),
 		}
+		event.Topic = "BufferedEvents"
 		timeout, cancel := context.WithTimeout(context.Background(), e.setting.bufferedEventTimeout)
 		e.AddDomainEvent(event)
 		e.PublishDomainEvents(timeout)
@@ -69,6 +70,10 @@ func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
 	defer e.mutex.Unlock()
 
 	domainEvent.AddingEvent()
+
+	if domainEvent.GetTopic() == "" {
+		panic("topic is required")
+	}
 
 	e.domainEvents = append(e.domainEvents, domainEvent)
 }
