@@ -9,42 +9,35 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-type EventBus struct {
-	mediator     *Mediator
-	messaging    MessagingAdapter
+type eventbus struct {
+	mediator     *mediator
+	messaging    messagingAdapter
 	domainEvents []DomainEventer
 	ch           chan rxgo.Item
 	cb           *gobreaker.CircuitBreaker
 	sync.Mutex
 }
 
-type BufferedEvent struct {
+type bufferedEvent struct {
 	DomainEvent
 	BufferedEvents []DomainEventer
 }
 
-func (e *EventBus) Initialize() *EventBus {
+func (e *eventbus) initialize() *eventbus {
 	observable := rxgo.FromChannel(e.ch).
 		BufferWithTimeOrCount(rxgo.WithDuration(1*time.Second), 1000)
 
-	go e.SubscribeBufferedEvent(observable)
+	go e.subscribeBufferedEvent(observable)
 
 	return e
 }
 
-func (e *EventBus) SetupCb(setting gobreaker.Settings) *EventBus {
-	setting.Name = e.cb.Name()
-	setting.OnStateChange = OnCbStateChange
-	e.cb = gobreaker.NewCircuitBreaker(setting)
-	return e
-}
-
-func (e *EventBus) SubscribeBufferedEvent(observable rxgo.Observable) {
+func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 	ch := observable.Observe()
 
 	for {
 		vals := <-ch
-		event := &BufferedEvent{
+		event := &bufferedEvent{
 			BufferedEvents: vals.V.([]DomainEventer),
 		}
 		timeout, _ := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
@@ -53,12 +46,17 @@ func (e *EventBus) SubscribeBufferedEvent(observable rxgo.Observable) {
 	}
 }
 
-func (e *EventBus) SetMessaingAdapter(messageService MessagingAdapter) *EventBus {
-	e.messaging = messageService
-	return e
+func (e *eventbus) dequeueDomainEvent() DomainEventer {
+	result := e.domainEvents[0]
+	e.domainEvents = e.domainEvents[1:]
+	return result
 }
 
-func (e *EventBus) AddDomainEvent(domainEvent DomainEventer) {
+func (e *eventbus) empty() bool {
+	return len(e.domainEvents) == 0
+}
+
+func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
 	e.Lock()
 	defer e.Unlock()
 
@@ -67,7 +65,7 @@ func (e *EventBus) AddDomainEvent(domainEvent DomainEventer) {
 	e.domainEvents = append(e.domainEvents, domainEvent)
 }
 
-func (e *EventBus) PublishDomainEvents(ctx context.Context) error {
+func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
 	e.Lock()
 	defer e.Unlock()
 
@@ -104,14 +102,4 @@ func (e *EventBus) PublishDomainEvents(ctx context.Context) error {
 	})
 
 	return err
-}
-
-func (e *EventBus) dequeueDomainEvent() DomainEventer {
-	result := e.domainEvents[0]
-	e.domainEvents = e.domainEvents[1:]
-	return result
-}
-
-func (e *EventBus) empty() bool {
-	return len(e.domainEvents) == 0
 }

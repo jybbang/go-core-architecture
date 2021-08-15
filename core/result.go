@@ -5,11 +5,6 @@ type Result struct {
 	E error
 }
 
-var EmptyResult = Result{
-	V: nil,
-	E: ErrInternalServerError,
-}
-
 func (r *Result) ToActionResult() {
 	// TODO
 }

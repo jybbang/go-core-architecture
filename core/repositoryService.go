@@ -8,74 +8,53 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-type RepositoryService struct {
+type repositoryService struct {
 	model             Entitier
-	queryRepository   QueryRepositoryAdapter
-	commandRepository CommandRepositoryAdapter
+	queryRepository   queryRepositoryAdapter
+	commandRepository commandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
 }
 
-func (r *RepositoryService) Initialize() *RepositoryService {
+func (r *repositoryService) initialize() *repositoryService {
 	return r
 }
 
-func (r *RepositoryService) SetupCb(setting gobreaker.Settings) *RepositoryService {
-	setting.Name = r.cb.Name()
-	setting.OnStateChange = OnCbStateChange
-	r.cb = gobreaker.NewCircuitBreaker(setting)
-	return r
-}
-
-func (r *RepositoryService) SetQueryRepositoryAdapter(adapter QueryRepositoryAdapter) *RepositoryService {
-	r.queryRepository = adapter
-	r.model.SetID(uuid.Nil)
-	r.queryRepository.SetModel(r.model)
-	return r
-}
-
-func (r *RepositoryService) SetCommandRepositoryAdapter(adapter CommandRepositoryAdapter) *RepositoryService {
-	r.commandRepository = adapter
-	r.model.SetID(uuid.Nil)
-	r.commandRepository.SetModel(r.model)
-	return r
-}
-
-func (r *RepositoryService) Find(ctx context.Context, dest Entitier, id uuid.UUID) (ok bool, err error) {
+func (r *repositoryService) Find(ctx context.Context, dest Entitier, id uuid.UUID) (ok bool, err error) {
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.Find(ctx, dest, id)
 	})
 	return resp.(bool), err
 }
 
-func (r *RepositoryService) Any(ctx context.Context) (ok bool, err error) {
+func (r *repositoryService) Any(ctx context.Context) (ok bool, err error) {
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.Any(ctx)
 	})
 	return resp.(bool), err
 }
 
-func (r *RepositoryService) AnyWithFilter(ctx context.Context, query interface{}, args interface{}) (ok bool, err error) {
+func (r *repositoryService) AnyWithFilter(ctx context.Context, query interface{}, args interface{}) (ok bool, err error) {
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.AnyWithFilter(ctx, query, args)
 	})
 	return resp.(bool), err
 }
 
-func (r *RepositoryService) Count(ctx context.Context) (count int64, err error) {
+func (r *repositoryService) Count(ctx context.Context) (count int64, err error) {
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.Count(ctx)
 	})
 	return resp.(int64), err
 }
 
-func (r *RepositoryService) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
+func (r *repositoryService) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.CountWithFilter(ctx, query, args)
 	})
 	return resp.(int64), err
 }
 
-func (r *RepositoryService) List(ctx context.Context, dest []Entitier) error {
+func (r *repositoryService) List(ctx context.Context, dest []Entitier) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.List(ctx, dest)
 		return nil, err
@@ -83,7 +62,7 @@ func (r *RepositoryService) List(ctx context.Context, dest []Entitier) error {
 	return err
 }
 
-func (r *RepositoryService) ListWithFilter(ctx context.Context, dest []Entitier, query interface{}, args interface{}) error {
+func (r *repositoryService) ListWithFilter(ctx context.Context, dest []Entitier, query interface{}, args interface{}) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.ListWithFilter(ctx, dest, query, args)
 		return nil, err
@@ -91,7 +70,7 @@ func (r *RepositoryService) ListWithFilter(ctx context.Context, dest []Entitier,
 	return err
 }
 
-func (r *RepositoryService) Remove(ctx context.Context, entity Entitier) error {
+func (r *repositoryService) Remove(ctx context.Context, entity Entitier) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Remove(ctx, entity)
 		return nil, err
@@ -99,7 +78,7 @@ func (r *RepositoryService) Remove(ctx context.Context, entity Entitier) error {
 	return err
 }
 
-func (r *RepositoryService) RemoveRange(ctx context.Context, entities []Entitier) error {
+func (r *repositoryService) RemoveRange(ctx context.Context, entities []Entitier) error {
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.RemoveRange(ctx, entities)
 		return nil, err
@@ -107,7 +86,7 @@ func (r *RepositoryService) RemoveRange(ctx context.Context, entities []Entitier
 	return err
 }
 
-func (r *RepositoryService) Add(ctx context.Context, entity Entitier) error {
+func (r *repositoryService) Add(ctx context.Context, entity Entitier) error {
 	entity.SetCreatedAt("", time.Now())
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Add(ctx, entity)
@@ -116,7 +95,7 @@ func (r *RepositoryService) Add(ctx context.Context, entity Entitier) error {
 	return err
 }
 
-func (r *RepositoryService) AddRange(ctx context.Context, entities []Entitier) error {
+func (r *repositoryService) AddRange(ctx context.Context, entities []Entitier) error {
 	user := ""
 	now := time.Now()
 	for _, v := range entities {
@@ -130,7 +109,7 @@ func (r *RepositoryService) AddRange(ctx context.Context, entities []Entitier) e
 	return err
 }
 
-func (r *RepositoryService) Update(ctx context.Context, entity Entitier) error {
+func (r *repositoryService) Update(ctx context.Context, entity Entitier) error {
 	entity.SetUpdatedAt("", time.Now())
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
@@ -140,7 +119,7 @@ func (r *RepositoryService) Update(ctx context.Context, entity Entitier) error {
 	return err
 }
 
-func (r *RepositoryService) UpdateRange(ctx context.Context, entities []Entitier) error {
+func (r *repositoryService) UpdateRange(ctx context.Context, entities []Entitier) error {
 	user := ""
 	now := time.Now()
 	for _, v := range entities {

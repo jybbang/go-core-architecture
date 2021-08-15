@@ -9,23 +9,17 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 )
 
-type Request interface{}
-type RequestHandler func(ctx context.Context, request interface{}) Result
-
-type Notification interface{}
-type NotificationHandler func(ctx context.Context, notification interface{}) error
-
-type Mediator struct {
+type mediator struct {
 	Middleware
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
 }
 
-func (m *Mediator) Setup() *Mediator {
+func (m *mediator) initialize() *mediator {
 	return m
 }
 
-func (m *Mediator) AddHandler(request Request, handler RequestHandler) *Mediator {
+func (m *mediator) AddHandler(request Request, handler RequestHandler) *mediator {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
 
@@ -33,7 +27,7 @@ func (m *Mediator) AddHandler(request Request, handler RequestHandler) *Mediator
 	return m
 }
 
-func (m *Mediator) AddNotificationHandler(notification Notification, handler NotificationHandler) *Mediator {
+func (m *mediator) AddNotificationHandler(notification Notification, handler NotificationHandler) *mediator {
 	valueOf := reflect.ValueOf(notification)
 	typeName := valueOf.Type().Name()
 
@@ -41,7 +35,7 @@ func (m *Mediator) AddNotificationHandler(notification Notification, handler Not
 	return m
 }
 
-func (m *Mediator) Send(ctx context.Context, request Request) Result {
+func (m *mediator) Send(ctx context.Context, request Request) Result {
 	valueOf := reflect.ValueOf(request)
 	typeName := valueOf.Type().Name()
 
@@ -57,7 +51,7 @@ func (m *Mediator) Send(ctx context.Context, request Request) Result {
 	return m.Next(ctx, request, handler)
 }
 
-func (m *Mediator) Publish(ctx context.Context, notification Notification) error {
+func (m *mediator) Publish(ctx context.Context, notification Notification) error {
 	valueOf := reflect.ValueOf(notification)
 	typeName := valueOf.Type().Name()
 
@@ -71,7 +65,7 @@ func (m *Mediator) Publish(ctx context.Context, notification Notification) error
 	return handler(ctx, notification)
 }
 
-func (m *Mediator) Run(ctx context.Context, request Request) (ok bool, err error) {
+func (m *mediator) Run(ctx context.Context, request Request) (ok bool, err error) {
 	return true, nil
 }
 

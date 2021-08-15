@@ -2,29 +2,18 @@ package core
 
 import (
 	"reflect"
-	"sync"
 
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-type singletons struct {
-	mediator sync.Once
-	eventBus sync.Once
-	states   sync.Once
-	logger   sync.Mutex
-}
+var mediatorInstance *mediator
 
-var syncs singletons
+var eventBusInstance *eventbus
 
-var mediatorInstance *Mediator
-
-var eventBusInstance *EventBus
-
-var statesInstance *StateService
+var statesInstance *stateService
 
 var repositories cmap.ConcurrentMap = cmap.New()
 
@@ -55,9 +44,7 @@ func init() {
 	Log = logger.Sugar()
 }
 
-func SetupLogger(logger *zap.Logger) {
-	syncs.logger.Lock()
-	defer syncs.logger.Unlock()
+func SetLogger(logger *zap.Logger) {
 	Log = logger.Sugar()
 }
 
@@ -65,90 +52,37 @@ func OnCbStateChange(name string, from gobreaker.State, to gobreaker.State) {
 	Log.Infow("circuit breaker state changed", "name", name, "from", from.String(), "to", to.String())
 }
 
-func GetMediator() *Mediator {
+func GetMediator() *mediator {
 	if mediatorInstance == nil {
-		syncs.mediator.Do(
-			func() {
-				mediatorInstance = &Mediator{
-					requestHandlers:      cmap.New(),
-					notificationHandlers: cmap.New(),
-				}
-				mediatorInstance.Setup()
-
-				Log.Infow("mediator created")
-			})
+		panic("you should create mediator before use it")
 	}
 	return mediatorInstance
 }
 
-func GetEventBus() *EventBus {
+func Geteventbus() *eventbus {
 	if eventBusInstance == nil {
-		syncs.eventBus.Do(
-			func() {
-				st := gobreaker.Settings{
-					Name:          "eventbus",
-					MaxRequests:   3,
-					OnStateChange: OnCbStateChange,
-				}
-
-				eventBusInstance = &EventBus{
-					mediator:     GetMediator(),
-					domainEvents: make([]DomainEventer, 0),
-					ch:           make(chan rxgo.Item, 1),
-					cb:           gobreaker.NewCircuitBreaker(st),
-				}
-				eventBusInstance.Initialize()
-
-				Log.Infow("eventbus created")
-			})
+		panic("you should create event bus before use it")
 	}
 	return eventBusInstance
 }
 
-func GetStateService() *StateService {
+func GetStateService() *stateService {
 	if statesInstance == nil {
-		syncs.states.Do(
-			func() {
-				st := gobreaker.Settings{
-					Name:          "state-service",
-					MaxRequests:   3,
-					OnStateChange: OnCbStateChange,
-				}
-
-				statesInstance = &StateService{
-					cb: gobreaker.NewCircuitBreaker(st),
-				}
-				statesInstance.Initialize()
-
-				Log.Infow("state created")
-			})
+		panic("you should create state service before use it")
 	}
 	return statesInstance
 }
 
-func GetRepositoryService(model Entitier) *RepositoryService {
+func GetRepositoryService(model Entitier) *repositoryService {
 	valueOf := reflect.ValueOf(model)
 	key := valueOf.Type().Name()
 
 	if !repositories.Has(key) {
-		st := gobreaker.Settings{
-			Name:          key + "-repository",
-			MaxRequests:   3,
-			OnStateChange: OnCbStateChange,
-		}
-
-		repository := &RepositoryService{
-			model: model,
-			cb:    gobreaker.NewCircuitBreaker(st),
-		}
-		repository.Initialize()
-
-		repositories.Set(key, repository)
-		Log.Infow("repository created")
+		panic("you should create repository service before use it")
 	}
 
 	if value, ok := repositories.Get(key); ok {
-		return value.(*RepositoryService)
+		return value.(*repositoryService)
 	}
 
 	panic("repository not found exception")

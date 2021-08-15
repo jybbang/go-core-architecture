@@ -7,29 +7,17 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-type StateService struct {
-	state StateAdapter
+type stateService struct {
+	state stateAdapter
 	cb    *gobreaker.CircuitBreaker
 	sync.RWMutex
 }
 
-func (s *StateService) Initialize() *StateService {
+func (s *stateService) initialize() *stateService {
 	return s
 }
 
-func (s *StateService) SetupCb(setting gobreaker.Settings) *StateService {
-	setting.Name = s.cb.Name()
-	setting.OnStateChange = OnCbStateChange
-	s.cb = gobreaker.NewCircuitBreaker(setting)
-	return s
-}
-
-func (s *StateService) SetStateAdapter(adapter StateAdapter) *StateService {
-	s.state = adapter
-	return s
-}
-
-func (s *StateService) Has(ctx context.Context, key string) (ok bool, err error) {
+func (s *stateService) Has(ctx context.Context, key string) (ok bool, err error) {
 	s.RLocker()
 	defer s.RUnlock()
 
@@ -39,7 +27,7 @@ func (s *StateService) Has(ctx context.Context, key string) (ok bool, err error)
 	return resp.(bool), err
 }
 
-func (s *StateService) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
+func (s *stateService) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
 	s.RLocker()
 	defer s.RUnlock()
 
@@ -49,7 +37,7 @@ func (s *StateService) Get(ctx context.Context, key string, dest interface{}) (o
 	return resp.(bool), err
 }
 
-func (s *StateService) Set(ctx context.Context, key string, value interface{}) error {
+func (s *stateService) Set(ctx context.Context, key string, value interface{}) error {
 	s.Lock()
 	defer s.Unlock()
 

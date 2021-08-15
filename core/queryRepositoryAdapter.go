@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type QueryRepositoryAdapter interface {
+type queryRepositoryAdapter interface {
 	SetModel(model Entitier)
 	Find(ctx context.Context, dest Entitier, id uuid.UUID) (ok bool, err error)
 	Any(ctx context.Context) (ok bool, err error)

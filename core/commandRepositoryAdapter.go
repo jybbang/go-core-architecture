@@ -2,7 +2,7 @@ package core
 
 import "context"
 
-type CommandRepositoryAdapter interface {
+type commandRepositoryAdapter interface {
 	SetModel(model Entitier)
 	Remove(ctx context.Context, entity Entitier) error
 	RemoveRange(ctx context.Context, entities []Entitier) error
