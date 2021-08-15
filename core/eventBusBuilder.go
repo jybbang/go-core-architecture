@@ -1,6 +1,8 @@
 package core
 
 import (
+	"time"
+
 	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
 )
@@ -9,6 +11,7 @@ import (
 type eventbusBuilder struct {
 	messaging messagingAdapter
 	cb        *gobreaker.CircuitBreaker
+	setting   EventbusSettings
 }
 
 // Constructor for EventBusBuilder
@@ -22,6 +25,12 @@ func NewEventbusBuilder() *eventbusBuilder {
 		MaxRequests:   cbDefaultAllowedRequests,
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
+
+	o.setting = EventbusSettings{
+		bufferedEventBufferTime:  time.Duration(1 * time.Second),
+		bufferedEventBufferCount: 1000,
+		bufferedEventTimeout:     time.Duration(2 * time.Second),
+	}
 
 	return o
 }
@@ -42,6 +51,12 @@ func (b *eventbusBuilder) Build() *eventbus {
 	eventBusInstance.initialize()
 
 	return eventBusInstance
+}
+
+// Builder method to set the field messaging in EventBusBuilder
+func (b *eventbusBuilder) Setting(setting EventbusSettings) *eventbusBuilder {
+	b.setting = setting
+	return b
 }
 
 // Builder method to set the field messaging in EventBusBuilder
