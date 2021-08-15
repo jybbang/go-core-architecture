@@ -7,7 +7,7 @@ import (
 )
 
 type Entity struct {
-	ID         uuid.UUID `gorm:"primaryKey" bson:"_id,omitempty"`
+	ID         uuid.UUID `validate:"required" gorm:"primaryKey" bson:"_id,omitempty"`
 	CreateUser string    `bson:"create_user,omitempty"`
 	UpdateUser string    `bson:"update_user,omitempty"`
 	CreatedAt  time.Time `bson:"created_at,omitempty"`
@@ -30,9 +30,11 @@ func (e *Entity) SetID(id uuid.UUID) {
 }
 
 func (e *Entity) SetCreatedAt(user string, timestamp time.Time) {
+	// TODO add create user from context
 	e.CreatedAt = timestamp
 }
 
 func (e *Entity) SetUpdatedAt(user string, timestamp time.Time) {
+	// TODO add update user from context
 	e.UpdatedAt = timestamp
 }

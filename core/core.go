@@ -15,8 +15,7 @@ import (
 )
 
 type MetricsSettings struct {
-	Endpoint   string
-	ListenAddr string
+	Endpoint string
 }
 
 type TracingSettings struct {

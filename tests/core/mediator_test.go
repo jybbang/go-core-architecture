@@ -10,7 +10,7 @@ import (
 )
 
 type testCommand struct {
-	expect int
+	expect int `validate:"eq=100"`
 }
 
 func testCommandHandler(ctx context.Context, request interface{}) core.Result {
@@ -21,7 +21,9 @@ func Test_mediator_Send(t *testing.T) {
 	m := core.NewMediatorBuilder().
 		AddHandler(new(testCommand), testCommandHandler).
 		Build()
-	m.AddMiddleware(middlewares.NewLogMiddleware())
+
+	m.AddMiddleware(middlewares.NewLogMiddleware()).
+		AddMiddleware(middlewares.NewValidationMiddleware())
 
 	core.NewEventbusBuilder().Build()
 	core.NewStateServiceBuilder().Build()
@@ -50,10 +52,10 @@ func Test_mediator_Send(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				request: &testCommand{
-					expect: 1234,
+					expect: 99,
 				},
 			},
-			want: core.Result{V: 1234},
+			want: core.Result{V: 99},
 		},
 	}
 	for _, tt := range tests {

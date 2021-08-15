@@ -6,5 +6,5 @@ type Result struct {
 }
 
 func (r *Result) ToActionResult() {
-	// TODO
+	// TODO result to http result
 }
