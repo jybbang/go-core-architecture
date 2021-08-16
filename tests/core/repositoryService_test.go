@@ -45,14 +45,14 @@ func TestRepositoryService_Find(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "1",
-			args: args{
-				ctx:  context.Background(),
-				dest: dto2,
-				id:   dto.ID,
+			"1",
+			args{
+				context.Background(),
+				dto2,
+				dto.ID,
 			},
-			wantOk:  true,
-			wantErr: false,
+			true,
+			false,
 		},
 	}
 	for _, tt := range tests {

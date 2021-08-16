@@ -8,4 +8,5 @@ var (
 	ErrConflict            = errors.New("your Item already exist")
 	ErrBadRequest          = errors.New("given Param is not valid")
 	ErrForbiddenAcccess    = errors.New("your access is forbidden")
+	ErrTimeout             = errors.New("your request processing takes too long")
 )

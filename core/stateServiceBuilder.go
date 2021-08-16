@@ -13,9 +13,7 @@ func NewStateServiceBuilder() *stateServiceBuilder {
 	o := new(stateServiceBuilder)
 
 	st := gobreaker.Settings{
-		Name:        "state service",
-		Timeout:     cbDefaultTimeout,
-		MaxRequests: cbDefaultAllowedRequests,
+		Name: "state service",
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -28,13 +26,20 @@ func (b *stateServiceBuilder) Build() *stateService {
 		panic("state service already created")
 	}
 
-	statesInstance = &stateService{
+	statesInstance = b.Create()
+
+	return statesInstance
+}
+
+// Build Method which creates EventBus
+func (b *stateServiceBuilder) Create() *stateService {
+	instance := &stateService{
 		state: b.state,
 		cb:    b.cb,
 	}
-	statesInstance.initialize()
+	instance.initialize()
 
-	return statesInstance
+	return instance
 }
 
 // Builder method to set the field state in StateServiceBuilder
@@ -44,8 +49,7 @@ func (b *stateServiceBuilder) StateAdapter(adapter stateAdapter) *stateServiceBu
 }
 
 // Builder method to set the field cb in StateServiceBuilder
-func (b *stateServiceBuilder) CircuitBreaker(setting gobreaker.Settings) *stateServiceBuilder {
-	setting.Name = b.cb.Name()
-	b.cb = gobreaker.NewCircuitBreaker(setting)
+func (b *stateServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *stateServiceBuilder {
+	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings())
 	return b
 }

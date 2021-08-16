@@ -19,10 +19,9 @@ func NewEventbusBuilder() *eventbusBuilder {
 	o := new(eventbusBuilder)
 
 	st := gobreaker.Settings{
-		Name:        "eventbus",
-		Timeout:     cbDefaultTimeout,
-		MaxRequests: cbDefaultAllowedRequests,
+		Name: "eventbus",
 	}
+
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
 	o.setting = EventbusSettings{
@@ -40,7 +39,14 @@ func (b *eventbusBuilder) Build() *eventbus {
 		panic("eventbus already created")
 	}
 
-	eventBusInstance = &eventbus{
+	eventBusInstance = b.Create()
+
+	return eventBusInstance
+}
+
+// Build Method which creates EventBus
+func (b *eventbusBuilder) Create() *eventbus {
+	instance := &eventbus{
 		mediator:     GetMediator(),
 		domainEvents: make([]DomainEventer, 0),
 		ch:           make(chan rxgo.Item, 1),
@@ -48,13 +54,23 @@ func (b *eventbusBuilder) Build() *eventbus {
 		cb:           b.cb,
 		settings:     b.setting,
 	}
-	eventBusInstance.initialize()
+	instance.initialize()
 
-	return eventBusInstance
+	return instance
 }
 
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventbusBuilder) Setting(setting EventbusSettings) *eventbusBuilder {
+	if setting.BufferedEventBufferCount < 1 {
+		setting.BufferedEventBufferCount = 1000
+	}
+	if setting.BufferedEventBufferTime <= time.Duration(0) {
+		setting.BufferedEventBufferTime = time.Duration(1 * time.Second)
+	}
+	if setting.BufferedEventTimeout <= time.Duration(0) {
+		setting.BufferedEventTimeout = time.Duration(2 * time.Second)
+	}
+
 	b.setting = setting
 	return b
 }
@@ -66,8 +82,7 @@ func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBui
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventbusBuilder) CircuitBreaker(setting gobreaker.Settings) *eventbusBuilder {
-	setting.Name = b.cb.Name()
-	b.cb = gobreaker.NewCircuitBreaker(setting)
+func (b *eventbusBuilder) CircuitBreaker(setting CircuitBreakerSettings) *eventbusBuilder {
+	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings())
 	return b
 }

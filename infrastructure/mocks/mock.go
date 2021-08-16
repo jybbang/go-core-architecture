@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"sync/atomic"
 
 	"github.com/google/uuid"
 	cmap "github.com/orcaman/concurrent-map"
@@ -12,34 +13,55 @@ import (
 )
 
 type adapter struct {
-	model   core.Entitier
-	db      cmap.ConcurrentMap
-	pubsubs cmap.ConcurrentMap
-	states  cmap.ConcurrentMap
-	setting MockSettings
+	model          core.Entitier
+	db             cmap.ConcurrentMap
+	pubsubs        cmap.ConcurrentMap
+	states         cmap.ConcurrentMap
+	setting        MockSettings
+	publishedCount int32
 }
 
 type MockSettings struct {
 	Log *zap.SugaredLogger
 }
 
-var mock = &adapter{
-	db:      cmap.New(),
-	pubsubs: cmap.New(),
-	states:  cmap.New(),
-}
-
 func NewMockAdapter() *adapter {
 	logger, _ := zap.NewDevelopment()
-	mock.setting = MockSettings{
-		Log: logger.Sugar(),
+
+	return &adapter{
+		db:      cmap.New(),
+		pubsubs: cmap.New(),
+		states:  cmap.New(),
+		setting: MockSettings{
+			Log: logger.Sugar(),
+		},
 	}
-	return mock
 }
 
 func NewMockAdapterWithSettings(setting MockSettings) *adapter {
-	mock.setting = setting
-	return mock
+
+	return &adapter{
+		db:      cmap.New(),
+		pubsubs: cmap.New(),
+		states:  cmap.New(),
+		setting: setting,
+	}
+}
+
+func (a *adapter) GetPublishedCount() int32 {
+	return a.publishedCount
+}
+
+func (a *adapter) GetDbCount() int {
+	return a.db.Count()
+}
+
+func (a *adapter) GetPubsubsCount() int {
+	return a.pubsubs.Count()
+}
+
+func (a *adapter) GetStatesCount() int {
+	return a.states.Count()
 }
 
 func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
@@ -94,6 +116,7 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 		return err
 	}
 
+	atomic.AddInt32(&a.publishedCount, 1)
 	a.setting.Log.Debugw("mock publish", "id", coreEvent.GetID(), "topic", coreEvent.GetTopic())
 	return nil
 }

@@ -19,6 +19,10 @@ func NewMediatorBuilder() *mediatorBuilder {
 	o := new(mediatorBuilder)
 	o.requestHandlers = cmap.New()
 	o.notificationHandlers = cmap.New()
+
+	// default
+	o.AddNotificationHandler(new(bufferedEvent), bufferedEventHandler)
+
 	return o
 }
 
@@ -28,16 +32,24 @@ func (b *mediatorBuilder) AddPerformanceMeasure(logger *zap.Logger) *mediatorBui
 }
 
 func (b *mediatorBuilder) AddHandler(request Request, handler RequestHandler) *mediatorBuilder {
-	valueOf := reflect.ValueOf(request)
-	typeName := valueOf.Type().Name()
+	typeOf := reflect.TypeOf(request)
+	typeName := typeOf.Elem().Name()
+
+	if typeName == "" {
+		panic("typeName is required")
+	}
 
 	b.requestHandlers.Set(typeName, handler)
 	return b
 }
 
 func (b *mediatorBuilder) AddNotificationHandler(notification Notification, handler NotificationHandler) *mediatorBuilder {
-	valueOf := reflect.ValueOf(notification)
-	typeName := valueOf.Type().Name()
+	typeOf := reflect.TypeOf(notification)
+	typeName := typeOf.Elem().Name()
+
+	if typeName == "" {
+		panic("typeName is required")
+	}
 
 	b.notificationHandlers.Set(typeName, handler)
 	return b
@@ -49,12 +61,19 @@ func (b *mediatorBuilder) Build() *mediator {
 		panic("mediator already created")
 	}
 
-	mediatorInstance = &mediator{
+	mediatorInstance = b.Create()
+
+	return mediatorInstance
+}
+
+// Build Method which creates Mediator
+func (b *mediatorBuilder) Create() *mediator {
+	instance := &mediator{
 		requestHandlers:      b.requestHandlers,
 		notificationHandlers: b.notificationHandlers,
 		log:                  b.log,
 	}
-	mediatorInstance.initialize()
+	instance.initialize()
 
-	return mediatorInstance
+	return instance
 }

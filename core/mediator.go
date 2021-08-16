@@ -22,8 +22,12 @@ func (m *mediator) initialize() *mediator {
 }
 
 func (m *mediator) Send(ctx context.Context, request Request) Result {
-	valueOf := reflect.ValueOf(request)
-	typeName := valueOf.Type().Name()
+	typeOf := reflect.TypeOf(request)
+	typeName := typeOf.Elem().Name()
+
+	if typeName == "" {
+		panic("typeName is required")
+	}
 
 	if m.log != nil {
 		defer m.timeMeasurement(time.Now(), typeName)
@@ -54,8 +58,12 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 }
 
 func (m *mediator) Publish(ctx context.Context, notification Notification) error {
-	valueOf := reflect.ValueOf(notification)
-	typeName := valueOf.Type().Name()
+	typeOf := reflect.TypeOf(notification)
+	typeName := typeOf.Elem().Name()
+
+	if typeName == "" {
+		panic("typeName is required")
+	}
 
 	if openTracer != nil {
 		span := openTracer.StartSpan(typeName)

@@ -91,8 +91,12 @@ func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
 }
 
 func (a *adapter) SetModel(model core.Entitier) {
-	valueOf := reflect.ValueOf(model)
-	key := valueOf.Type().Name()
+	typeOf := reflect.TypeOf(model)
+	key := typeOf.Elem().Name()
+
+	if key == "" {
+		panic("key is required")
+	}
 
 	a.model = model
 

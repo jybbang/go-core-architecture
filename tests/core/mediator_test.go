@@ -44,24 +44,24 @@ func Test_mediator_Send(t *testing.T) {
 		want core.Result
 	}{
 		{
-			name: "1",
-			args: args{
+			"1",
+			args{
 				ctx: context.Background(),
 				request: &testCommand{
 					Expect: 100,
 				},
 			},
-			want: core.Result{V: 100},
+			core.Result{V: 100},
 		},
 		{
-			name: "2",
-			args: args{
+			"2",
+			args{
 				ctx: context.Background(),
 				request: &testCommand{
 					Expect: 99,
 				},
 			},
-			want: core.Result{E: core.ErrBadRequest},
+			core.Result{E: core.ErrBadRequest},
 		},
 	}
 	for _, tt := range tests {
@@ -74,6 +74,7 @@ func Test_mediator_Send(t *testing.T) {
 }
 
 type testNotification struct {
+	core.DomainEvent
 }
 
 func testNotificationHandler(ctx context.Context, notification interface{}) error {
@@ -98,12 +99,12 @@ func Test_mediator_Publish(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "1",
-			args: args{
+			"1",
+			args{
 				ctx:          context.Background(),
 				notification: &testNotification{},
 			},
-			wantErr: false,
+			false,
 		},
 	}
 	for _, tt := range tests {

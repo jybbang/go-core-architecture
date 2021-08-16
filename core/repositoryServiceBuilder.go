@@ -18,17 +18,19 @@ type repositoryServiceBuilder struct {
 
 // Constructor for RepositoryServiceBuilder
 func NewRepositoryServiceBuilder(model Entitier) *repositoryServiceBuilder {
-	valueOf := reflect.ValueOf(model)
-	key := valueOf.Type().Name()
+	typeOf := reflect.TypeOf(model)
+	key := typeOf.Elem().Name()
+
+	if key == "" {
+		panic("key is required")
+	}
 
 	o := new(repositoryServiceBuilder)
 	o.key = key
 	o.model = model
 
 	st := gobreaker.Settings{
-		Name:        key + "-repository",
-		Timeout:     cbDefaultTimeout,
-		MaxRequests: cbDefaultAllowedRequests,
+		Name: key + "-repository",
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -41,16 +43,23 @@ func (b *repositoryServiceBuilder) Build() *repositoryService {
 		panic("this repository service already created")
 	}
 
-	repository := &repositoryService{
+	repository := b.Create()
+
+	repositories.Set(b.key, repository)
+	return repository
+}
+
+// Build Method which creates EventBus
+func (b *repositoryServiceBuilder) Create() *repositoryService {
+	instance := &repositoryService{
 		model:             b.model,
 		queryRepository:   b.queryRepository,
 		commandRepository: b.commandRepository,
 		cb:                b.cb,
 	}
-	repository.initialize()
+	instance.initialize()
 
-	repositories.Set(b.key, repository)
-	return repository
+	return instance
 }
 
 // Builder method to set the field queryRepository in RepositoryServiceBuilder
@@ -70,8 +79,7 @@ func (b *repositoryServiceBuilder) CommandRepositoryAdapter(adapter commandRepos
 }
 
 // Builder method to set the field messaging in RepositoryServiceBuilder
-func (b *repositoryServiceBuilder) CircuitBreaker(setting gobreaker.Settings) *repositoryServiceBuilder {
-	setting.Name = b.cb.Name()
-	b.cb = gobreaker.NewCircuitBreaker(setting)
+func (b *repositoryServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *repositoryServiceBuilder {
+	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings())
 	return b
 }
