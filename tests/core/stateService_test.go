@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -100,7 +101,7 @@ func TestStateService_GetNotFoundShouldBeError(t *testing.T) {
 	dest := &okCommand{}
 	err := s.Get(ctx, "zxc", dest)
 
-	if err != core.ErrNotFound {
+	if !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }

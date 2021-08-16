@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"testing"
 	"time"
@@ -106,7 +107,7 @@ func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *t
 
 	time.Sleep(1 * time.Second)
 	err := e.PublishDomainEvents(ctx)
-	if err != context.DeadlineExceeded {
+	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded() err = %v, expect %v", err, context.DeadlineExceeded)
 	}
 }
@@ -128,7 +129,7 @@ func TestEventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
 
 	ctx := context.Background()
 	err := e.PublishDomainEvents(ctx)
-	if err != core.ErrForbiddenAcccess {
+	if !errors.Is(err, core.ErrForbiddenAcccess) {
 		t.Errorf("TestEventBus_PublishDomainEventsMediatorErrShouldBeError() err = %v, expect %v", err, core.ErrForbiddenAcccess)
 	}
 }
@@ -191,7 +192,7 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 	e.AddDomainEvent(event)
 
 	err := e.PublishDomainEvents(ctx)
-	if err != gobreaker.ErrOpenState {
+	if !errors.Is(err, gobreaker.ErrOpenState) {
 		t.Errorf("TestEventBus_PublishDomainEventsMediatorErrShouldBeError() err = %v, expect %v", err, gobreaker.ErrOpenState)
 	}
 

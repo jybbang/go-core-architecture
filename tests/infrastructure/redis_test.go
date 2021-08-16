@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func TestRedisStateService_ConnectionTimeout(t *testing.T) {
 	}
 	err := s.Set(ctx, key, &expect)
 
-	if err != context.DeadlineExceeded {
+	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("TestRedisStateService_ConnectionTimeout() err = %v, expect %v", err, context.DeadlineExceeded)
 	}
 }
@@ -137,7 +138,7 @@ func TestRedisStateService_GetNotFoundShouldBeError(t *testing.T) {
 	dest := &okCommand{}
 	err := s.Get(ctx, "zxc", dest)
 
-	if err != core.ErrNotFound {
+	if !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("TestRedisStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }

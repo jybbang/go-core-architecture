@@ -18,13 +18,11 @@ type adapter struct {
 	conn       *mongo.Client
 	database   *mongo.Database
 	collection *mongo.Collection
-	rw         *sync.RWMutex
 	settings   MongoSettings
 }
 
 type clients struct {
 	clients map[string]*mongo.Client
-	mutexes map[string]*sync.RWMutex
 	mutex   sync.Mutex
 }
 
@@ -44,14 +42,13 @@ func getClients() *clients {
 			func() {
 				clientsInstance = &clients{
 					clients: make(map[string]*mongo.Client),
-					mutexes: make(map[string]*sync.RWMutex),
 				}
 			})
 	}
 	return clientsInstance
 }
 
-func getMongoClient(ctx context.Context, settings MongoSettings) (*mongo.Client, *sync.RWMutex) {
+func getMongoClient(ctx context.Context, settings MongoSettings) *mongo.Client {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -70,20 +67,17 @@ func getMongoClient(ctx context.Context, settings MongoSettings) (*mongo.Client,
 		}
 
 		clientsInstance.clients[uri] = client
-		clientsInstance.mutexes[uri] = new(sync.RWMutex)
 	}
 
 	client := clientsInstance.clients[uri]
-	mutex := clientsInstance.mutexes[uri]
-	return client, mutex
+	return client
 }
 
 func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
-	client, mutex := getMongoClient(ctx, settings)
+	client := getMongoClient(ctx, settings)
 	mongo := &adapter{
 		conn:     client,
 		database: client.Database(settings.DatabaseName),
-		rw:       mutex,
 		settings: settings,
 	}
 
@@ -99,9 +93,6 @@ func (a *adapter) SetModel(model core.Entitier) {
 	}
 
 	a.model = model
-
-	a.rw.Lock()
-	defer a.rw.Unlock()
 
 	ctx := context.Background()
 	names, err := a.database.ListCollectionNames(
@@ -130,9 +121,6 @@ func (a *adapter) SetModel(model core.Entitier) {
 }
 
 func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (err error) {
-	a.rw.RLock()
-	defer a.rw.RUnlock()
-
 	err = a.collection.FindOne(ctx, bson.M{"entity._id": id}).Decode(dest)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -154,9 +142,6 @@ func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args int
 }
 
 func (a *adapter) Count(ctx context.Context) (count int64, err error) {
-	a.rw.RLock()
-	defer a.rw.RUnlock()
-
 	count, err = a.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return 0, err
@@ -166,9 +151,6 @@ func (a *adapter) Count(ctx context.Context) (count int64, err error) {
 }
 
 func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
-	a.rw.RLock()
-	defer a.rw.RUnlock()
-
 	count, err = a.collection.CountDocuments(ctx, query)
 	if err != nil {
 		return 0, err
@@ -177,42 +159,31 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 	return count, nil
 }
 
-func (a *adapter) List(ctx context.Context) (result []core.Entitier, err error) {
-	a.rw.RLock()
-	defer a.rw.RUnlock()
-
+func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
 	cursor, err := a.collection.Find(ctx, bson.M{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer cursor.Close(ctx)
-	result = make([]core.Entitier, cursor.RemainingBatchLength())
-	err = cursor.All(ctx, result)
+	err = cursor.All(ctx, dest)
 
-	return result, err
+	return err
 }
 
-func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []core.Entitier, err error) {
-	a.rw.RLock()
-	defer a.rw.RUnlock()
-
+func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
 	cursor, err := a.collection.Find(ctx, query)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer cursor.Close(ctx)
-	result = make([]core.Entitier, cursor.RemainingBatchLength())
-	err = cursor.All(ctx, result)
+	err = cursor.All(ctx, dest)
 
-	return result, err
+	return err
 }
 
 func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
-	a.rw.Lock()
-	defer a.rw.Unlock()
-
 	_, err := a.collection.DeleteOne(ctx, bson.M{"entity._id": entity.GetID()})
 	if err != nil {
 		return err
@@ -222,25 +193,17 @@ func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
 }
 
 func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
-	a.rw.Lock()
-	defer a.rw.Unlock()
-
-	vals := make([]bson.M, len(entities))
-	for i, entity := range entities {
-		vals[i] = bson.M{"entity._id": entity.GetID()}
-	}
-	_, err := a.collection.DeleteMany(ctx, vals)
-	if err != nil {
-		return err
+	for _, entity := range entities {
+		err := a.Remove(ctx, entity)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
-	a.rw.Lock()
-	defer a.rw.Unlock()
-
 	_, err := a.collection.InsertOne(ctx, entity)
 	if err != nil {
 		return err
@@ -250,9 +213,6 @@ func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
 }
 
 func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
-	a.rw.Lock()
-	defer a.rw.Unlock()
-
 	vals := make([]interface{}, len(entities))
 	for i, entity := range entities {
 		vals[i] = entity
@@ -266,15 +226,7 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 }
 
 func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
-	a.rw.Lock()
-	defer a.rw.Unlock()
-
-	_, err := a.collection.UpdateOne(ctx, bson.M{"entity._id": entity.GetID()}, entity)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return a.collection.FindOneAndReplace(ctx, bson.M{"entity._id": entity.GetID()}, entity).Err()
 }
 
 func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) error {

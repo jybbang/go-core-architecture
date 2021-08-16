@@ -2,7 +2,10 @@ package core
 
 import (
 	"context"
+	"errors"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jybbang/go-core-architecture/core"
@@ -37,7 +40,7 @@ func Test_commandRepositoryService_Remove(t *testing.T) {
 	dto2 := new(testModel)
 	err = r.Find(ctx, dto.ID, dto2)
 
-	if err != core.ErrNotFound {
+	if !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("Test_commandRepositoryService_Remove() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }
@@ -70,28 +73,32 @@ func Test_commandRepositoryService_RemoveRange(t *testing.T) {
 	dto2 := new(testModel)
 	err = r.Find(ctx, dtos[0].GetID(), dto2)
 
-	if err != core.ErrNotFound {
+	if !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }
 
 func Test_commandRepositoryService_AddRange(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
 
-	ctx := context.Background()
 	expect := 10000
-	sumExpect := 0
+	cntExpect := 0
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int()
 	var dtos = make([]core.Entitier, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
-		dto.Expect = i
+		dto.Expect = random
+
 		dtos = append(dtos, dto)
-		sumExpect += i
+		cntExpect += 1
 	}
 
 	err := r.AddRange(ctx, dtos)
@@ -100,19 +107,13 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 		t.Errorf("Test_commandRepositoryService_AddRange() err = %v", err)
 	}
 
-	dtos2, err := r.List(ctx)
+	var dest = make([]*testModel, 0)
+	r.ListWithFilter(ctx, "", "", &dest)
 
-	sum := 0
-	for _, v := range dtos2 {
-		sum += v.(*testModel).Expect
-	}
+	cnt := len(dest)
 
-	if sum != sumExpect {
-		t.Errorf("Test_commandRepositoryService_AddRange() sum = %v, expect %v", sum, sumExpect)
-	}
-
-	if err != nil {
-		t.Errorf("Test_commandRepositoryService_AddRange() err = %v", err)
+	if cnt != cntExpect {
+		t.Errorf("Test_commandRepositoryService_AddRange() cnt = %v, expect %v", cnt, cntExpect)
 	}
 }
 
@@ -152,27 +153,31 @@ func Test_commandRepositoryService_Update(t *testing.T) {
 }
 
 func Test_commandRepositoryService_UpdateRange(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
 
-	ctx := context.Background()
 	expect := 10000
 	var dtos = make([]core.Entitier, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
-		dto.Expect = 0
+		dto.Expect = i
+
 		dtos = append(dtos, dto)
 		r.Add(ctx, dto)
 	}
 
-	sumExpect := 0
+	cntExpect := 0
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int()
 	for _, dto := range dtos {
-		dto.(*testModel).Expect = 1
-		sumExpect += 1
+		dto.(*testModel).Expect = random
+		cntExpect += 1
 	}
 
 	err := r.UpdateRange(ctx, dtos)
@@ -181,14 +186,12 @@ func Test_commandRepositoryService_UpdateRange(t *testing.T) {
 		t.Errorf("Test_commandRepositoryService_UpdateRange() err = %v", err)
 	}
 
-	dtos2, err := r.List(ctx)
+	var dest = make([]*testModel, 0)
+	r.ListWithFilter(ctx, "", "", &dest)
 
-	sum := 0
-	for _, v := range dtos2 {
-		sum += v.(*testModel).Expect
-	}
+	cnt := len(dest)
 
-	if sum != sumExpect {
-		t.Errorf("Test_commandRepositoryService_UpdateRange() sum = %v, expect %v", sum, sumExpect)
+	if cnt != cntExpect {
+		t.Errorf("Test_commandRepositoryService_UpdateRange() cnt = %v, expect %v", cnt, cntExpect)
 	}
 }

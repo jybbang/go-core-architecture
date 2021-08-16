@@ -93,28 +93,22 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 	return *resp, nil
 }
 
-func (a *adapter) List(ctx context.Context) (result []core.Entitier, err error) {
+func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
-	a.conn.WithContext(ctx).Find(result)
-	if result == nil {
-		return nil, core.ErrNotFound
-	}
+	a.conn.WithContext(ctx).Find(dest)
 
-	return result, nil
+	return nil
 }
 
-func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []core.Entitier, err error) {
+func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
-	a.conn.WithContext(ctx).Find(result).Where(query, args)
-	if result == nil {
-		return nil, core.ErrNotFound
-	}
+	a.conn.WithContext(ctx).Find(dest).Where(query, args)
 
-	return result, nil
+	return nil
 }
 
 func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {

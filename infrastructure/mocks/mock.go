@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"reflect"
 	"sync/atomic"
 
 	"github.com/google/uuid"
@@ -175,9 +176,9 @@ func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (e
 	}
 
 	if resp, ok := a.db.Get(id.String()); ok {
-		defer a.setting.Log.Debugw("mock find", "id", id, "result", resp)
-
 		model.Copy(dest, resp)
+
+		defer a.setting.Log.Debugw("mock find", "id", id, "dest", dest)
 		return nil
 	}
 
@@ -242,36 +243,68 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 	return int64(resp), nil
 }
 
-func (a *adapter) List(ctx context.Context) (result []core.Entitier, err error) {
+func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
+	}
+
+	resultsVal := reflect.ValueOf(dest)
+	if resultsVal.Kind() != reflect.Ptr {
+		panic("results argument must be a pointer to a slice")
+	}
+
+	sliceVal := resultsVal.Elem()
+	if sliceVal.Kind() == reflect.Interface {
+		sliceVal = sliceVal.Elem()
+	}
+
+	if sliceVal.Kind() != reflect.Slice {
+		panic("results argument must be a pointer to a slice")
 	}
 
 	for _, v := range a.db.Items() {
-		entity := v.(core.Entitier)
-		result = append(result, entity)
+		entityVal := reflect.ValueOf(v)
+		sliceVal = reflect.Append(sliceVal, entityVal)
 	}
 
-	defer a.setting.Log.Debugw("mock list", "result", result)
+	resultsVal.Elem().Set(sliceVal)
 
-	return result, nil
+	defer a.setting.Log.Debugw("mock list", "dest", dest)
+
+	return nil
 }
 
-func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []core.Entitier, err error) {
+func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
+	}
+
+	resultsVal := reflect.ValueOf(dest)
+	if resultsVal.Kind() != reflect.Ptr {
+		panic("results argument must be a pointer to a slice")
+	}
+
+	sliceVal := resultsVal.Elem()
+	if sliceVal.Kind() == reflect.Interface {
+		sliceVal = sliceVal.Elem()
+	}
+
+	if sliceVal.Kind() != reflect.Slice {
+		panic("results argument must be a pointer to a slice")
 	}
 
 	for _, v := range a.db.Items() {
-		entity := v.(core.Entitier)
-		result = append(result, entity)
+		entityVal := reflect.ValueOf(v)
+		sliceVal = reflect.Append(sliceVal, entityVal)
 	}
 
-	defer a.setting.Log.Debugw("mock listwithfilter", "result", result, "query", query, "args", args)
+	resultsVal.Elem().Set(sliceVal)
 
-	return result, nil
+	defer a.setting.Log.Debugw("mock listwithfilter", "dest", dest, "query", query, "args", args)
+
+	return nil
 }
 
 func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {

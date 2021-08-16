@@ -13,6 +13,6 @@ type queryRepositoryAdapter interface {
 	AnyWithFilter(ctx context.Context, query interface{}, args interface{}) (ok bool, err error)
 	Count(ctx context.Context) (count int64, err error)
 	CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error)
-	List(ctx context.Context) (result []Entitier, err error)
-	ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []Entitier, err error)
+	List(ctx context.Context, dest interface{}) (err error)
+	ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error)
 }

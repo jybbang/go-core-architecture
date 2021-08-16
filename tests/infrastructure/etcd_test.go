@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func TestEtcdStateService_ConnectionTimeout(t *testing.T) {
 	}
 	err := s.Set(ctx, key, &expect)
 
-	if err != context.DeadlineExceeded {
+	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("TestEtcdStateService_ConnectionTimeout() err = %v, expect %v", err, context.DeadlineExceeded)
 	}
 }
@@ -142,7 +143,7 @@ func TestEtcdStateService_GetNotFoundShouldBeError(t *testing.T) {
 
 	err := s.Get(ctx, "zxc", dest)
 
-	if err != core.ErrNotFound {
+	if !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("TestEtcdStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }
@@ -166,6 +167,7 @@ func TestEtcdStateService_Set(t *testing.T) {
 		go s.Set(ctx, key, expect)
 	}
 
+	time.Sleep(1 * time.Second)
 	err := s.Set(ctx, key, expect)
 
 	if err != nil {

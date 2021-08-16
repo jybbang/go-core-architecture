@@ -2,8 +2,11 @@ package core
 
 import (
 	"context"
+	"errors"
+	"math/rand"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jybbang/go-core-architecture/core"
@@ -11,6 +14,8 @@ import (
 )
 
 func Test_queryRepositoryService_Find(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
@@ -21,7 +26,6 @@ func Test_queryRepositoryService_Find(t *testing.T) {
 	dto.ID = uuid.New()
 	dto.Expect = 123
 
-	ctx := context.Background()
 	r.Add(ctx, dto)
 
 	dto2 := new(testModel)
@@ -42,6 +46,8 @@ func Test_queryRepositoryService_Find(t *testing.T) {
 }
 
 func Test_queryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
@@ -52,17 +58,17 @@ func Test_queryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	dto.ID = uuid.New()
 	dto.Expect = 123
 
-	ctx := context.Background()
-
 	dto2 := new(testModel)
 	err := r.Find(ctx, dto.ID, dto2)
 
-	if err != core.ErrNotFound {
+	if !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }
 
 func Test_queryRepositoryService_Any(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
@@ -73,7 +79,6 @@ func Test_queryRepositoryService_Any(t *testing.T) {
 	dto.ID = uuid.New()
 	dto.Expect = 123
 
-	ctx := context.Background()
 	r.Add(ctx, dto)
 
 	count := 10000
@@ -93,6 +98,8 @@ func Test_queryRepositoryService_Any(t *testing.T) {
 }
 
 func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
@@ -103,7 +110,6 @@ func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
 	dto.ID = uuid.New()
 	dto.Expect = 123
 
-	ctx := context.Background()
 	r.Add(ctx, dto)
 
 	ok, err := r.AnyWithFilter(ctx, "", "")
@@ -118,13 +124,14 @@ func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
 }
 
 func Test_queryRepositoryService_Count(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
 
-	ctx := context.Background()
 	expect := 10000
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
@@ -151,18 +158,21 @@ func Test_queryRepositoryService_Count(t *testing.T) {
 }
 
 func Test_queryRepositoryService_CountWithFilter(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
 
-	ctx := context.Background()
 	expect := 10000
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int()
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
-		dto.Expect = i
+		dto.Expect = random
 
 		r.Add(ctx, dto)
 	}
@@ -179,68 +189,70 @@ func Test_queryRepositoryService_CountWithFilter(t *testing.T) {
 }
 
 func Test_queryRepositoryService_List(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
 
-	ctx := context.Background()
-	expect := 10000
-	sumExpect := 0
+	expect := 100
+	cntExpect := 0
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int()
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
-		dto.Expect = i
+		dto.Expect = random
 
 		r.Add(ctx, dto)
-		sumExpect += i
+		cntExpect += 1
 	}
 
-	dtos2, err := r.List(ctx)
+	var dest = make([]*testModel, 0)
+	err := r.List(ctx, &dest)
 
 	if err != nil {
 		t.Errorf("Test_queryRepositoryService_List() err = %v", err)
 	}
 
-	sum := 0
-	for _, v := range dtos2 {
-		sum += v.(*testModel).Expect
-	}
+	cnt := len(dest)
 
-	if sum != sumExpect {
-		t.Errorf("Test_queryRepositoryService_List() sum = %v, expect %v", sum, sumExpect)
+	if cnt < cntExpect {
+		t.Errorf("Test_queryRepositoryService_List() cnt = %v, expect %v", cnt, cntExpect)
 	}
 }
 
 func Test_queryRepositoryService_ListWithFilter(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	r := core.NewRepositoryServiceBuilder(new(testModel)).
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
 
-	ctx := context.Background()
 	expect := 10000
-	sumExpect := 0
+	cntExpect := 0
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int()
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
-		dto.Expect = i
+		dto.Expect = random
 
 		r.Add(ctx, dto)
-		sumExpect += i
+		cntExpect += 1
 	}
 
-	dtos2, err := r.ListWithFilter(ctx, "", "")
+	var dest = make([]*testModel, 0)
+	err := r.ListWithFilter(ctx, "", "", &dest)
 
-	sum := 0
-	for _, v := range dtos2 {
-		sum += v.(*testModel).Expect
-	}
+	cnt := len(dest)
 
-	if sum != sumExpect {
-		t.Errorf("Test_queryRepositoryService_ListWithFilter() sum = %v, expect %v", sum, sumExpect)
+	if cnt != cntExpect {
+		t.Errorf("Test_queryRepositoryService_ListWithFilter() cnt = %v, expect %v", cnt, cntExpect)
 	}
 
 	if err != nil {

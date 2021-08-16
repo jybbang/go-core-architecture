@@ -55,24 +55,20 @@ func (r *repositoryService) CountWithFilter(ctx context.Context, query interface
 	return resp.(int64), err
 }
 
-func (r *repositoryService) List(ctx context.Context) (result []Entitier, err error) {
-	resp, err := r.cb.Execute(func() (interface{}, error) {
-		return r.queryRepository.List(ctx)
+func (r *repositoryService) List(ctx context.Context, dest interface{}) (err error) {
+	_, err = r.cb.Execute(func() (interface{}, error) {
+		err = r.queryRepository.List(ctx, dest)
+		return nil, err
 	})
-	if resp != nil {
-		return resp.([]Entitier), err
-	}
-	return nil, err
+	return err
 }
 
-func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []Entitier, err error) {
-	resp, err := r.cb.Execute(func() (interface{}, error) {
-		return r.queryRepository.ListWithFilter(ctx, query, args)
+func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
+	_, err = r.cb.Execute(func() (interface{}, error) {
+		err = r.queryRepository.ListWithFilter(ctx, query, args, dest)
+		return nil, err
 	})
-	if resp != nil {
-		return resp.([]Entitier), err
-	}
-	return nil, err
+	return err
 }
 
 func (r *repositoryService) Remove(ctx context.Context, entity Entitier) error {
