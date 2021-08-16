@@ -11,29 +11,6 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-type eventBusTestNotification struct {
-	core.DomainEvent
-}
-
-type eventBusTestErrorNotification struct {
-	core.DomainEvent
-}
-
-func eventBusTestNotificationHandler(ctx context.Context, notification interface{}) error {
-	return nil
-}
-
-func eventBusTestNotificationErrorHandler(ctx context.Context, notification interface{}) error {
-	return core.ErrForbiddenAcccess
-}
-
-func init() {
-	core.NewMediatorBuilder().
-		AddNotificationHandler(new(eventBusTestNotification), eventBusTestNotificationHandler).
-		AddNotificationHandler(new(eventBusTestErrorNotification), eventBusTestNotificationErrorHandler).
-		Build()
-}
-
 func TestEventBus_AddDomainEvents(t *testing.T) {
 	expect := 1000000
 	mock := mocks.NewMockAdapter()
@@ -82,7 +59,7 @@ func TestEventBus_PublishDomainEvents(t *testing.T) {
 		}).MessaingAdapter(mock).Create()
 
 	for i := 0; i < expect; i++ {
-		event := new(eventBusTestNotification)
+		event := new(okNotification)
 		event.Topic = strconv.Itoa(i)
 		e.AddDomainEvent(event)
 	}
@@ -104,7 +81,7 @@ func TestEventBus_PublishDomainEvents(t *testing.T) {
 	}
 
 	then2 := mock.GetPublishedCount()
-	if then2 != int32(expect) {
+	if then2 != uint32(expect) {
 		t.Errorf("TestEventBus_PublishDomainEvents() count = %v, expect %v", then2, expect)
 	}
 }
@@ -119,7 +96,7 @@ func TestEventBus_PublishDomainEventsContextTimeoutShouldBeError(t *testing.T) {
 		}).MessaingAdapter(mock).Create()
 
 	for i := 0; i < expect; i++ {
-		event := new(eventBusTestNotification)
+		event := new(okNotification)
 		event.Topic = strconv.Itoa(i)
 		e.AddDomainEvent(event)
 	}
@@ -144,7 +121,7 @@ func TestEventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
 		}).MessaingAdapter(mock).Create()
 
 	for i := 0; i < expect; i++ {
-		event := new(eventBusTestErrorNotification)
+		event := new(errNotification)
 		event.Topic = strconv.Itoa(i)
 		e.AddDomainEvent(event)
 	}
@@ -166,7 +143,7 @@ func TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking(t *testi
 		}).MessaingAdapter(mock).Create()
 
 	for i := 0; i < expect; i++ {
-		event := new(eventBusTestNotification)
+		event := new(okNotification)
 		event.Topic = strconv.Itoa(i)
 		event.CanNotPublishToEventsource = true
 		e.AddDomainEvent(event)
@@ -203,13 +180,13 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 
 	ctx := context.Background()
 	for i := 0; i < expect; i++ {
-		event := new(eventBusTestErrorNotification)
+		event := new(errNotification)
 		event.Topic = strconv.Itoa(i)
 		e.AddDomainEvent(event)
 	}
 
 	// expectRequest + 1
-	event := new(eventBusTestNotification)
+	event := new(okNotification)
 	event.Topic = "ok"
 	e.AddDomainEvent(event)
 
@@ -225,7 +202,7 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 
 	time.Sleep(timeout)
 
-	event = new(eventBusTestNotification)
+	event = new(okNotification)
 	event.Topic = "ok2"
 	e.AddDomainEvent(event)
 
@@ -256,7 +233,7 @@ func TestEventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) 
 
 	ctx := context.Background()
 	for i := 0; i < expect; i++ {
-		event := new(eventBusTestNotification)
+		event := new(okNotification)
 		event.Topic = strconv.Itoa(i)
 		event.CanBuffered = true
 		e.AddDomainEvent(event)

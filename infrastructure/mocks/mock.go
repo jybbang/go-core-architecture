@@ -18,7 +18,7 @@ type adapter struct {
 	pubsubs        cmap.ConcurrentMap
 	states         cmap.ConcurrentMap
 	setting        MockSettings
-	publishedCount int32
+	publishedCount uint32
 }
 
 type MockSettings struct {
@@ -48,7 +48,7 @@ func NewMockAdapterWithSettings(setting MockSettings) *adapter {
 	}
 }
 
-func (a *adapter) GetPublishedCount() int32 {
+func (a *adapter) GetPublishedCount() uint32 {
 	return a.publishedCount
 }
 
@@ -116,7 +116,7 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 		return err
 	}
 
-	atomic.AddInt32(&a.publishedCount, 1)
+	atomic.AddUint32(&a.publishedCount, 1)
 	a.setting.Log.Debugw("mock publish", "id", coreEvent.GetID(), "topic", coreEvent.GetTopic())
 	return nil
 }

@@ -85,7 +85,7 @@ func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	domainEvent.AddingEvent()
+	domainEvent.SetAddingEvent()
 
 	if domainEvent.GetTopic() == "" {
 		panic("topic is required")
@@ -105,20 +105,16 @@ func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
 		event := e.dequeueDomainEvent()
 
 		_, err = e.cb.Execute(func() (interface{}, error) {
-			if err := ctx.Err(); err != nil {
+			err = e.mediator.Publish(ctx, event)
+			if err != nil {
 				return nil, err
-			}
-
-			event.PublishingEvent(ctx, now)
-
-			mediatorErr := e.mediator.Publish(ctx, event)
-			if mediatorErr != nil {
-				return nil, mediatorErr
 			}
 
 			if event.GetCanNotPublishToEventsource() {
 				return nil, nil
 			}
+
+			event.SetPublishingEvent(ctx, now)
 
 			if event.GetCanBuffered() {
 				e.ch <- rxgo.Item{
@@ -127,9 +123,9 @@ func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
 				return nil, nil
 			}
 
-			msgErr := e.messaging.Publish(ctx, event)
-			if msgErr != nil {
-				return nil, msgErr
+			err = e.messaging.Publish(ctx, event)
+			if err != nil {
+				return nil, err
 			}
 
 			return nil, nil

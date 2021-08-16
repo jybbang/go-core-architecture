@@ -2,8 +2,8 @@ package core
 
 import (
 	"context"
-	"errors"
 	"reflect"
+	"sync/atomic"
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
@@ -15,13 +15,27 @@ type mediator struct {
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
 	log                  *zap.Logger
+	sentCount            uint32
+	publishedCount       uint32
 }
 
 func (m *mediator) initialize() *mediator {
 	return m
 }
 
+func (m *mediator) GetSentCount() uint32 {
+	return m.sentCount
+}
+
+func (m *mediator) GetPublishedCount() uint32 {
+	return m.publishedCount
+}
+
 func (m *mediator) Send(ctx context.Context, request Request) Result {
+	if err := ctx.Err(); err != nil {
+		return Result{E: err}
+	}
+
 	typeOf := reflect.TypeOf(request)
 	typeName := typeOf.Elem().Name()
 
@@ -29,22 +43,21 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 		panic("typeName is required")
 	}
 
-	if m.log != nil {
-		defer m.timeMeasurement(time.Now(), typeName)
-	}
-
 	if openTracer != nil {
 		span := openTracer.StartSpan(typeName)
 		defer span.Finish()
 	}
 
+	if m.log != nil {
+		defer m.timeMeasurement(time.Now(), typeName)
+	}
+
 	item, ok := m.requestHandlers.Get(typeName)
 	if !ok {
-		return Result{E: errors.New("request handler not found")}
+		panic("request handler not found, you should register handler before use it")
 	}
-	handler := item.(RequestHandler)
 
-	eventbus := GetEventbus()
+	handler := item.(RequestHandler)
 
 	result := m.nextRun(ctx, request, handler)
 
@@ -52,12 +65,17 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 		return result
 	}
 
-	eventbus.PublishDomainEvents(ctx)
+	GetEventbus().PublishDomainEvents(ctx)
+	atomic.AddUint32(&m.sentCount, 1)
 
 	return result
 }
 
 func (m *mediator) Publish(ctx context.Context, notification Notification) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	typeOf := reflect.TypeOf(notification)
 	typeName := typeOf.Elem().Name()
 
@@ -72,12 +90,19 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 
 	item, ok := m.notificationHandlers.Get(typeName)
 	if !ok {
-		return errors.New("request handler not found")
+		panic("request handler not found, you should register handler before use it")
 	}
 
 	handler := item.(NotificationHandler)
 
-	return handler(ctx, notification)
+	err := handler(ctx, notification)
+	if err != nil {
+		return err
+	}
+
+	atomic.AddUint32(&m.publishedCount, 1)
+
+	return nil
 }
 
 func (m *mediator) timeMeasurement(start time.Time, typeName string) {

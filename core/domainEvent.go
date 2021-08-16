@@ -24,8 +24,8 @@ type DomainEventer interface {
 	GetTopic() string
 	GetCanNotPublishToEventsource() bool
 	GetCanBuffered() bool
-	AddingEvent()
-	PublishingEvent(ctx context.Context, publishedAt time.Time)
+	SetAddingEvent()
+	SetPublishingEvent(ctx context.Context, publishedAt time.Time)
 }
 
 func (e *DomainEvent) GetID() uuid.UUID {
@@ -48,12 +48,12 @@ func (e *DomainEvent) GetCanBuffered() bool {
 	return e.CanBuffered
 }
 
-func (e *DomainEvent) AddingEvent() {
+func (e *DomainEvent) SetAddingEvent() {
 	e.EventID = uuid.New()
 	e.CreatedAt = time.Now()
 }
 
-func (e *DomainEvent) PublishingEvent(ctx context.Context, publishedAt time.Time) {
+func (e *DomainEvent) SetPublishingEvent(ctx context.Context, publishedAt time.Time) {
 	e.IsPublished = true
 	e.PublishedAt = publishedAt
 }
