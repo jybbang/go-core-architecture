@@ -19,11 +19,12 @@ func (r *repositoryService) initialize() *repositoryService {
 	return r
 }
 
-func (r *repositoryService) Find(ctx context.Context, dest Entitier, id uuid.UUID) (ok bool, err error) {
-	resp, err := r.cb.Execute(func() (interface{}, error) {
-		return r.queryRepository.Find(ctx, dest, id)
+func (r *repositoryService) Find(ctx context.Context, id uuid.UUID, dest Entitier) (err error) {
+	_, err = r.cb.Execute(func() (interface{}, error) {
+		err = r.queryRepository.Find(ctx, id, dest)
+		return nil, err
 	})
-	return resp.(bool), err
+	return err
 }
 
 func (r *repositoryService) Any(ctx context.Context) (ok bool, err error) {
@@ -54,20 +55,24 @@ func (r *repositoryService) CountWithFilter(ctx context.Context, query interface
 	return resp.(int64), err
 }
 
-func (r *repositoryService) List(ctx context.Context, dest []Entitier) error {
-	_, err := r.cb.Execute(func() (interface{}, error) {
-		err := r.queryRepository.List(ctx, dest)
-		return nil, err
+func (r *repositoryService) List(ctx context.Context) (result []Entitier, err error) {
+	resp, err := r.cb.Execute(func() (interface{}, error) {
+		return r.queryRepository.List(ctx)
 	})
-	return err
+	if resp != nil {
+		return resp.([]Entitier), err
+	}
+	return nil, err
 }
 
-func (r *repositoryService) ListWithFilter(ctx context.Context, dest []Entitier, query interface{}, args interface{}) error {
-	_, err := r.cb.Execute(func() (interface{}, error) {
-		err := r.queryRepository.ListWithFilter(ctx, dest, query, args)
-		return nil, err
+func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []Entitier, err error) {
+	resp, err := r.cb.Execute(func() (interface{}, error) {
+		return r.queryRepository.ListWithFilter(ctx, query, args)
 	})
-	return err
+	if resp != nil {
+		return resp.([]Entitier), err
+	}
+	return nil, err
 }
 
 func (r *repositoryService) Remove(ctx context.Context, entity Entitier) error {

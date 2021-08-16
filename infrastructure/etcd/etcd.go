@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jybbang/go-core-architecture/core"
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
@@ -71,6 +72,10 @@ func getEtcdClient(ctx context.Context, settings EtcdSettings) *etcd.Client {
 }
 
 func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
+	if settings.DialTimeout <= time.Duration(0) {
+		settings.DialTimeout = time.Duration(5 * time.Second)
+	}
+
 	client := getEtcdClient(ctx, settings)
 	etcdService := &adapter{
 		etcd:     client,
@@ -88,13 +93,15 @@ func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 	return value.Count > 0, err
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
 	value, err := a.etcd.Get(ctx, key)
 	if err != nil {
-		return false, err
+		return err
 	}
-
-	return true, json.Unmarshal(value.XXX_unrecognized, dest)
+	if value.Count < 1 {
+		return core.ErrNotFound
+	}
+	return json.Unmarshal(value.Kvs[0].Value, dest)
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {

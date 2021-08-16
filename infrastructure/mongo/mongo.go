@@ -1,4 +1,4 @@
-package mongos
+package mongo
 
 import (
 	"context"
@@ -129,16 +129,18 @@ func (a *adapter) SetModel(model core.Entitier) {
 	a.collection = a.database.Collection(key)
 }
 
-func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {
+func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
-	err = a.collection.FindOne(ctx, bson.M{"_id": id}).Decode(dest)
+	err = a.collection.FindOne(ctx, bson.M{"entity._id": id}).Decode(dest)
 	if err != nil {
-		return false, err
+		if err == mongo.ErrNoDocuments {
+			return core.ErrNotFound
+		}
+		return err
 	}
-
-	return true, nil
+	return nil
 }
 
 func (a *adapter) Any(ctx context.Context) (ok bool, err error) {
@@ -175,37 +177,43 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 	return count, nil
 }
 
-func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
+func (a *adapter) List(ctx context.Context) (result []core.Entitier, err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
 	cursor, err := a.collection.Find(ctx, bson.M{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer cursor.Close(ctx)
-	return cursor.All(ctx, dest)
+	result = make([]core.Entitier, cursor.RemainingBatchLength())
+	err = cursor.All(ctx, result)
+
+	return result, err
 }
 
-func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []core.Entitier, err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
 	cursor, err := a.collection.Find(ctx, query)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer cursor.Close(ctx)
-	return cursor.All(ctx, dest)
+	result = make([]core.Entitier, cursor.RemainingBatchLength())
+	err = cursor.All(ctx, result)
+
+	return result, err
 }
 
 func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
 	a.rw.Lock()
 	defer a.rw.Unlock()
 
-	_, err := a.collection.DeleteOne(ctx, bson.M{"_id": entity.GetID()})
+	_, err := a.collection.DeleteOne(ctx, bson.M{"entity._id": entity.GetID()})
 	if err != nil {
 		return err
 	}
@@ -219,7 +227,7 @@ func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) err
 
 	vals := make([]bson.M, len(entities))
 	for i, entity := range entities {
-		vals[i] = bson.M{"_id": entity.GetID()}
+		vals[i] = bson.M{"entity._id": entity.GetID()}
 	}
 	_, err := a.collection.DeleteMany(ctx, vals)
 	if err != nil {
@@ -261,7 +269,7 @@ func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
 	a.rw.Lock()
 	defer a.rw.Unlock()
 
-	_, err := a.collection.UpdateOne(ctx, bson.M{"_id": entity.GetID()}, entity)
+	_, err := a.collection.UpdateOne(ctx, bson.M{"entity._id": entity.GetID()}, entity)
 	if err != nil {
 		return err
 	}

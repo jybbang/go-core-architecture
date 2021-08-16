@@ -37,6 +37,7 @@ func getClients() *clients {
 			func() {
 				clientsInstance = &clients{
 					clients: make(map[string]*nats.Conn),
+					pubsubs: make(map[string]cmap.ConcurrentMap),
 				}
 			})
 	}

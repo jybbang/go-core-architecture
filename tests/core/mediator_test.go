@@ -27,6 +27,10 @@ func Test_mediator_Send(t *testing.T) {
 		t.Errorf("Test_mediator_Send() sum = %v, expect %v", sum, sumExpect)
 	}
 
+	for i := 0; i < expect; i++ {
+		m.Send(ctx, &errCommand{})
+	}
+
 	then := int(m.GetSentCount())
 	if then != expect {
 		t.Errorf("Test_mediator_Send() count = %v, expect %v", then, expect)

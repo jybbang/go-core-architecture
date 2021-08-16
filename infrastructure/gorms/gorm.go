@@ -52,16 +52,15 @@ func (a *adapter) SetModel(model core.Entitier) {
 	}
 }
 
-func (a *adapter) Find(ctx context.Context, dest core.Entitier, id uuid.UUID) (ok bool, err error) {
+func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
 	a.conn.WithContext(ctx).Take(dest, id)
 	if dest == nil {
-		return false, core.ErrNotFound
+		return core.ErrNotFound
 	}
-
-	return true, nil
+	return nil
 }
 
 func (a *adapter) Any(ctx context.Context) (ok bool, err error) {
@@ -94,28 +93,28 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 	return *resp, nil
 }
 
-func (a *adapter) List(ctx context.Context, dest []core.Entitier) error {
+func (a *adapter) List(ctx context.Context) (result []core.Entitier, err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
-	a.conn.WithContext(ctx).Find(dest)
-	if dest == nil {
-		return core.ErrNotFound
+	a.conn.WithContext(ctx).Find(result)
+	if result == nil {
+		return nil, core.ErrNotFound
 	}
 
-	return nil
+	return result, nil
 }
 
-func (a *adapter) ListWithFilter(ctx context.Context, dest []core.Entitier, query interface{}, args interface{}) error {
+func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}) (result []core.Entitier, err error) {
 	a.rw.RLock()
 	defer a.rw.RUnlock()
 
-	a.conn.WithContext(ctx).Find(dest).Where(query, args)
-	if dest == nil {
-		return core.ErrNotFound
+	a.conn.WithContext(ctx).Find(result).Where(query, args)
+	if result == nil {
+		return nil, core.ErrNotFound
 	}
 
-	return nil
+	return result, nil
 }
 
 func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {

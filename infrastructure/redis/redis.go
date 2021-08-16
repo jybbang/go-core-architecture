@@ -38,6 +38,7 @@ func getClients() *clients {
 			func() {
 				clientsInstance = &clients{
 					clients: make(map[string]*redis.Client),
+					pubsubs: make(map[string]cmap.ConcurrentMap),
 				}
 			})
 	}
@@ -93,15 +94,14 @@ func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 	return value > 0, err
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
 	value, err := a.redis.Get(ctx, key).Bytes()
 	if err == redis.Nil {
-		return false, core.ErrNotFound
+		return core.ErrNotFound
 	} else if err != nil {
-		return false, err
+		return err
 	}
-
-	return true, json.Unmarshal(value, dest)
+	return json.Unmarshal(value, dest)
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {

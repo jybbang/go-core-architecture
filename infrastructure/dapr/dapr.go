@@ -61,13 +61,12 @@ func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 	return value.Value != nil, err
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (ok bool, err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
 	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
 	if err != nil {
-		return false, err
+		return err
 	}
-	json.Unmarshal(value.Value, dest)
-	return value.Value != nil, err
+	return json.Unmarshal(value.Value, dest)
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {

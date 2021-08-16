@@ -2,122 +2,185 @@ package core
 
 import (
 	"context"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jybbang/go-core-architecture/core"
 	"github.com/jybbang/go-core-architecture/infrastructure/mocks"
 )
 
 func TestStateService_Has(t *testing.T) {
+	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mocks.NewMockAdapter()).
-		Build()
+		StateAdapter(mock).
+		Create()
 
-	type args struct {
-		ctx context.Context
-		key string
+	count := 10000
+	key := "qwe"
+	expect := okCommand{
+		Expect: 123,
 	}
-	tests := []struct {
-		name    string
-		args    args
-		wantOk  bool
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+	ctx := context.Background()
+	s.Set(ctx, key, &expect)
+
+	for i := 0; i < count; i++ {
+		go s.Has(ctx, key)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotOk, err := s.Has(tt.args.ctx, tt.args.key)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("StateService.Has() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotOk != tt.wantOk {
-				t.Errorf("StateService.Has() = %v, want %v", gotOk, tt.wantOk)
-			}
-		})
+
+	time.Sleep(1 * time.Second)
+
+	ok, err := s.Has(ctx, key)
+
+	if ok != true {
+		t.Errorf("TestStateService_Has() ok = %v, expect %v", ok, true)
+	}
+
+	if err != nil {
+		t.Errorf("TestStateService_Has() err = %v", err)
+	}
+}
+
+func TestStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
+	mock := mocks.NewMockAdapter()
+	s := core.NewStateServiceBuilder().
+		StateAdapter(mock).
+		Create()
+
+	ctx := context.Background()
+	ok, err := s.Has(ctx, "zxc")
+
+	if ok != false {
+		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", ok, false)
+	}
+
+	if err != nil {
+		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", err)
 	}
 }
 
 func TestStateService_Get(t *testing.T) {
+	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mocks.NewMockAdapter()).
-		Build()
+		StateAdapter(mock).
+		Create()
 
-	type args struct {
-		ctx  context.Context
-		key  string
-		dest interface{}
+	count := 10000
+	key := "qwe"
+	expect := &okCommand{
+		Expect: 123,
 	}
-	tests := []struct {
-		name    string
-		args    args
-		wantOk  bool
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+	ctx := context.Background()
+	s.Set(ctx, key, expect)
+
+	dest := &okCommand{}
+	for i := 0; i < count; i++ {
+		go s.Get(ctx, key, dest)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotOk, err := s.Get(tt.args.ctx, tt.args.key, tt.args.dest)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("StateService.Get() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotOk != tt.wantOk {
-				t.Errorf("StateService.Get() = %v, want %v", gotOk, tt.wantOk)
-			}
-		})
+
+	err := s.Get(ctx, key, dest)
+
+	if !reflect.DeepEqual(dest, expect) {
+		t.Errorf("TestStateService_Get() dest = %v, expect %v", dest, expect)
+	}
+
+	if err != nil {
+		t.Errorf("TestStateService_Get() err = %v", err)
+	}
+}
+
+func TestStateService_GetNotFoundShouldBeError(t *testing.T) {
+	mock := mocks.NewMockAdapter()
+	s := core.NewStateServiceBuilder().
+		StateAdapter(mock).
+		Create()
+
+	ctx := context.Background()
+
+	dest := &okCommand{}
+	err := s.Get(ctx, "zxc", dest)
+
+	if err != core.ErrNotFound {
+		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }
 
 func TestStateService_Set(t *testing.T) {
+	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mocks.NewMockAdapter()).
-		Build()
+		StateAdapter(mock).
+		Create()
 
-	type args struct {
-		ctx   context.Context
-		key   string
-		value interface{}
+	ctx := context.Background()
+
+	count := 10000
+	key := "qwe"
+	expect := &okCommand{
+		Expect: 123,
 	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+	for i := 0; i < count; i++ {
+		go s.Set(ctx, key, expect)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := s.Set(tt.args.ctx, tt.args.key, tt.args.value); (err != nil) != tt.wantErr {
-				t.Errorf("StateService.Set() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+
+	err := s.Set(ctx, key, expect)
+
+	if err != nil {
+		t.Errorf("TestStateService_Set() err = %v", err)
+	}
+
+	dest := &okCommand{}
+	s.Get(ctx, key, dest)
+
+	if !reflect.DeepEqual(dest, expect) {
+		t.Errorf("TestStateService_Set() dest = %v, expect %v", dest, expect)
 	}
 }
 
 func TestStateService_Delete(t *testing.T) {
+	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mocks.NewMockAdapter()).
-		Build()
+		StateAdapter(mock).
+		Create()
 
-	type args struct {
-		ctx context.Context
-		key string
+	count := 10000
+	key := "qwe"
+	expect := okCommand{
+		Expect: 123,
 	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+	ctx := context.Background()
+
+	for i := 0; i < count; i++ {
+		go s.Set(ctx, key, &expect)
+		go s.Delete(ctx, key)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := s.Delete(tt.args.ctx, tt.args.key); (err != nil) != tt.wantErr {
-				t.Errorf("StateService.Set() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+
+	time.Sleep(1 * time.Second)
+
+	s.Delete(ctx, key)
+
+	ok, err := s.Has(ctx, key)
+
+	if ok != false {
+		t.Errorf("TestStateService_Delete() ok = %v, expect %v", ok, false)
+	}
+
+	if err != nil {
+		t.Errorf("TestStateService_Delete() err = %v", err)
+	}
+}
+
+func TestStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
+	mock := mocks.NewMockAdapter()
+	s := core.NewStateServiceBuilder().
+		StateAdapter(mock).
+		Create()
+
+	key := "qwe"
+	ctx := context.Background()
+
+	err := s.Delete(ctx, key)
+
+	if err != nil {
+		t.Errorf("TestStateService_DeleteNotFoundShouldBeNoError() err = %v", err)
 	}
 }

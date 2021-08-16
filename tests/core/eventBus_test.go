@@ -86,7 +86,7 @@ func TestEventBus_PublishDomainEvents(t *testing.T) {
 	}
 }
 
-func TestEventBus_PublishDomainEventsContextTimeoutShouldBeError(t *testing.T) {
+func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *testing.T) {
 	expect := 1000
 	mock := mocks.NewMockAdapter()
 	e := core.NewEventbusBuilder().
@@ -107,7 +107,7 @@ func TestEventBus_PublishDomainEventsContextTimeoutShouldBeError(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	err := e.PublishDomainEvents(ctx)
 	if err != context.DeadlineExceeded {
-		t.Errorf("TestEventBus_PublishDomainEventsContextTimeoutShouldBeError() err = %v, expect %v", err, context.DeadlineExceeded)
+		t.Errorf("TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded() err = %v, expect %v", err, context.DeadlineExceeded)
 	}
 }
 
@@ -223,7 +223,7 @@ func TestEventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) 
 
 	mock := mocks.NewMockAdapter()
 	e := core.NewEventbusBuilder().
-		Setting(core.EventbusSettings{
+		Settings(core.EventbusSettings{
 			BufferedEventBufferTime: timeout,
 		}).
 		CircuitBreaker(core.CircuitBreakerSettings{

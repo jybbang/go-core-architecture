@@ -60,18 +60,18 @@ func (b *eventbusBuilder) Create() *eventbus {
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventbusBuilder) Setting(setting EventbusSettings) *eventbusBuilder {
-	if setting.BufferedEventBufferCount < 1 {
-		setting.BufferedEventBufferCount = 1000
+func (b *eventbusBuilder) Settings(settings EventbusSettings) *eventbusBuilder {
+	if settings.BufferedEventBufferCount < 1 {
+		settings.BufferedEventBufferCount = 1000
 	}
-	if setting.BufferedEventBufferTime <= time.Duration(0) {
-		setting.BufferedEventBufferTime = time.Duration(1 * time.Second)
+	if settings.BufferedEventBufferTime <= time.Duration(0) {
+		settings.BufferedEventBufferTime = time.Duration(1 * time.Second)
 	}
-	if setting.BufferedEventTimeout <= time.Duration(0) {
-		setting.BufferedEventTimeout = time.Duration(2 * time.Second)
+	if settings.BufferedEventTimeout <= time.Duration(0) {
+		settings.BufferedEventTimeout = time.Duration(2 * time.Second)
 	}
 
-	b.setting = setting
+	b.setting = settings
 	return b
 }
 
