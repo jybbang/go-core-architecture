@@ -252,17 +252,9 @@ func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
 	}
 
 	resultsVal := reflect.ValueOf(dest)
-	if resultsVal.Kind() != reflect.Ptr {
-		panic("results argument must be a pointer to a slice")
-	}
-
 	sliceVal := resultsVal.Elem()
 	if sliceVal.Kind() == reflect.Interface {
 		sliceVal = sliceVal.Elem()
-	}
-
-	if sliceVal.Kind() != reflect.Slice {
-		panic("results argument must be a pointer to a slice")
 	}
 
 	for _, v := range a.db.Items() {
@@ -284,17 +276,9 @@ func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args in
 	}
 
 	resultsVal := reflect.ValueOf(dest)
-	if resultsVal.Kind() != reflect.Ptr {
-		panic("results argument must be a pointer to a slice")
-	}
-
 	sliceVal := resultsVal.Elem()
 	if sliceVal.Kind() == reflect.Interface {
 		sliceVal = sliceVal.Elem()
-	}
-
-	if sliceVal.Kind() != reflect.Slice {
-		panic("results argument must be a pointer to a slice")
 	}
 
 	for _, v := range a.db.Items() {
