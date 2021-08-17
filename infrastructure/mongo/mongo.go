@@ -178,8 +178,8 @@ func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args in
 	return err
 }
 
-func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
-	_, err := a.collection.DeleteOne(ctx, bson.M{"entity._id": entity.GetID()})
+func (a *adapter) Remove(ctx context.Context, id uuid.UUID) error {
+	_, err := a.collection.DeleteOne(ctx, bson.M{"entity._id": id})
 	if err != nil {
 		return err
 	}
@@ -187,9 +187,9 @@ func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
 	return nil
 }
 
-func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
-	for _, entity := range entities {
-		err := a.Remove(ctx, entity)
+func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
+	for _, id := range ids {
+		err := a.Remove(ctx, id)
 		if err != nil {
 			return err
 		}

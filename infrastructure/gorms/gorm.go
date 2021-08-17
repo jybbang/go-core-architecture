@@ -103,15 +103,15 @@ func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args in
 	return result.Error
 }
 
-func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
-	result := a.conn.WithContext(ctx).Table(a.tableName).Delete(entity, entity.GetID())
+func (a *adapter) Remove(ctx context.Context, id uuid.UUID) error {
+	result := a.conn.WithContext(ctx).Table(a.tableName).Delete(a.model, id)
 	return result.Error
 }
 
-func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
+func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
 	err := a.conn.WithContext(ctx).Table(a.tableName).Transaction(func(tx *gorm.DB) error {
-		for _, entity := range entities {
-			err := a.conn.WithContext(ctx).Table(a.tableName).Delete(entity, entity.GetID()).Error
+		for _, id := range ids {
+			err := a.conn.WithContext(ctx).Table(a.tableName).Delete(a.model, id).Error
 			if err != nil {
 				return err
 			}

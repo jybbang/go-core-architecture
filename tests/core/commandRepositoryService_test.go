@@ -28,12 +28,12 @@ func Test_commandRepositoryService_Remove(t *testing.T) {
 
 	count := 10000
 	for i := 0; i < count; i++ {
-		go r.Remove(ctx, dto)
+		go r.Remove(ctx, dto.ID)
 	}
 
 	time.Sleep(1 * time.Second)
 
-	result := r.Remove(ctx, dto)
+	result := r.Remove(ctx, dto.ID)
 
 	if result.E != nil {
 		t.Errorf("Test_commandRepositoryService_Remove() err = %v", result.E)
@@ -55,25 +55,25 @@ func Test_commandRepositoryService_RemoveRange(t *testing.T) {
 		Create()
 
 	ctx := context.Background()
-	expect := 10
-	var dtos = make([]core.Entitier, 0)
+	expect := 10000
+	var ids = make([]uuid.UUID, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
 		dto.Expect = i
-		dtos = append(dtos, dto)
+		ids = append(ids, dto.ID)
 
 		r.Add(ctx, dto)
 	}
 
-	result := r.RemoveRange(ctx, dtos)
+	result := r.RemoveRange(ctx, ids)
 
 	if result.E != nil {
 		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	result = r.Find(ctx, dtos[0].GetID(), dto2)
+	result = r.Find(ctx, ids[0], dto2)
 
 	if !errors.Is(result.E, core.ErrNotFound) {
 		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v, expect %v", result.E, core.ErrNotFound)
@@ -126,7 +126,7 @@ func Test_commandRepositoryService_Update(t *testing.T) {
 	ctx := context.Background()
 	dto := new(testModel)
 	dto.ID = uuid.New()
-	dto.Expect = 100
+	dto.Expect = 10000
 
 	r.Add(ctx, dto)
 

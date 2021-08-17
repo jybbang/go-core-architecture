@@ -348,12 +348,12 @@ func Test_mongoCommandRepositoryService_Remove(t *testing.T) {
 
 	count := 1000
 	for i := 0; i < count; i++ {
-		go r.Remove(ctx, dto)
+		go r.Remove(ctx, dto.ID)
 	}
 
 	time.Sleep(1 * time.Second)
 
-	result := r.Remove(ctx, dto)
+	result := r.Remove(ctx, dto.ID)
 
 	if result.E != nil {
 		t.Errorf("Test_mongoCommandRepositoryService_Remove() err = %v", result.E)
@@ -381,24 +381,24 @@ func Test_mongoCommandRepositoryService_RemoveRange(t *testing.T) {
 		Create()
 
 	expect := 1000
-	var dtos = make([]core.Entitier, 0)
+	var ids = make([]uuid.UUID, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
 		dto.Expect = i
-		dtos = append(dtos, dto)
+		ids = append(ids, dto.ID)
 
 		r.Add(ctx, dto)
 	}
 
-	result := r.RemoveRange(ctx, dtos)
+	result := r.RemoveRange(ctx, ids)
 
 	if result.E != nil {
 		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	result = r.Find(ctx, dtos[0].GetID(), dto2)
+	result = r.Find(ctx, ids[0], dto2)
 
 	if !errors.Is(result.E, core.ErrNotFound) {
 		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v, expect %v", result.E, core.ErrNotFound)

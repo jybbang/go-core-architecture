@@ -131,26 +131,26 @@ func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{
 	return Result{V: dest, E: err}
 }
 
-func (r *repositoryService) Remove(ctx context.Context, entity Entitier) Result {
-	if entity == nil {
-		return Result{E: fmt.Errorf("%w entity is required", ErrInternalServerError)}
+func (r *repositoryService) Remove(ctx context.Context, id uuid.UUID) Result {
+	if id == uuid.Nil {
+		return Result{E: fmt.Errorf("%w id is required", ErrInternalServerError)}
 	}
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
-		err := r.commandRepository.Remove(ctx, entity)
+		err := r.commandRepository.Remove(ctx, id)
 		return nil, err
 	})
 
 	return Result{V: nil, E: err}
 }
 
-func (r *repositoryService) RemoveRange(ctx context.Context, entities []Entitier) Result {
-	if len(entities) == 0 {
-		return Result{E: fmt.Errorf("%w entities is required", ErrInternalServerError)}
+func (r *repositoryService) RemoveRange(ctx context.Context, ids []uuid.UUID) Result {
+	if len(ids) == 0 {
+		return Result{E: fmt.Errorf("%w ids is required", ErrInternalServerError)}
 	}
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
-		err := r.commandRepository.RemoveRange(ctx, entities)
+		err := r.commandRepository.RemoveRange(ctx, ids)
 		return nil, err
 	})
 

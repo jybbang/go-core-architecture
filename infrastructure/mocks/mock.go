@@ -293,19 +293,19 @@ func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args in
 	return nil
 }
 
-func (a *adapter) Remove(ctx context.Context, entity core.Entitier) error {
+func (a *adapter) Remove(ctx context.Context, id uuid.UUID) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	defer a.setting.Log.Debugw("mock remove", "entity", entity)
+	defer a.setting.Log.Debugw("mock remove", "id", id)
 
-	a.db.Remove(entity.GetID().String())
+	a.db.Remove(id.String())
 	return nil
 }
 
-func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) error {
+func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return err
@@ -313,8 +313,8 @@ func (a *adapter) RemoveRange(ctx context.Context, entities []core.Entitier) err
 
 	defer a.setting.Log.Debugw("mock removerange")
 
-	for _, v := range entities {
-		a.Remove(ctx, v)
+	for _, id := range ids {
+		a.Remove(ctx, id)
 	}
 	return nil
 }
