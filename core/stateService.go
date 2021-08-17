@@ -16,55 +16,60 @@ func (s *stateService) initialize() *stateService {
 	return s
 }
 
-func (s *stateService) Has(ctx context.Context, key string) (ok bool, err error) {
+func (s *stateService) Has(ctx context.Context, key string) Result {
 	if key == "" {
-		return false, fmt.Errorf("%w key is required", ErrInternalServerError)
+		return Result{V: false, E: fmt.Errorf("%w key is required", ErrInternalServerError)}
 	}
 
 	resp, err := s.cb.Execute(func() (interface{}, error) {
 		return s.state.Has(ctx, key)
 	})
-	return resp.(bool), err
+	if err != nil {
+		return Result{V: false, E: err}
+	}
+	return Result{V: resp.(bool), E: err}
 }
 
-func (s *stateService) Get(ctx context.Context, key string, dest interface{}) (err error) {
+func (s *stateService) Get(ctx context.Context, key string, dest interface{}) Result {
 	if key == "" {
-		return fmt.Errorf("%w key is required", ErrInternalServerError)
+		return Result{V: nil, E: fmt.Errorf("%w key is required", ErrInternalServerError)}
 	}
 	if dest == nil {
-		return fmt.Errorf("%w dest is required", ErrInternalServerError)
+		return Result{V: nil, E: fmt.Errorf("%w dest is required", ErrInternalServerError)}
 	}
 
-	_, err = s.cb.Execute(func() (interface{}, error) {
+	_, err := s.cb.Execute(func() (interface{}, error) {
 		return nil, s.state.Get(ctx, key, dest)
 	})
 
-	return err
+	return Result{V: dest, E: err}
 }
 
-func (s *stateService) Set(ctx context.Context, key string, value interface{}) error {
+func (s *stateService) Set(ctx context.Context, key string, value interface{}) Result {
 	if key == "" {
-		return fmt.Errorf("%w key is required", ErrInternalServerError)
+		return Result{V: nil, E: fmt.Errorf("%w key is required", ErrInternalServerError)}
 	}
 	if value == nil {
-		return fmt.Errorf("%w value is required", ErrInternalServerError)
+		return Result{V: nil, E: fmt.Errorf("%w value is required", ErrInternalServerError)}
 	}
 
 	_, err := s.cb.Execute(func() (interface{}, error) {
 		err := s.state.Set(ctx, key, value)
 		return nil, err
 	})
-	return err
+
+	return Result{V: nil, E: err}
 }
 
-func (s *stateService) Delete(ctx context.Context, key string) error {
+func (s *stateService) Delete(ctx context.Context, key string) Result {
 	if key == "" {
-		return fmt.Errorf("%w key is required", ErrInternalServerError)
+		return Result{V: nil, E: fmt.Errorf("%w key is required", ErrInternalServerError)}
 	}
 
 	_, err := s.cb.Execute(func() (interface{}, error) {
 		err := s.state.Delete(ctx, key)
 		return nil, err
 	})
-	return err
+
+	return Result{V: nil, E: err}
 }

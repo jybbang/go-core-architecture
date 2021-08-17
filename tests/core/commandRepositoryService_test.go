@@ -31,17 +31,19 @@ func Test_commandRepositoryService_Remove(t *testing.T) {
 		go r.Remove(ctx, dto)
 	}
 
-	err := r.Remove(ctx, dto)
+	time.Sleep(1 * time.Second)
 
-	if err != nil {
-		t.Errorf("Test_commandRepositoryService_Remove() err = %v", err)
+	result := r.Remove(ctx, dto)
+
+	if result.E != nil {
+		t.Errorf("Test_commandRepositoryService_Remove() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	err = r.Find(ctx, dto.ID, dto2)
+	result = r.Find(ctx, dto.ID, dto2)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("Test_commandRepositoryService_Remove() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("Test_commandRepositoryService_Remove() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -64,17 +66,17 @@ func Test_commandRepositoryService_RemoveRange(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	err := r.RemoveRange(ctx, dtos)
+	result := r.RemoveRange(ctx, dtos)
 
-	if err != nil {
-		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	err = r.Find(ctx, dtos[0].GetID(), dto2)
+	result = r.Find(ctx, dtos[0].GetID(), dto2)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -88,7 +90,7 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 		Create()
 
 	expect := 10000
-	cntExpect := 0
+	var cntExpect int64 = 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
 	var dtos = make([]core.Entitier, 0)
@@ -101,19 +103,16 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 		cntExpect += 1
 	}
 
-	err := r.AddRange(ctx, dtos)
+	result := r.AddRange(ctx, dtos)
 
-	if err != nil {
-		t.Errorf("Test_commandRepositoryService_AddRange() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_commandRepositoryService_AddRange() err = %v", result.E)
 	}
 
-	var dest = make([]*testModel, 0)
-	r.ListWithFilter(ctx, "", "", &dest)
+	result = r.CountWithFilter(ctx, "", "")
 
-	cnt := len(dest)
-
-	if cnt != cntExpect {
-		t.Errorf("Test_commandRepositoryService_AddRange() cnt = %v, expect %v", cnt, cntExpect)
+	if result.V.(int64) != cntExpect {
+		t.Errorf("Test_commandRepositoryService_AddRange() cnt = %v, expect %v", result.V, cntExpect)
 	}
 }
 
@@ -137,18 +136,19 @@ func Test_commandRepositoryService_Update(t *testing.T) {
 		go r.Update(ctx, dto)
 	}
 
-	err := r.Update(ctx, dto)
+	time.Sleep(1 * time.Second)
 
-	if err != nil {
-		t.Errorf("Test_commandRepositoryService_Update() err = %v", err)
+	result := r.Update(ctx, dto)
+
+	if result.E != nil {
+		t.Errorf("Test_commandRepositoryService_Update() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	r.Find(ctx, dto.GetID(), dto2)
+	result = r.Find(ctx, dto.GetID(), dto2)
 
-	result := dto2.Expect
-	if result != 1 {
-		t.Errorf("Test_commandRepositoryService_Update() result = %v, expect %v", result, 1)
+	if dto2.Expect != 1 {
+		t.Errorf("Test_commandRepositoryService_Update() result = %v, expect %v", dto2.Expect, 1)
 	}
 }
 
@@ -172,7 +172,7 @@ func Test_commandRepositoryService_UpdateRange(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	cntExpect := 0
+	var cntExpect int64 = 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
 	for _, dto := range dtos {
@@ -180,18 +180,15 @@ func Test_commandRepositoryService_UpdateRange(t *testing.T) {
 		cntExpect += 1
 	}
 
-	err := r.UpdateRange(ctx, dtos)
+	result := r.UpdateRange(ctx, dtos)
 
-	if err != nil {
-		t.Errorf("Test_commandRepositoryService_UpdateRange() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_commandRepositoryService_UpdateRange() err = %v", result.E)
 	}
 
-	var dest = make([]*testModel, 0)
-	r.ListWithFilter(ctx, "", "", &dest)
+	result = r.CountWithFilter(ctx, "", "")
 
-	cnt := len(dest)
-
-	if cnt != cntExpect {
-		t.Errorf("Test_commandRepositoryService_UpdateRange() cnt = %v, expect %v", cnt, cntExpect)
+	if result.V.(int64) != cntExpect {
+		t.Errorf("Test_commandRepositoryService_UpdateRange() cnt = %v, expect %v", result.V, cntExpect)
 	}
 }

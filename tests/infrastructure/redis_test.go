@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jybbang/go-core-architecture/core"
-	"github.com/jybbang/go-core-architecture/infrastructure/mocks"
 	"github.com/jybbang/go-core-architecture/infrastructure/redis"
 )
 
@@ -27,13 +26,14 @@ func TestRedisStateService_ConnectionTimeout(t *testing.T) {
 	time.Sleep(timeout)
 
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
-	err := s.Set(ctx, key, &expect)
 
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("TestRedisStateService_ConnectionTimeout() err = %v, expect %v", err, context.DeadlineExceeded)
+	result := s.Set(ctx, key, &expect)
+
+	if !errors.Is(result.E, context.DeadlineExceeded) {
+		t.Errorf("TestRedisStateService_ConnectionTimeout() err = %v, expect %v", result.E, context.DeadlineExceeded)
 	}
 }
 
@@ -49,9 +49,10 @@ func TestRedisStateService_Has(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
+
 	s.Set(ctx, key, &expect)
 
 	for i := 0; i < count; i++ {
@@ -60,14 +61,14 @@ func TestRedisStateService_Has(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	ok, err := s.Has(ctx, key)
+	result := s.Has(ctx, key)
 
-	if ok != true {
-		t.Errorf("TestRedisStateService_Has() ok = %v, expect %v", ok, true)
+	if result.V != true {
+		t.Errorf("TestRedisStateService_Has() ok = %v, expect %v", result.V, true)
 	}
 
-	if err != nil {
-		t.Errorf("TestRedisStateService_Has() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestRedisStateService_Has() err = %v", result.E)
 	}
 }
 
@@ -81,14 +82,14 @@ func TestRedisStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 		StateAdapter(redis).
 		Create()
 
-	ok, err := s.Has(ctx, "zxc")
+	result := s.Has(ctx, "zxc")
 
-	if ok != false {
-		t.Errorf("TestRedisStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", ok, false)
+	if result.V != false {
+		t.Errorf("TestRedisStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
 	}
 
-	if err != nil {
-		t.Errorf("TestRedisStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestRedisStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
 	}
 }
 
@@ -104,24 +105,27 @@ func TestRedisStateService_Get(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := &okCommand{
+	expect := &testModel{
 		Expect: 123,
 	}
+
 	s.Set(ctx, key, expect)
 
-	dest := &okCommand{}
+	dest := &testModel{}
 	for i := 0; i < count; i++ {
 		go s.Get(ctx, key, dest)
 	}
 
-	err := s.Get(ctx, key, dest)
+	time.Sleep(1 * time.Second)
+
+	result := s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
 		t.Errorf("TestRedisStateService_Get() dest = %v, expect %v", dest, expect)
 	}
 
-	if err != nil {
-		t.Errorf("TestRedisStateService_Get() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestRedisStateService_Get() err = %v", result.E)
 	}
 }
 
@@ -135,11 +139,11 @@ func TestRedisStateService_GetNotFoundShouldBeError(t *testing.T) {
 		StateAdapter(redis).
 		Create()
 
-	dest := &okCommand{}
-	err := s.Get(ctx, "zxc", dest)
+	dest := &testModel{}
+	result := s.Get(ctx, "zxc", dest)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("TestRedisStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("TestRedisStateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -155,20 +159,22 @@ func TestRedisStateService_Set(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := &okCommand{
+	expect := &testModel{
 		Expect: 123,
 	}
 	for i := 0; i < count; i++ {
 		go s.Set(ctx, key, expect)
 	}
 
-	err := s.Set(ctx, key, expect)
+	time.Sleep(1 * time.Second)
 
-	if err != nil {
-		t.Errorf("TestRedisStateService_Set() err = %v", err)
+	result := s.Set(ctx, key, expect)
+
+	if result.E != nil {
+		t.Errorf("TestRedisStateService_Set() err = %v", result.E)
 	}
 
-	dest := &okCommand{}
+	dest := &testModel{}
 	s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
@@ -177,20 +183,23 @@ func TestRedisStateService_Set(t *testing.T) {
 }
 
 func TestRedisStateService_Delete(t *testing.T) {
-	mock := mocks.NewMockAdapter()
+	ctx := context.Background()
+
+	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+		Host: "localhost:6379",
+	})
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mock).
+		StateAdapter(redis).
 		Create()
 
 	count := 10000
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
-	ctx := context.Background()
 
+	s.Set(ctx, key, &expect)
 	for i := 0; i < count; i++ {
-		go s.Set(ctx, key, &expect)
 		go s.Delete(ctx, key)
 	}
 
@@ -198,29 +207,32 @@ func TestRedisStateService_Delete(t *testing.T) {
 
 	s.Delete(ctx, key)
 
-	ok, err := s.Has(ctx, key)
+	result := s.Has(ctx, key)
 
-	if ok != false {
-		t.Errorf("TestRedisStateService_Delete() ok = %v, expect %v", ok, false)
+	if result.E != nil {
+		t.Errorf("TestRedisStateService_Delete() err = %v", result.E)
 	}
 
-	if err != nil {
-		t.Errorf("TestRedisStateService_Delete() err = %v", err)
+	if result.V != false {
+		t.Errorf("TestRedisStateService_Delete() ok = %v, expect %v", result.V, false)
 	}
 }
 
 func TestRedisStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
-	mock := mocks.NewMockAdapter()
+	ctx := context.Background()
+
+	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+		Host: "localhost:6379",
+	})
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mock).
+		StateAdapter(redis).
 		Create()
 
 	key := "qwe"
-	ctx := context.Background()
 
-	err := s.Delete(ctx, key)
+	result := s.Delete(ctx, key)
 
-	if err != nil {
-		t.Errorf("TestRedisStateService_DeleteNotFoundShouldBeNoError() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestRedisStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
 	}
 }

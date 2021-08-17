@@ -35,10 +35,10 @@ func Test_mongoQueryRepositoryService_ConnectionTimeout(t *testing.T) {
 	dto.ID = uuid.New()
 	dto.Expect = 123
 
-	err := r.Add(ctx, dto)
+	result := r.Add(ctx, dto)
 
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("Test_mongoQueryRepositoryService_ConnectionTimeout() err = %v, expect %v", err, context.DeadlineExceeded)
+	if !errors.Is(result.E, context.DeadlineExceeded) {
+		t.Errorf("Test_mongoQueryRepositoryService_ConnectionTimeout() err = %v, expect %v", result.E, context.DeadlineExceeded)
 	}
 }
 
@@ -62,19 +62,21 @@ func Test_mongoQueryRepositoryService_Find(t *testing.T) {
 	r.Add(ctx, dto)
 
 	dto2 := new(testModel)
-	count := 100
+	count := 1000
 	for i := 0; i < count; i++ {
 		go r.Find(ctx, dto.ID, dto2)
 	}
 
-	err := r.Find(ctx, dto.ID, dto2)
+	time.Sleep(1 * time.Second)
 
-	if !reflect.DeepEqual(dto2.Expect, dto.Expect) {
+	result := r.Find(ctx, dto.ID, dto2)
+
+	if !reflect.DeepEqual(dto2.ID, dto.ID) || !reflect.DeepEqual(dto2.Expect, dto.Expect) {
 		t.Errorf("Test_mongoQueryRepositoryService_Find() result = %v, expect %v", dto2, dto)
 	}
 
-	if err != nil {
-		t.Errorf("Test_mongoQueryRepositoryService_Find() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoQueryRepositoryService_Find() err = %v", result.E)
 	}
 }
 
@@ -96,10 +98,10 @@ func Test_mongoQueryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	dto.Expect = 123
 
 	dto2 := new(testModel)
-	err := r.Find(ctx, dto.ID, dto2)
+	result := r.Find(ctx, dto.ID, dto2)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("Test_mongoQueryRepositoryService_FindnotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -122,19 +124,21 @@ func Test_mongoQueryRepositoryService_Any(t *testing.T) {
 
 	r.Add(ctx, dto)
 
-	count := 100
+	count := 1000
 	for i := 0; i < count; i++ {
 		go r.Any(ctx)
 	}
 
-	ok, err := r.Any(ctx)
+	time.Sleep(1 * time.Second)
 
-	if ok != true {
-		t.Errorf("Test_mongoQueryRepositoryService_Any() ok = %v, expect %v", ok, true)
+	result := r.Any(ctx)
+
+	if result.V != true {
+		t.Errorf("Test_mongoQueryRepositoryService_Any() ok = %v, expect %v", result.V, true)
 	}
 
-	if err != nil {
-		t.Errorf("Test_mongoQueryRepositoryService_Any() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoQueryRepositoryService_Any() err = %v", result.E)
 	}
 }
 
@@ -157,14 +161,14 @@ func Test_mongoQueryRepositoryService_AnyWithFilter(t *testing.T) {
 
 	r.Add(ctx, dto)
 
-	ok, err := r.AnyWithFilter(ctx, bson.M{"entity._id": dto.ID}, "")
+	result := r.AnyWithFilter(ctx, bson.M{"entity._id": dto.ID}, "")
 
-	if ok != true {
-		t.Errorf("Test_mongoQueryRepositoryService_AnyWithFilter() ok = %v, expect %v", ok, true)
+	if result.V != true {
+		t.Errorf("Test_mongoQueryRepositoryService_AnyWithFilter() ok = %v, expect %v", result.V, true)
 	}
 
-	if err != nil {
-		t.Errorf("Test_mongoQueryRepositoryService_AnyWithFilter() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoQueryRepositoryService_AnyWithFilter() err = %v", result.E)
 	}
 }
 
@@ -181,7 +185,7 @@ func Test_mongoQueryRepositoryService_Count(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 100
+	expect := 1000
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
@@ -190,19 +194,21 @@ func Test_mongoQueryRepositoryService_Count(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	count := 100
+	count := 1000
 	for i := 0; i < count; i++ {
 		go r.Count(ctx)
 	}
 
-	result, err := r.Count(ctx)
+	time.Sleep(1 * time.Second)
 
-	if result < int64(expect) {
-		t.Errorf("Test_mongoQueryRepositoryService_Count() result = %v, expect %v", result, expect)
+	result := r.Count(ctx)
+
+	if result.V.(int64) < int64(expect) {
+		t.Errorf("Test_mongoQueryRepositoryService_Count() result = %v, expect %v", result.V, expect)
 	}
 
-	if err != nil {
-		t.Errorf("Test_mongoQueryRepositoryService_Count() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoQueryRepositoryService_Count() err = %v", result.E)
 	}
 }
 
@@ -219,7 +225,7 @@ func Test_mongoQueryRepositoryService_CountWithFilter(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 100
+	expect := 1000
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
 	for i := 0; i < expect; i++ {
@@ -230,14 +236,14 @@ func Test_mongoQueryRepositoryService_CountWithFilter(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	result, err := r.CountWithFilter(ctx, bson.M{"expect": random}, "")
+	result := r.CountWithFilter(ctx, bson.M{"expect": random}, "")
 
-	if result != int64(expect) {
-		t.Errorf("Test_mongoQueryRepositoryService_CountWithFilter() result = %v, expect %v", result, expect)
+	if result.V.(int64) != int64(expect) {
+		t.Errorf("Test_mongoQueryRepositoryService_CountWithFilter() result = %v, expect %v", result.V, expect)
 	}
 
-	if err != nil {
-		t.Errorf("Test_mongoQueryRepositoryService_CountWithFilter() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoQueryRepositoryService_CountWithFilter() err = %v", result.E)
 	}
 }
 
@@ -254,7 +260,7 @@ func Test_mongoQueryRepositoryService_List(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 100
+	expect := 1000
 	cntExpect := 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
@@ -268,10 +274,10 @@ func Test_mongoQueryRepositoryService_List(t *testing.T) {
 	}
 
 	var dest = make([]*testModel, 0)
-	err := r.List(ctx, &dest)
+	result := r.List(ctx, &dest)
 
-	if err != nil {
-		t.Errorf("Test_mongoQueryRepositoryService_List() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoQueryRepositoryService_List() err = %v", result.E)
 	}
 
 	cnt := len(dest)
@@ -294,7 +300,7 @@ func Test_mongoQueryRepositoryService_ListWithFilter(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 100
+	expect := 1000
 	cntExpect := 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
@@ -308,7 +314,7 @@ func Test_mongoQueryRepositoryService_ListWithFilter(t *testing.T) {
 	}
 
 	var dest = make([]*testModel, 0)
-	err := r.ListWithFilter(ctx, bson.M{"expect": random}, "", &dest)
+	result := r.ListWithFilter(ctx, bson.M{"expect": random}, "", &dest)
 
 	cnt := len(dest)
 
@@ -316,8 +322,8 @@ func Test_mongoQueryRepositoryService_ListWithFilter(t *testing.T) {
 		t.Errorf("Test_mongoQueryRepositoryService_ListWithFilter() cnt = %v, expect %v", cnt, cntExpect)
 	}
 
-	if err != nil {
-		t.Errorf("Test_mongoQueryRepositoryService_ListWithFilter() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoQueryRepositoryService_ListWithFilter() err = %v", result.E)
 	}
 }
 
@@ -340,22 +346,24 @@ func Test_mongoCommandRepositoryService_Remove(t *testing.T) {
 
 	r.Add(ctx, dto)
 
-	count := 100
+	count := 1000
 	for i := 0; i < count; i++ {
 		go r.Remove(ctx, dto)
 	}
 
-	err := r.Remove(ctx, dto)
+	time.Sleep(1 * time.Second)
 
-	if err != nil {
-		t.Errorf("Test_mongoCommandRepositoryService_Remove() err = %v", err)
+	result := r.Remove(ctx, dto)
+
+	if result.E != nil {
+		t.Errorf("Test_mongoCommandRepositoryService_Remove() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	err = r.Find(ctx, dto.ID, dto2)
+	result = r.Find(ctx, dto.ID, dto2)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("Test_mongoCommandRepositoryService_Remove() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("Test_mongoCommandRepositoryService_Remove() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -372,7 +380,7 @@ func Test_mongoCommandRepositoryService_RemoveRange(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 100
+	expect := 1000
 	var dtos = make([]core.Entitier, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
@@ -383,17 +391,17 @@ func Test_mongoCommandRepositoryService_RemoveRange(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	err := r.RemoveRange(ctx, dtos)
+	result := r.RemoveRange(ctx, dtos)
 
-	if err != nil {
-		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	err = r.Find(ctx, dtos[0].GetID(), dto2)
+	result = r.Find(ctx, dtos[0].GetID(), dto2)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -410,8 +418,8 @@ func Test_mongoCommandRepositoryService_AddRange(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 10000
-	cntExpect := 0
+	expect := 1000
+	var cntExpect int64 = 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
 	var dtos = make([]core.Entitier, 0)
@@ -424,19 +432,16 @@ func Test_mongoCommandRepositoryService_AddRange(t *testing.T) {
 		cntExpect += 1
 	}
 
-	err := r.AddRange(ctx, dtos)
+	result := r.AddRange(ctx, dtos)
 
-	if err != nil {
-		t.Errorf("Test_mongoCommandRepositoryService_AddRange() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoCommandRepositoryService_AddRange() err = %v", result.E)
 	}
 
-	var dest = make([]*testModel, 0)
-	r.ListWithFilter(ctx, bson.M{"expect": random}, "", &dest)
+	result = r.CountWithFilter(ctx, bson.M{"expect": random}, "")
 
-	cnt := len(dest)
-
-	if cnt != cntExpect {
-		t.Errorf("Test_mongoCommandRepositoryService_AddRange() cnt = %v, expect %v", cnt, cntExpect)
+	if result.V.(int64) != cntExpect {
+		t.Errorf("Test_mongoCommandRepositoryService_AddRange() cnt = %v, expect %v", result.V, cntExpect)
 	}
 }
 
@@ -455,30 +460,29 @@ func Test_mongoCommandRepositoryService_Update(t *testing.T) {
 
 	dto := new(testModel)
 	dto.ID = uuid.New()
-	dto.Expect = 100
+	dto.Expect = 1000
 
 	r.Add(ctx, dto)
 
 	dto.Expect = 1
-	count := 100
+	count := 1000
 	for i := 0; i < count; i++ {
 		go r.Update(ctx, dto)
 	}
 
 	time.Sleep(1 * time.Second)
 
-	err := r.Update(ctx, dto)
+	result := r.Update(ctx, dto)
 
-	if err != nil {
-		t.Errorf("Test_mongoCommandRepositoryService_Update() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoCommandRepositoryService_Update() err = %v", result.E)
 	}
 
 	dto2 := new(testModel)
-	r.Find(ctx, dto.GetID(), dto2)
+	result = r.Find(ctx, dto.GetID(), dto2)
 
-	result := dto2.Expect
-	if result != 1 {
-		t.Errorf("Test_mongoCommandRepositoryService_Update() result = %v, expect %v", result, 1)
+	if dto2.Expect != 1 {
+		t.Errorf("Test_mongoCommandRepositoryService_Update() result = %v, expect %v", dto2.Expect, 1)
 	}
 }
 
@@ -495,7 +499,7 @@ func Test_mongoCommandRepositoryService_UpdateRange(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 100
+	expect := 1000
 	var dtos = make([]core.Entitier, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
@@ -506,7 +510,7 @@ func Test_mongoCommandRepositoryService_UpdateRange(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	cntExpect := 0
+	var cntExpect int64 = 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
 	for _, dto := range dtos {
@@ -514,18 +518,15 @@ func Test_mongoCommandRepositoryService_UpdateRange(t *testing.T) {
 		cntExpect += 1
 	}
 
-	err := r.UpdateRange(ctx, dtos)
+	result := r.UpdateRange(ctx, dtos)
 
-	if err != nil {
-		t.Errorf("Test_mongoCommandRepositoryService_UpdateRange() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_mongoCommandRepositoryService_UpdateRange() err = %v", result.E)
 	}
 
-	var dest = make([]*testModel, 0)
-	r.ListWithFilter(ctx, bson.M{"expect": random}, "", &dest)
+	result = r.CountWithFilter(ctx, bson.M{"expect": random}, "")
 
-	cnt := len(dest)
-
-	if cnt != cntExpect {
-		t.Errorf("Test_mongoCommandRepositoryService_UpdateRange() cnt = %v, expect %v", cnt, cntExpect)
+	if result.V.(int64) != cntExpect {
+		t.Errorf("Test_mongoCommandRepositoryService_UpdateRange() cnt = %v, expect %v", result.V, cntExpect)
 	}
 }
