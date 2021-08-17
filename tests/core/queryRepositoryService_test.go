@@ -34,14 +34,16 @@ func Test_queryRepositoryService_Find(t *testing.T) {
 		go r.Find(ctx, dto.ID, dto2)
 	}
 
-	err := r.Find(ctx, dto.ID, dto2)
+	time.Sleep(1 * time.Second)
 
-	if !reflect.DeepEqual(dto2, dto) {
+	result := r.Find(ctx, dto.ID, dto2)
+
+	if !reflect.DeepEqual(dto2.ID, dto.ID) || !reflect.DeepEqual(dto2.Expect, dto.Expect) {
 		t.Errorf("Test_queryRepositoryService_Find() result = %v, expect %v", dto2, dto)
 	}
 
-	if err != nil {
-		t.Errorf("Test_queryRepositoryService_Find() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_queryRepositoryService_Find() err = %v", result.E)
 	}
 }
 
@@ -59,10 +61,10 @@ func Test_queryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	dto.Expect = 123
 
 	dto2 := new(testModel)
-	err := r.Find(ctx, dto.ID, dto2)
+	result := r.Find(ctx, dto.ID, dto2)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -86,14 +88,16 @@ func Test_queryRepositoryService_Any(t *testing.T) {
 		go r.Any(ctx)
 	}
 
-	ok, err := r.Any(ctx)
+	time.Sleep(1 * time.Second)
 
-	if ok != true {
-		t.Errorf("Test_queryRepositoryService_Any() ok = %v, expect %v", ok, true)
+	result := r.Any(ctx)
+
+	if result.V != true {
+		t.Errorf("Test_queryRepositoryService_Any() ok = %v, expect %v", result.V, true)
 	}
 
-	if err != nil {
-		t.Errorf("Test_queryRepositoryService_Any() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_queryRepositoryService_Any() err = %v", result.E)
 	}
 }
 
@@ -112,14 +116,14 @@ func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
 
 	r.Add(ctx, dto)
 
-	ok, err := r.AnyWithFilter(ctx, "", "")
+	result := r.AnyWithFilter(ctx, "", "")
 
-	if ok != true {
-		t.Errorf("Test_queryRepositoryService_AnyWithFilter() ok = %v, expect %v", ok, true)
+	if result.V != true {
+		t.Errorf("Test_queryRepositoryService_AnyWithFilter() ok = %v, expect %v", result.V, true)
 	}
 
-	if err != nil {
-		t.Errorf("Test_queryRepositoryService_AnyWithFilter() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_queryRepositoryService_AnyWithFilter() err = %v", result.E)
 	}
 }
 
@@ -146,14 +150,16 @@ func Test_queryRepositoryService_Count(t *testing.T) {
 		go r.Count(ctx)
 	}
 
-	result, err := r.Count(ctx)
+	time.Sleep(1 * time.Second)
 
-	if result < int64(expect) {
-		t.Errorf("Test_queryRepositoryService_Count() result = %v, expect %v", result, expect)
+	result := r.Count(ctx)
+
+	if result.V.(int64) < int64(expect) {
+		t.Errorf("Test_queryRepositoryService_Count() result = %v, expect %v", result.V, expect)
 	}
 
-	if err != nil {
-		t.Errorf("Test_queryRepositoryService_Count() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_queryRepositoryService_Count() err = %v", result.E)
 	}
 }
 
@@ -177,14 +183,14 @@ func Test_queryRepositoryService_CountWithFilter(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	result, err := r.CountWithFilter(ctx, "", "")
+	result := r.CountWithFilter(ctx, "", "")
 
-	if result != int64(expect) {
-		t.Errorf("Test_queryRepositoryService_CountWithFilter() result = %v, expect %v", result, expect)
+	if result.V.(int64) != int64(expect) {
+		t.Errorf("Test_queryRepositoryService_CountWithFilter() result = %v, expect %v", result.V, expect)
 	}
 
-	if err != nil {
-		t.Errorf("Test_queryRepositoryService_CountWithFilter() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_queryRepositoryService_CountWithFilter() err = %v", result.E)
 	}
 }
 
@@ -211,10 +217,10 @@ func Test_queryRepositoryService_List(t *testing.T) {
 	}
 
 	var dest = make([]*testModel, 0)
-	err := r.List(ctx, &dest)
+	result := r.List(ctx, &dest)
 
-	if err != nil {
-		t.Errorf("Test_queryRepositoryService_List() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_queryRepositoryService_List() err = %v", result.E)
 	}
 
 	cnt := len(dest)
@@ -247,7 +253,7 @@ func Test_queryRepositoryService_ListWithFilter(t *testing.T) {
 	}
 
 	var dest = make([]*testModel, 0)
-	err := r.ListWithFilter(ctx, "", "", &dest)
+	result := r.ListWithFilter(ctx, "", "", &dest)
 
 	cnt := len(dest)
 
@@ -255,7 +261,7 @@ func Test_queryRepositoryService_ListWithFilter(t *testing.T) {
 		t.Errorf("Test_queryRepositoryService_ListWithFilter() cnt = %v, expect %v", cnt, cntExpect)
 	}
 
-	if err != nil {
-		t.Errorf("Test_queryRepositoryService_ListWithFilter() err = %v", err)
+	if result.E != nil {
+		t.Errorf("Test_queryRepositoryService_ListWithFilter() err = %v", result.E)
 	}
 }

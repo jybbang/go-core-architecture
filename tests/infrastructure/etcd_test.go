@@ -9,7 +9,6 @@ import (
 
 	"github.com/jybbang/go-core-architecture/core"
 	"github.com/jybbang/go-core-architecture/infrastructure/etcd"
-	"github.com/jybbang/go-core-architecture/infrastructure/mocks"
 )
 
 func TestEtcdStateService_ConnectionTimeout(t *testing.T) {
@@ -27,13 +26,14 @@ func TestEtcdStateService_ConnectionTimeout(t *testing.T) {
 	time.Sleep(timeout)
 
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
-	err := s.Set(ctx, key, &expect)
 
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("TestEtcdStateService_ConnectionTimeout() err = %v, expect %v", err, context.DeadlineExceeded)
+	result := s.Set(ctx, key, &expect)
+
+	if !errors.Is(result.E, context.DeadlineExceeded) {
+		t.Errorf("TestEtcdStateService_ConnectionTimeout() err = %v, expect %v", result.E, context.DeadlineExceeded)
 	}
 }
 
@@ -49,9 +49,10 @@ func TestEtcdStateService_Has(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
+
 	s.Set(ctx, key, &expect)
 
 	for i := 0; i < count; i++ {
@@ -60,14 +61,14 @@ func TestEtcdStateService_Has(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	ok, err := s.Has(ctx, key)
+	result := s.Has(ctx, key)
 
-	if ok != true {
-		t.Errorf("TestEtcdStateService_Has() ok = %v, expect %v", ok, true)
+	if result.V != true {
+		t.Errorf("TestEtcdStateService_Has() ok = %v, expect %v", result.V, true)
 	}
 
-	if err != nil {
-		t.Errorf("TestEtcdStateService_Has() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestEtcdStateService_Has() err = %v", result.E)
 	}
 }
 
@@ -81,14 +82,14 @@ func TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 		StateAdapter(etcd).
 		Create()
 
-	ok, err := s.Has(ctx, "zxc")
+	result := s.Has(ctx, "zxc")
 
-	if ok != false {
-		t.Errorf("TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", ok, false)
+	if result.V != false {
+		t.Errorf("TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
 	}
 
-	if err != nil {
-		t.Errorf("TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
 	}
 }
 
@@ -104,26 +105,27 @@ func TestEtcdStateService_Get(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := &okCommand{
+	expect := &testModel{
 		Expect: 123,
 	}
+
 	s.Set(ctx, key, expect)
 
-	dest := &okCommand{
-		Expect: 123,
-	}
+	dest := &testModel{}
 	for i := 0; i < count; i++ {
 		go s.Get(ctx, key, dest)
 	}
 
-	err := s.Get(ctx, key, dest)
+	time.Sleep(1 * time.Second)
+
+	result := s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
 		t.Errorf("TestEtcdStateService_Get() dest = %v, expect %v", dest, expect)
 	}
 
-	if err != nil {
-		t.Errorf("TestEtcdStateService_Get() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestEtcdStateService_Get() err = %v", result.E)
 	}
 }
 
@@ -137,14 +139,11 @@ func TestEtcdStateService_GetNotFoundShouldBeError(t *testing.T) {
 		StateAdapter(etcd).
 		Create()
 
-	dest := &okCommand{
-		Expect: 123,
-	}
+	dest := &testModel{}
+	result := s.Get(ctx, "zxc", dest)
 
-	err := s.Get(ctx, "zxc", dest)
-
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("TestEtcdStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
@@ -160,7 +159,7 @@ func TestEtcdStateService_Set(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := &okCommand{
+	expect := &testModel{
 		Expect: 123,
 	}
 	for i := 0; i < count; i++ {
@@ -168,13 +167,14 @@ func TestEtcdStateService_Set(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	err := s.Set(ctx, key, expect)
 
-	if err != nil {
-		t.Errorf("TestEtcdStateService_Set() err = %v", err)
+	result := s.Set(ctx, key, expect)
+
+	if result.E != nil {
+		t.Errorf("TestEtcdStateService_Set() err = %v", result.E)
 	}
 
-	dest := &okCommand{}
+	dest := &testModel{}
 	s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
@@ -183,49 +183,56 @@ func TestEtcdStateService_Set(t *testing.T) {
 }
 
 func TestEtcdStateService_Delete(t *testing.T) {
-	mock := mocks.NewMockAdapter()
+	ctx := context.Background()
+
+	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+		Endpoints: []string{"localhost:2379"},
+	})
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mock).
+		StateAdapter(etcd).
 		Create()
 
 	count := 10000
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
-	ctx := context.Background()
-	s.Set(ctx, key, &expect)
 
+	s.Set(ctx, key, &expect)
 	for i := 0; i < count; i++ {
 		go s.Delete(ctx, key)
 	}
-	s.Delete(ctx, key)
 
 	time.Sleep(1 * time.Second)
 
-	ok, err := s.Has(ctx, key)
+	s.Delete(ctx, key)
 
-	if ok != false {
-		t.Errorf("TestEtcdStateService_Delete() ok = %v, expect %v", ok, false)
+	result := s.Has(ctx, key)
+
+	if result.E != nil {
+		t.Errorf("TestEtcdStateService_Delete() err = %v", result.E)
 	}
 
-	if err != nil {
-		t.Errorf("TestEtcdStateService_Delete() err = %v", err)
+	if result.V != false {
+		t.Errorf("TestEtcdStateService_Delete() ok = %v, expect %v", result.V, false)
 	}
 }
 
 func TestEtcdStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
-	mock := mocks.NewMockAdapter()
+	ctx := context.Background()
+
+	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+		Endpoints: []string{"localhost:2379"},
+	})
 	s := core.NewStateServiceBuilder().
-		StateAdapter(mock).
+		StateAdapter(etcd).
 		Create()
 
 	key := "qwe"
-	ctx := context.Background()
 
-	err := s.Delete(ctx, key)
+	result := s.Delete(ctx, key)
 
-	if err != nil {
-		t.Errorf("TestEtcdStateService_DeleteNotFoundShouldBeNoError() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestEtcdStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
 	}
 }

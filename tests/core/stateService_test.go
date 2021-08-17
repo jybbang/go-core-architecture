@@ -12,6 +12,8 @@ import (
 )
 
 func TestStateService_Has(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
 		StateAdapter(mock).
@@ -22,7 +24,7 @@ func TestStateService_Has(t *testing.T) {
 	expect := okCommand{
 		Expect: 123,
 	}
-	ctx := context.Background()
+
 	s.Set(ctx, key, &expect)
 
 	for i := 0; i < count; i++ {
@@ -31,36 +33,39 @@ func TestStateService_Has(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	ok, err := s.Has(ctx, key)
+	result := s.Has(ctx, key)
 
-	if ok != true {
-		t.Errorf("TestStateService_Has() ok = %v, expect %v", ok, true)
+	if result.V != true {
+		t.Errorf("TestStateService_Has() ok = %v, expect %v", result.V, true)
 	}
 
-	if err != nil {
-		t.Errorf("TestStateService_Has() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestStateService_Has() err = %v", result.E)
 	}
 }
 
 func TestStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
 		StateAdapter(mock).
 		Create()
 
-	ctx := context.Background()
-	ok, err := s.Has(ctx, "zxc")
+	result := s.Has(ctx, "zxc")
 
-	if ok != false {
-		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", ok, false)
+	if result.V != false {
+		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
 	}
 
-	if err != nil {
-		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
 	}
 }
 
 func TestStateService_Get(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
 		StateAdapter(mock).
@@ -71,7 +76,7 @@ func TestStateService_Get(t *testing.T) {
 	expect := &okCommand{
 		Expect: 123,
 	}
-	ctx := context.Background()
+
 	s.Set(ctx, key, expect)
 
 	dest := &okCommand{}
@@ -79,40 +84,42 @@ func TestStateService_Get(t *testing.T) {
 		go s.Get(ctx, key, dest)
 	}
 
-	err := s.Get(ctx, key, dest)
+	time.Sleep(1 * time.Second)
+
+	result := s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
 		t.Errorf("TestStateService_Get() dest = %v, expect %v", dest, expect)
 	}
 
-	if err != nil {
-		t.Errorf("TestStateService_Get() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestStateService_Get() err = %v", result.E)
 	}
 }
 
 func TestStateService_GetNotFoundShouldBeError(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
 		StateAdapter(mock).
 		Create()
 
-	ctx := context.Background()
-
 	dest := &okCommand{}
-	err := s.Get(ctx, "zxc", dest)
+	result := s.Get(ctx, "zxc", dest)
 
-	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", err, core.ErrNotFound)
+	if !errors.Is(result.E, core.ErrNotFound) {
+		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
 func TestStateService_Set(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
 		StateAdapter(mock).
 		Create()
-
-	ctx := context.Background()
 
 	count := 10000
 	key := "qwe"
@@ -123,10 +130,12 @@ func TestStateService_Set(t *testing.T) {
 		go s.Set(ctx, key, expect)
 	}
 
-	err := s.Set(ctx, key, expect)
+	time.Sleep(1 * time.Second)
 
-	if err != nil {
-		t.Errorf("TestStateService_Set() err = %v", err)
+	result := s.Set(ctx, key, expect)
+
+	if result.E != nil {
+		t.Errorf("TestStateService_Set() err = %v", result.E)
 	}
 
 	dest := &okCommand{}
@@ -138,6 +147,8 @@ func TestStateService_Set(t *testing.T) {
 }
 
 func TestStateService_Delete(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
 		StateAdapter(mock).
@@ -148,10 +159,9 @@ func TestStateService_Delete(t *testing.T) {
 	expect := okCommand{
 		Expect: 123,
 	}
-	ctx := context.Background()
 
+	s.Set(ctx, key, &expect)
 	for i := 0; i < count; i++ {
-		go s.Set(ctx, key, &expect)
 		go s.Delete(ctx, key)
 	}
 
@@ -159,29 +169,30 @@ func TestStateService_Delete(t *testing.T) {
 
 	s.Delete(ctx, key)
 
-	ok, err := s.Has(ctx, key)
+	result := s.Has(ctx, key)
 
-	if ok != false {
-		t.Errorf("TestStateService_Delete() ok = %v, expect %v", ok, false)
+	if result.V != false {
+		t.Errorf("TestStateService_Delete() ok = %v, expect %v", result.V, false)
 	}
 
-	if err != nil {
-		t.Errorf("TestStateService_Delete() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestStateService_Delete() err = %v", result.E)
 	}
 }
 
 func TestStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
+	ctx := context.Background()
+
 	mock := mocks.NewMockAdapter()
 	s := core.NewStateServiceBuilder().
 		StateAdapter(mock).
 		Create()
 
 	key := "qwe"
-	ctx := context.Background()
 
-	err := s.Delete(ctx, key)
+	result := s.Delete(ctx, key)
 
-	if err != nil {
-		t.Errorf("TestStateService_DeleteNotFoundShouldBeNoError() err = %v", err)
+	if result.E != nil {
+		t.Errorf("TestStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
 	}
 }
