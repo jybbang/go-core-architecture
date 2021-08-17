@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func getPostresClient(settings GormSettings) *gorm.DB {
+func getPostgresClient(settings GormSettings) *gorm.DB {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -32,8 +32,8 @@ func getPostresClient(settings GormSettings) *gorm.DB {
 	return client
 }
 
-func NewPostresAdapter(ctx context.Context, settings GormSettings) *adapter {
-	conn := getPostresClient(settings)
+func NewPostgresAdapter(ctx context.Context, settings GormSettings) *adapter {
+	conn := getPostgresClient(settings)
 	postgres := &adapter{
 		conn:     conn,
 		settings: settings,

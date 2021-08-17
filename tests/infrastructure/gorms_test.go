@@ -18,7 +18,7 @@ func Test_gormsQueryRepositoryService_ConnectionTimeout(t *testing.T) {
 	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -43,7 +43,7 @@ func Test_gormsQueryRepositoryService_ConnectionTimeout(t *testing.T) {
 func Test_gormsQueryRepositoryService_Find(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -80,7 +80,7 @@ func Test_gormsQueryRepositoryService_Find(t *testing.T) {
 func Test_gormsQueryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -104,7 +104,7 @@ func Test_gormsQueryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 func Test_gormsQueryRepositoryService_Any(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -140,7 +140,7 @@ func Test_gormsQueryRepositoryService_Any(t *testing.T) {
 func Test_gormsQueryRepositoryService_AnyWithFilter(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -169,7 +169,7 @@ func Test_gormsQueryRepositoryService_AnyWithFilter(t *testing.T) {
 func Test_gormsQueryRepositoryService_Count(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -208,7 +208,7 @@ func Test_gormsQueryRepositoryService_Count(t *testing.T) {
 func Test_gormsQueryRepositoryService_CountWithFilter(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -242,7 +242,7 @@ func Test_gormsQueryRepositoryService_CountWithFilter(t *testing.T) {
 func Test_gormsQueryRepositoryService_List(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -281,7 +281,7 @@ func Test_gormsQueryRepositoryService_List(t *testing.T) {
 func Test_gormsQueryRepositoryService_ListWithFilter(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -320,7 +320,7 @@ func Test_gormsQueryRepositoryService_ListWithFilter(t *testing.T) {
 func Test_gormsCommandRepositoryService_Remove(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -357,7 +357,7 @@ func Test_gormsCommandRepositoryService_Remove(t *testing.T) {
 func Test_gormsCommandRepositoryService_RemoveRange(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -394,7 +394,7 @@ func Test_gormsCommandRepositoryService_RemoveRange(t *testing.T) {
 func Test_gormsCommandRepositoryService_AddRange(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -433,7 +433,7 @@ func Test_gormsCommandRepositoryService_AddRange(t *testing.T) {
 func Test_gormsCommandRepositoryService_Update(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})
@@ -473,7 +473,7 @@ func Test_gormsCommandRepositoryService_Update(t *testing.T) {
 func Test_gormsCommandRepositoryService_UpdateRange(t *testing.T) {
 	ctx := context.Background()
 
-	gorms := gorms.NewPostresAdapter(ctx, gorms.GormSettings{
+	gorms := gorms.NewPostgresAdapter(ctx, gorms.GormSettings{
 		ConnectionString: "postgres://postgres:admin@localhost:5432/test",
 		CanCreateTable:   true,
 	})

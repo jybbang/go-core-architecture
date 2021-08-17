@@ -10,12 +10,14 @@ import (
 
 type performanceMiddleware struct {
 	core.Middleware
-	log *zap.Logger
+	log           *zap.Logger
+	limitDuration time.Duration
 }
 
-func NewPerformanceMiddleware(logger *zap.Logger) *performanceMiddleware {
+func NewPerformanceMiddleware(logger *zap.Logger, limitDuration time.Duration) *performanceMiddleware {
 	return &performanceMiddleware{
-		log: logger,
+		log:           logger,
+		limitDuration: limitDuration,
 	}
 }
 
@@ -26,7 +28,7 @@ func (m *performanceMiddleware) Run(ctx context.Context, request core.Request) c
 
 func (m *performanceMiddleware) timeMeasurement(start time.Time, request core.Request) {
 	elapsed := time.Since(start)
-	if elapsed > time.Duration(500*time.Millisecond) {
+	if elapsed > time.Duration(m.limitDuration) {
 		m.log.Warn("send request long running", zap.Reflect("request", request), zap.Duration("measure", elapsed))
 	}
 }
