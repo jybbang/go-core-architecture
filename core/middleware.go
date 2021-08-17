@@ -2,8 +2,8 @@ package core
 
 import "context"
 
-type Behavior interface {
-	AddNext(next Behavior) Behavior
+type behavior interface {
+	AddNext(next behavior) behavior
 	Run(ctx context.Context, request Request) Result
 	Next() Result
 	setParameters(ctx context.Context, request Request, handler RequestHandler)
@@ -13,18 +13,12 @@ type Middleware struct {
 	ctx     context.Context
 	request Request
 	handler RequestHandler
-	next    Behavior
+	next    behavior
 }
 
-func (m *Middleware) AddNext(next Behavior) Behavior {
+func (m *Middleware) AddNext(next behavior) behavior {
 	m.next = next
 	return m.next
-}
-
-func (m *Middleware) setParameters(ctx context.Context, request Request, handler RequestHandler) {
-	m.ctx = ctx
-	m.request = request
-	m.handler = handler
 }
 
 func (m *Middleware) Next() Result {
@@ -38,4 +32,10 @@ func (m *Middleware) Next() Result {
 	} else {
 		return m.handler(m.ctx, m.request)
 	}
+}
+
+func (m *Middleware) setParameters(ctx context.Context, request Request, handler RequestHandler) {
+	m.ctx = ctx
+	m.request = request
+	m.handler = handler
 }

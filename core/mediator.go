@@ -9,7 +9,7 @@ import (
 )
 
 type mediator struct {
-	middleware           Behavior
+	middleware           behavior
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
 	sentCount            uint32
@@ -28,7 +28,7 @@ func (m *mediator) GetPublishedCount() uint32 {
 	return m.publishedCount
 }
 
-func (m *mediator) AddMiddleware(next Behavior) Behavior {
+func (m *mediator) AddMiddleware(next behavior) behavior {
 	m.middleware = next
 	return m.middleware
 }
