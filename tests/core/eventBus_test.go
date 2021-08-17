@@ -193,7 +193,7 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 
 	err := e.PublishDomainEvents(ctx)
 	if !errors.Is(err, gobreaker.ErrOpenState) {
-		t.Errorf("TestEventBus_PublishDomainEventsMediatorErrShouldBeError() err = %v, expect %v", err, gobreaker.ErrOpenState)
+		t.Errorf("TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() err = %v, expect %v", err, gobreaker.ErrOpenState)
 	}
 
 	then := mock.GetPublishedCount()

@@ -3,6 +3,7 @@ package core
 import (
 	"time"
 
+	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
 )
@@ -46,9 +47,13 @@ func (b *eventbusBuilder) Build() *eventbus {
 
 // Build Method which creates EventBus
 func (b *eventbusBuilder) Create() *eventbus {
+	if b.messaging == nil {
+		panic("messaging adapter is required")
+	}
+
 	instance := &eventbus{
 		mediator:     GetMediator(),
-		domainEvents: make([]DomainEventer, 0),
+		domainEvents: goconcurrentqueue.NewFIFO(),
 		ch:           make(chan rxgo.Item, 1),
 		messaging:    b.messaging,
 		cb:           b.cb,

@@ -33,6 +33,10 @@ func (b *stateServiceBuilder) Build() *stateService {
 
 // Build Method which creates EventBus
 func (b *stateServiceBuilder) Create() *stateService {
+	if b.state == nil {
+		panic("state adapter is required")
+	}
+
 	instance := &stateService{
 		state: b.state,
 		cb:    b.cb,

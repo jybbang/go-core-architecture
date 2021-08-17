@@ -90,14 +90,14 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 		panic("typeName is required")
 	}
 
-	if openTracer != nil {
-		span := openTracer.StartSpan(typeName)
-		defer span.Finish()
-	}
-
 	item, ok := m.notificationHandlers.Get(typeName)
 	if !ok {
 		panic("request handler not found, you should register handler before use it")
+	}
+
+	if openTracer != nil {
+		span := openTracer.StartSpan(typeName)
+		defer span.Finish()
 	}
 
 	handler := item.(NotificationHandler)

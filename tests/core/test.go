@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jybbang/go-core-architecture/core"
+	"github.com/jybbang/go-core-architecture/infrastructure/mocks"
 )
 
 type testModel struct {
@@ -51,5 +52,5 @@ func init() {
 		AddNotificationHandler(new(errNotification), errNotificationHandler).
 		Build()
 
-	core.NewEventbusBuilder().Build()
+	core.NewEventbusBuilder().MessaingAdapter(mocks.NewMockAdapter()).Build()
 }

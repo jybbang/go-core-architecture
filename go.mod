@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/dapr/go-sdk v1.2.0
+	github.com/enriquebris/goconcurrentqueue v0.6.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/google/uuid v1.3.0

@@ -3,9 +3,9 @@ package core
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
+	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
 )
@@ -13,10 +13,9 @@ import (
 type eventbus struct {
 	mediator     *mediator
 	messaging    messagingAdapter
-	domainEvents []DomainEventer
+	domainEvents *goconcurrentqueue.FIFO
 	ch           chan rxgo.Item
 	cb           *gobreaker.CircuitBreaker
-	mutex        sync.Mutex
 	settings     EventbusSettings
 }
 
@@ -62,43 +61,33 @@ func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 	}
 }
 
-func (e *eventbus) dequeueDomainEvent() DomainEventer {
-	result := e.domainEvents[0]
-	e.domainEvents = e.domainEvents[1:]
-	return result
-}
-
 func (e *eventbus) empty() bool {
 	return e.GetDomainEventsQueueCount() == 0
 }
 
 func (e *eventbus) GetDomainEventsQueueCount() int {
-	return len(e.domainEvents)
+	return e.domainEvents.GetLen()
 }
 
 func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
 	domainEvent.SetAddingEvent()
 
 	if domainEvent.GetTopic() == "" {
 		panic("topic is required")
 	}
 
-	e.domainEvents = append(e.domainEvents, domainEvent)
+	e.domainEvents.Enqueue(domainEvent)
 }
 
 func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
 	defer publishEventsPanicRecover()
 
 	var err error
 	now := time.Now()
 
 	for !e.empty() {
-		event := e.dequeueDomainEvent()
+		item, _ := e.domainEvents.Dequeue()
+		event := item.(DomainEventer)
 
 		_, err = e.cb.Execute(func() (interface{}, error) {
 			err = e.mediator.Publish(ctx, event)

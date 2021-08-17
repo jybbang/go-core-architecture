@@ -55,6 +55,13 @@ func (b *repositoryServiceBuilder) Build() *repositoryService {
 
 // Build Method which creates EventBus
 func (b *repositoryServiceBuilder) Create() *repositoryService {
+	if b.queryRepository == nil {
+		panic("queryRepository adapter is required")
+	}
+	if b.commandRepository == nil {
+		panic("commandRepository adapter is required")
+	}
+
 	instance := &repositoryService{
 		queryRepository:   b.queryRepository,
 		commandRepository: b.commandRepository,
