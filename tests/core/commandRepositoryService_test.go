@@ -14,7 +14,7 @@ import (
 
 func Test_commandRepositoryService_Remove(t *testing.T) {
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -47,7 +47,7 @@ func Test_commandRepositoryService_Remove(t *testing.T) {
 
 func Test_commandRepositoryService_RemoveRange(t *testing.T) {
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -82,7 +82,7 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -119,7 +119,7 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 
 func Test_commandRepositoryService_Update(t *testing.T) {
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -156,7 +156,7 @@ func Test_commandRepositoryService_UpdateRange(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()

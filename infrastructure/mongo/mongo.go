@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"context"
-	"reflect"
+	"errors"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,6 +14,7 @@ import (
 )
 
 type adapter struct {
+	tableName  string
 	model      core.Entitier
 	conn       *mongo.Client
 	database   *mongo.Database
@@ -84,15 +85,9 @@ func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
 	return mongo
 }
 
-func (a *adapter) SetModel(model core.Entitier) {
-	typeOf := reflect.TypeOf(model)
-	key := typeOf.Elem().Name()
-
-	if key == "" {
-		panic("key is required")
-	}
-
+func (a *adapter) SetModel(model core.Entitier, tableName string) {
 	a.model = model
+	a.tableName = tableName
 
 	ctx := context.Background()
 	names, err := a.database.ListCollectionNames(
@@ -104,26 +99,26 @@ func (a *adapter) SetModel(model core.Entitier) {
 
 	hasCollection := false
 	for _, name := range names {
-		if name == key {
+		if name == a.tableName {
 			hasCollection = true
 			break
 		}
 	}
 
 	if !hasCollection && a.settings.CanCreateCollection {
-		err := a.database.CreateCollection(ctx, key)
+		err := a.database.CreateCollection(ctx, a.tableName)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	a.collection = a.database.Collection(key)
+	a.collection = a.database.Collection(a.tableName)
 }
 
 func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (err error) {
 	err = a.collection.FindOne(ctx, bson.M{"entity._id": id}).Decode(dest)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return core.ErrNotFound
 		}
 		return err

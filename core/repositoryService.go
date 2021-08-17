@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,7 +10,6 @@ import (
 )
 
 type repositoryService struct {
-	model             Entitier
 	queryRepository   queryRepositoryAdapter
 	commandRepository commandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
@@ -20,6 +20,10 @@ func (r *repositoryService) initialize() *repositoryService {
 }
 
 func (r *repositoryService) Find(ctx context.Context, id uuid.UUID, dest Entitier) (err error) {
+	if dest == nil {
+		return fmt.Errorf("%w dest is required", ErrInternalServerError)
+	}
+
 	_, err = r.cb.Execute(func() (interface{}, error) {
 		err = r.queryRepository.Find(ctx, id, dest)
 		return nil, err
@@ -56,6 +60,10 @@ func (r *repositoryService) CountWithFilter(ctx context.Context, query interface
 }
 
 func (r *repositoryService) List(ctx context.Context, dest interface{}) (err error) {
+	if dest == nil {
+		return fmt.Errorf("%w dest is required", ErrInternalServerError)
+	}
+
 	_, err = r.cb.Execute(func() (interface{}, error) {
 		err = r.queryRepository.List(ctx, dest)
 		return nil, err
@@ -64,6 +72,10 @@ func (r *repositoryService) List(ctx context.Context, dest interface{}) (err err
 }
 
 func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
+	if dest == nil {
+		return fmt.Errorf("%w dest is required", ErrInternalServerError)
+	}
+
 	_, err = r.cb.Execute(func() (interface{}, error) {
 		err = r.queryRepository.ListWithFilter(ctx, query, args, dest)
 		return nil, err
@@ -72,6 +84,10 @@ func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{
 }
 
 func (r *repositoryService) Remove(ctx context.Context, entity Entitier) error {
+	if entity == nil {
+		return fmt.Errorf("%w entity is required", ErrInternalServerError)
+	}
+
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Remove(ctx, entity)
 		return nil, err
@@ -80,6 +96,10 @@ func (r *repositoryService) Remove(ctx context.Context, entity Entitier) error {
 }
 
 func (r *repositoryService) RemoveRange(ctx context.Context, entities []Entitier) error {
+	if len(entities) == 0 {
+		return fmt.Errorf("%w entities is required", ErrInternalServerError)
+	}
+
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.RemoveRange(ctx, entities)
 		return nil, err
@@ -88,6 +108,10 @@ func (r *repositoryService) RemoveRange(ctx context.Context, entities []Entitier
 }
 
 func (r *repositoryService) Add(ctx context.Context, entity Entitier) error {
+	if entity == nil {
+		return fmt.Errorf("%w entity is required", ErrInternalServerError)
+	}
+
 	entity.SetCreatedAt("", time.Now())
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Add(ctx, entity)
@@ -97,6 +121,10 @@ func (r *repositoryService) Add(ctx context.Context, entity Entitier) error {
 }
 
 func (r *repositoryService) AddRange(ctx context.Context, entities []Entitier) error {
+	if len(entities) == 0 {
+		return fmt.Errorf("%w entities is required", ErrInternalServerError)
+	}
+
 	user := ""
 	now := time.Now()
 	for _, v := range entities {
@@ -111,6 +139,10 @@ func (r *repositoryService) AddRange(ctx context.Context, entities []Entitier) e
 }
 
 func (r *repositoryService) Update(ctx context.Context, entity Entitier) error {
+	if entity == nil {
+		return fmt.Errorf("%w entity is required", ErrInternalServerError)
+	}
+
 	entity.SetUpdatedAt("", time.Now())
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
@@ -121,6 +153,10 @@ func (r *repositoryService) Update(ctx context.Context, entity Entitier) error {
 }
 
 func (r *repositoryService) UpdateRange(ctx context.Context, entities []Entitier) error {
+	if len(entities) == 0 {
+		return fmt.Errorf("%w entities is required", ErrInternalServerError)
+	}
+
 	user := ""
 	now := time.Now()
 	for _, v := range entities {

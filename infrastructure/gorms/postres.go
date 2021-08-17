@@ -17,7 +17,10 @@ func getPostresClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 	connectionString := settings.ConnectionString
 	_, ok := clientsInstance.clients[connectionString]
 	if !ok {
-		db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
+		db, err := gorm.Open(postgres.New(postgres.Config{
+			DSN:                  connectionString,
+			PreferSimpleProtocol: true, // disables implicit prepared statement usage
+		}), &gorm.Config{})
 		if err != nil {
 			panic(err)
 		}
@@ -33,7 +36,7 @@ func getPostresClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 }
 
 func NewPostresAdapter(ctx context.Context, settings GormSettings) *adapter {
-	conn, mutex := getMySqlClient(settings)
+	conn, mutex := getPostresClient(settings)
 	postgres := &adapter{
 		conn:     conn,
 		rw:       mutex,

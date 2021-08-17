@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func Test_queryRepositoryService_ConnectionTimeout(t *testing.T) {
+func Test_mongoQueryRepositoryService_ConnectionTimeout(t *testing.T) {
 	timeout := time.Duration(1 * time.Second)
 	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
@@ -24,7 +24,7 @@ func Test_queryRepositoryService_ConnectionTimeout(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -38,11 +38,11 @@ func Test_queryRepositoryService_ConnectionTimeout(t *testing.T) {
 	err := r.Add(ctx, dto)
 
 	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("Test_queryRepositoryService_ConnectionTimeout() err = %v, expect %v", err, context.DeadlineExceeded)
+		t.Errorf("Test_mongoQueryRepositoryService_ConnectionTimeout() err = %v, expect %v", err, context.DeadlineExceeded)
 	}
 }
 
-func Test_queryRepositoryService_Find(t *testing.T) {
+func Test_mongoQueryRepositoryService_Find(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -50,7 +50,7 @@ func Test_queryRepositoryService_Find(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -70,15 +70,15 @@ func Test_queryRepositoryService_Find(t *testing.T) {
 	err := r.Find(ctx, dto.ID, dto2)
 
 	if !reflect.DeepEqual(dto2.Expect, dto.Expect) {
-		t.Errorf("Test_queryRepositoryService_Find() result = %v, expect %v", dto2, dto)
+		t.Errorf("Test_mongoQueryRepositoryService_Find() result = %v, expect %v", dto2, dto)
 	}
 
 	if err != nil {
-		t.Errorf("Test_queryRepositoryService_Find() err = %v", err)
+		t.Errorf("Test_mongoQueryRepositoryService_Find() err = %v", err)
 	}
 }
 
-func Test_queryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
+func Test_mongoQueryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -86,7 +86,7 @@ func Test_queryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -103,7 +103,7 @@ func Test_queryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	}
 }
 
-func Test_queryRepositoryService_Any(t *testing.T) {
+func Test_mongoQueryRepositoryService_Any(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -111,7 +111,7 @@ func Test_queryRepositoryService_Any(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -130,15 +130,15 @@ func Test_queryRepositoryService_Any(t *testing.T) {
 	ok, err := r.Any(ctx)
 
 	if ok != true {
-		t.Errorf("Test_queryRepositoryService_Any() ok = %v, expect %v", ok, true)
+		t.Errorf("Test_mongoQueryRepositoryService_Any() ok = %v, expect %v", ok, true)
 	}
 
 	if err != nil {
-		t.Errorf("Test_queryRepositoryService_Any() err = %v", err)
+		t.Errorf("Test_mongoQueryRepositoryService_Any() err = %v", err)
 	}
 }
 
-func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
+func Test_mongoQueryRepositoryService_AnyWithFilter(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -146,7 +146,7 @@ func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -160,15 +160,15 @@ func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
 	ok, err := r.AnyWithFilter(ctx, bson.M{"entity._id": dto.ID}, "")
 
 	if ok != true {
-		t.Errorf("Test_queryRepositoryService_AnyWithFilter() ok = %v, expect %v", ok, true)
+		t.Errorf("Test_mongoQueryRepositoryService_AnyWithFilter() ok = %v, expect %v", ok, true)
 	}
 
 	if err != nil {
-		t.Errorf("Test_queryRepositoryService_AnyWithFilter() err = %v", err)
+		t.Errorf("Test_mongoQueryRepositoryService_AnyWithFilter() err = %v", err)
 	}
 }
 
-func Test_queryRepositoryService_Count(t *testing.T) {
+func Test_mongoQueryRepositoryService_Count(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -176,7 +176,7 @@ func Test_queryRepositoryService_Count(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -198,15 +198,15 @@ func Test_queryRepositoryService_Count(t *testing.T) {
 	result, err := r.Count(ctx)
 
 	if result < int64(expect) {
-		t.Errorf("Test_queryRepositoryService_Count() result = %v, expect %v", result, expect)
+		t.Errorf("Test_mongoQueryRepositoryService_Count() result = %v, expect %v", result, expect)
 	}
 
 	if err != nil {
-		t.Errorf("Test_queryRepositoryService_Count() err = %v", err)
+		t.Errorf("Test_mongoQueryRepositoryService_Count() err = %v", err)
 	}
 }
 
-func Test_queryRepositoryService_CountWithFilter(t *testing.T) {
+func Test_mongoQueryRepositoryService_CountWithFilter(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -214,7 +214,7 @@ func Test_queryRepositoryService_CountWithFilter(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -233,15 +233,15 @@ func Test_queryRepositoryService_CountWithFilter(t *testing.T) {
 	result, err := r.CountWithFilter(ctx, bson.M{"expect": random}, "")
 
 	if result != int64(expect) {
-		t.Errorf("Test_queryRepositoryService_CountWithFilter() result = %v, expect %v", result, expect)
+		t.Errorf("Test_mongoQueryRepositoryService_CountWithFilter() result = %v, expect %v", result, expect)
 	}
 
 	if err != nil {
-		t.Errorf("Test_queryRepositoryService_CountWithFilter() err = %v", err)
+		t.Errorf("Test_mongoQueryRepositoryService_CountWithFilter() err = %v", err)
 	}
 }
 
-func Test_queryRepositoryService_List(t *testing.T) {
+func Test_mongoQueryRepositoryService_List(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -249,7 +249,7 @@ func Test_queryRepositoryService_List(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -271,17 +271,17 @@ func Test_queryRepositoryService_List(t *testing.T) {
 	err := r.List(ctx, &dest)
 
 	if err != nil {
-		t.Errorf("Test_queryRepositoryService_List() err = %v", err)
+		t.Errorf("Test_mongoQueryRepositoryService_List() err = %v", err)
 	}
 
 	cnt := len(dest)
 
 	if cnt < cntExpect {
-		t.Errorf("Test_queryRepositoryService_List() cnt = %v, expect %v", cnt, cntExpect)
+		t.Errorf("Test_mongoQueryRepositoryService_List() cnt = %v, expect %v", cnt, cntExpect)
 	}
 }
 
-func Test_queryRepositoryService_ListWithFilter(t *testing.T) {
+func Test_mongoQueryRepositoryService_ListWithFilter(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -289,7 +289,7 @@ func Test_queryRepositoryService_ListWithFilter(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -313,15 +313,15 @@ func Test_queryRepositoryService_ListWithFilter(t *testing.T) {
 	cnt := len(dest)
 
 	if cnt != cntExpect {
-		t.Errorf("Test_queryRepositoryService_ListWithFilter() cnt = %v, expect %v", cnt, cntExpect)
+		t.Errorf("Test_mongoQueryRepositoryService_ListWithFilter() cnt = %v, expect %v", cnt, cntExpect)
 	}
 
 	if err != nil {
-		t.Errorf("Test_queryRepositoryService_ListWithFilter() err = %v", err)
+		t.Errorf("Test_mongoQueryRepositoryService_ListWithFilter() err = %v", err)
 	}
 }
 
-func Test_commandRepositoryService_Remove(t *testing.T) {
+func Test_mongoCommandRepositoryService_Remove(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -329,7 +329,7 @@ func Test_commandRepositoryService_Remove(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -348,18 +348,18 @@ func Test_commandRepositoryService_Remove(t *testing.T) {
 	err := r.Remove(ctx, dto)
 
 	if err != nil {
-		t.Errorf("Test_commandRepositoryService_Remove() err = %v", err)
+		t.Errorf("Test_mongoCommandRepositoryService_Remove() err = %v", err)
 	}
 
 	dto2 := new(testModel)
 	err = r.Find(ctx, dto.ID, dto2)
 
 	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("Test_commandRepositoryService_Remove() err = %v, expect %v", err, core.ErrNotFound)
+		t.Errorf("Test_mongoCommandRepositoryService_Remove() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }
 
-func Test_commandRepositoryService_RemoveRange(t *testing.T) {
+func Test_mongoCommandRepositoryService_RemoveRange(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -367,7 +367,7 @@ func Test_commandRepositoryService_RemoveRange(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -386,18 +386,18 @@ func Test_commandRepositoryService_RemoveRange(t *testing.T) {
 	err := r.RemoveRange(ctx, dtos)
 
 	if err != nil {
-		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v", err)
+		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v", err)
 	}
 
 	dto2 := new(testModel)
 	err = r.Find(ctx, dtos[0].GetID(), dto2)
 
 	if !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("Test_commandRepositoryService_RemoveRange() err = %v, expect %v", err, core.ErrNotFound)
+		t.Errorf("Test_mongoCommandRepositoryService_RemoveRange() err = %v, expect %v", err, core.ErrNotFound)
 	}
 }
 
-func Test_commandRepositoryService_AddRange(t *testing.T) {
+func Test_mongoCommandRepositoryService_AddRange(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -405,7 +405,7 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -427,7 +427,7 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 	err := r.AddRange(ctx, dtos)
 
 	if err != nil {
-		t.Errorf("Test_commandRepositoryService_AddRange() err = %v", err)
+		t.Errorf("Test_mongoCommandRepositoryService_AddRange() err = %v", err)
 	}
 
 	var dest = make([]*testModel, 0)
@@ -436,11 +436,11 @@ func Test_commandRepositoryService_AddRange(t *testing.T) {
 	cnt := len(dest)
 
 	if cnt != cntExpect {
-		t.Errorf("Test_commandRepositoryService_AddRange() cnt = %v, expect %v", cnt, cntExpect)
+		t.Errorf("Test_mongoCommandRepositoryService_AddRange() cnt = %v, expect %v", cnt, cntExpect)
 	}
 }
 
-func Test_commandRepositoryService_Update(t *testing.T) {
+func Test_mongoCommandRepositoryService_Update(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -448,7 +448,7 @@ func Test_commandRepositoryService_Update(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -470,7 +470,7 @@ func Test_commandRepositoryService_Update(t *testing.T) {
 	err := r.Update(ctx, dto)
 
 	if err != nil {
-		t.Errorf("Test_commandRepositoryService_Update() err = %v", err)
+		t.Errorf("Test_mongoCommandRepositoryService_Update() err = %v", err)
 	}
 
 	dto2 := new(testModel)
@@ -478,11 +478,11 @@ func Test_commandRepositoryService_Update(t *testing.T) {
 
 	result := dto2.Expect
 	if result != 1 {
-		t.Errorf("Test_commandRepositoryService_Update() result = %v, expect %v", result, 1)
+		t.Errorf("Test_mongoCommandRepositoryService_Update() result = %v, expect %v", result, 1)
 	}
 }
 
-func Test_commandRepositoryService_UpdateRange(t *testing.T) {
+func Test_mongoCommandRepositoryService_UpdateRange(t *testing.T) {
 	ctx := context.Background()
 
 	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
@@ -490,7 +490,7 @@ func Test_commandRepositoryService_UpdateRange(t *testing.T) {
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
 	})
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "test_model").
 		CommandRepositoryAdapter(mongo).
 		QueryRepositoryAdapter(mongo).
 		Create()
@@ -517,7 +517,7 @@ func Test_commandRepositoryService_UpdateRange(t *testing.T) {
 	err := r.UpdateRange(ctx, dtos)
 
 	if err != nil {
-		t.Errorf("Test_commandRepositoryService_UpdateRange() err = %v", err)
+		t.Errorf("Test_mongoCommandRepositoryService_UpdateRange() err = %v", err)
 	}
 
 	var dest = make([]*testModel, 0)
@@ -526,6 +526,6 @@ func Test_commandRepositoryService_UpdateRange(t *testing.T) {
 	cnt := len(dest)
 
 	if cnt != cntExpect {
-		t.Errorf("Test_commandRepositoryService_UpdateRange() cnt = %v, expect %v", cnt, cntExpect)
+		t.Errorf("Test_mongoCommandRepositoryService_UpdateRange() cnt = %v, expect %v", cnt, cntExpect)
 	}
 }

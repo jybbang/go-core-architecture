@@ -44,12 +44,16 @@ func (b *stateServiceBuilder) Create() *stateService {
 
 // Builder method to set the field state in StateServiceBuilder
 func (b *stateServiceBuilder) StateAdapter(adapter stateAdapter) *stateServiceBuilder {
+	if adapter == nil {
+		panic("adapter is required")
+	}
+
 	b.state = adapter
 	return b
 }
 
 // Builder method to set the field cb in StateServiceBuilder
 func (b *stateServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *stateServiceBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings())
+	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings(b.cb.Name()))
 	return b
 }

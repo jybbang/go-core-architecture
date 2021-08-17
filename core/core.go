@@ -3,6 +3,7 @@ package core
 import (
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/opentracing/opentracing-go"
@@ -58,7 +59,10 @@ func AddTracing(settings TracingSettings) {
 	openTracer = tracer
 }
 
-func (s *CircuitBreakerSettings) toGobreakerSettings() gobreaker.Settings {
+func (s *CircuitBreakerSettings) toGobreakerSettings(defaultName string) gobreaker.Settings {
+	if strings.TrimSpace(s.Name) == "" {
+		s.Name = defaultName
+	}
 	if s.AllowedRequestInHalfOpen < 1 {
 		s.AllowedRequestInHalfOpen = 1
 	}
@@ -114,12 +118,12 @@ func GetStateService() *stateService {
 }
 
 func GetRepositoryService(model Entitier) *repositoryService {
+	if model == nil {
+		panic("model is required")
+	}
+
 	typeOf := reflect.TypeOf(model)
 	key := typeOf.Elem().Name()
-
-	if key == "" {
-		panic("key is required")
-	}
 
 	if !repositories.Has(key) {
 		panic("you should create repository service before use it")

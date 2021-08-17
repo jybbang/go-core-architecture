@@ -33,7 +33,7 @@ func getSqlServerClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 }
 
 func NewSqlServerAdapter(ctx context.Context, settings GormSettings) *adapter {
-	conn, mutex := getMySqlClient(settings)
+	conn, mutex := getSqlServerClient(settings)
 	sqlserver := &adapter{
 		conn:     conn,
 		rw:       mutex,

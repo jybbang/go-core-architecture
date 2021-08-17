@@ -17,7 +17,7 @@ func Test_queryRepositoryService_Find(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -49,7 +49,7 @@ func Test_queryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -70,7 +70,7 @@ func Test_queryRepositoryService_Any(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -101,7 +101,7 @@ func Test_queryRepositoryService_AnyWithFilter(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -127,7 +127,7 @@ func Test_queryRepositoryService_Count(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -161,7 +161,7 @@ func Test_queryRepositoryService_CountWithFilter(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -192,7 +192,7 @@ func Test_queryRepositoryService_List(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()
@@ -228,7 +228,7 @@ func Test_queryRepositoryService_ListWithFilter(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
-	r := core.NewRepositoryServiceBuilder(new(testModel)).
+	r := core.NewRepositoryServiceBuilder(new(testModel), "testModel").
 		CommandRepositoryAdapter(mock).
 		QueryRepositoryAdapter(mock).
 		Create()

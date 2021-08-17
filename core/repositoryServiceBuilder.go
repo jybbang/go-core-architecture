@@ -9,7 +9,7 @@ import (
 
 // Builder Object for RepositoryService
 type repositoryServiceBuilder struct {
-	key               string
+	tableName         string
 	model             Entitier
 	queryRepository   queryRepositoryAdapter
 	commandRepository commandRepositoryAdapter
@@ -17,20 +17,21 @@ type repositoryServiceBuilder struct {
 }
 
 // Constructor for RepositoryServiceBuilder
-func NewRepositoryServiceBuilder(model Entitier) *repositoryServiceBuilder {
-	typeOf := reflect.TypeOf(model)
-	key := typeOf.Elem().Name()
-
-	if key == "" {
-		panic("key is required")
+func NewRepositoryServiceBuilder(model Entitier, tableName string) *repositoryServiceBuilder {
+	if model == nil {
+		panic("model is required")
+	}
+	if tableName == "" {
+		panic("tableName is required")
 	}
 
 	o := new(repositoryServiceBuilder)
-	o.key = key
+	o.tableName = tableName
 	o.model = model
+	o.model.SetID(uuid.Nil)
 
 	st := gobreaker.Settings{
-		Name: key + "-repository",
+		Name: tableName + "-repository",
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
 
@@ -39,20 +40,22 @@ func NewRepositoryServiceBuilder(model Entitier) *repositoryServiceBuilder {
 
 // Build Method which creates RepositoryService
 func (b *repositoryServiceBuilder) Build() *repositoryService {
-	if repositories.Has(b.key) {
+	typeOf := reflect.TypeOf(b.model)
+	key := typeOf.Elem().Name()
+
+	if repositories.Has(key) {
 		panic("this repository service already created")
 	}
 
 	repository := b.Create()
 
-	repositories.Set(b.key, repository)
+	repositories.Set(key, repository)
 	return repository
 }
 
 // Build Method which creates EventBus
 func (b *repositoryServiceBuilder) Create() *repositoryService {
 	instance := &repositoryService{
-		model:             b.model,
 		queryRepository:   b.queryRepository,
 		commandRepository: b.commandRepository,
 		cb:                b.cb,
@@ -64,22 +67,28 @@ func (b *repositoryServiceBuilder) Create() *repositoryService {
 
 // Builder method to set the field queryRepository in RepositoryServiceBuilder
 func (b *repositoryServiceBuilder) QueryRepositoryAdapter(adapter queryRepositoryAdapter) *repositoryServiceBuilder {
+	if adapter == nil {
+		panic("adapter is required")
+	}
+
 	b.queryRepository = adapter
-	b.model.SetID(uuid.Nil)
-	b.queryRepository.SetModel(b.model)
+	b.queryRepository.SetModel(b.model, b.tableName)
 	return b
 }
 
 // Builder method to set the field commandRepository in RepositoryServiceBuilder
 func (b *repositoryServiceBuilder) CommandRepositoryAdapter(adapter commandRepositoryAdapter) *repositoryServiceBuilder {
+	if adapter == nil {
+		panic("adapter is required")
+	}
+
 	b.commandRepository = adapter
-	b.model.SetID(uuid.Nil)
-	b.commandRepository.SetModel(b.model)
+	b.commandRepository.SetModel(b.model, b.tableName)
 	return b
 }
 
 // Builder method to set the field messaging in RepositoryServiceBuilder
 func (b *repositoryServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *repositoryServiceBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings())
+	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings(b.cb.Name()))
 	return b
 }

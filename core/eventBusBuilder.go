@@ -77,12 +77,16 @@ func (b *eventbusBuilder) Settings(settings EventbusSettings) *eventbusBuilder {
 
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBuilder {
+	if adapter == nil {
+		panic("adapter is required")
+	}
+
 	b.messaging = adapter
 	return b
 }
 
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventbusBuilder) CircuitBreaker(setting CircuitBreakerSettings) *eventbusBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings())
+	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings(b.cb.Name()))
 	return b
 }

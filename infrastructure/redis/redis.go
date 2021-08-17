@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 
 	"github.com/go-redis/redis/v8"
@@ -96,7 +97,7 @@ func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
 	value, err := a.redis.Get(ctx, key).Bytes()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return core.ErrNotFound
 	} else if err != nil {
 		return err
@@ -110,11 +111,13 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 		return err
 	}
 
-	return a.redis.Set(ctx, key, bytes, 0).Err()
+	result := a.redis.Set(ctx, key, bytes, 0)
+	return result.Err()
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	return a.redis.Del(ctx, key).Err()
+	result := a.redis.Del(ctx, key)
+	return result.Err()
 }
 
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
@@ -122,8 +125,8 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 	if err != nil {
 		return err
 	}
-	err = a.redis.Publish(ctx, coreEvent.GetTopic(), bytes).Err()
-	return err
+	result := a.redis.Publish(ctx, coreEvent.GetTopic(), bytes)
+	return result.Err()
 }
 
 func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {

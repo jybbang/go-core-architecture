@@ -14,6 +14,7 @@ import (
 )
 
 type adapter struct {
+	tableName      string
 	model          core.Entitier
 	db             cmap.ConcurrentMap
 	pubsubs        cmap.ConcurrentMap
@@ -163,10 +164,11 @@ func (a *adapter) FakeSend(topic string, receivedData interface{}) {
 	}
 }
 
-func (a *adapter) SetModel(model core.Entitier) {
-	defer a.setting.Log.Debugw("mock setmodel", "model", model)
+func (a *adapter) SetModel(model core.Entitier, tableName string) {
+	defer a.setting.Log.Debugw("mock setmodel", "model", model, "tableName", tableName)
 
 	a.model = model
+	a.tableName = tableName
 }
 
 func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (err error) {
