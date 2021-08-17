@@ -13,8 +13,8 @@ type performanceMiddleware struct {
 	log *zap.Logger
 }
 
-func NewPerformanceMiddleware(logger *zap.Logger) *logMiddleware {
-	return &logMiddleware{
+func NewPerformanceMiddleware(logger *zap.Logger) *performanceMiddleware {
+	return &performanceMiddleware{
 		log: logger,
 	}
 }

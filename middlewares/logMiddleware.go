@@ -19,6 +19,6 @@ func NewLogMiddleware(logger *zap.Logger) *logMiddleware {
 }
 
 func (m *logMiddleware) Run(ctx context.Context, request core.Request) core.Result {
-	m.log.Info("mediator request log", zap.Reflect("request", request))
+	m.log.Info("send request log", zap.Reflect("request", request))
 	return m.Next()
 }
