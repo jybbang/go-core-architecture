@@ -30,11 +30,11 @@ func (e *Entity) SetID(id uuid.UUID) {
 }
 
 func (e *Entity) SetCreatedAt(user string, timestamp time.Time) {
-	// TODO add create user from context
+	e.CreateUser = user
 	e.CreatedAt = timestamp
 }
 
 func (e *Entity) SetUpdatedAt(user string, timestamp time.Time) {
-	// TODO add update user from context
+	e.UpdateUser = user
 	e.UpdatedAt = timestamp
 }
