@@ -19,12 +19,6 @@ type eventbus struct {
 	settings     EventbusSettings
 }
 
-type EventbusSettings struct {
-	BufferedEventBufferTime  time.Duration
-	BufferedEventBufferCount int
-	BufferedEventTimeout     time.Duration
-}
-
 type bufferedEvent struct {
 	DomainEvent
 	BufferedEvents []DomainEventer
