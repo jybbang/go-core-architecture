@@ -2,13 +2,12 @@ package gorms
 
 import (
 	"context"
-	"sync"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func getSqliteClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
+func getSqliteClient(settings GormSettings) *gorm.DB {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -24,19 +23,16 @@ func getSqliteClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
 		clientsInstance.clients[connectionString] = tx
-		clientsInstance.mutexes[connectionString] = new(sync.RWMutex)
 	}
 
 	client := clientsInstance.clients[connectionString]
-	mutex := clientsInstance.mutexes[connectionString]
-	return client, mutex
+	return client
 }
 
 func NewSqliteAdapter(ctx context.Context, settings GormSettings) *adapter {
-	conn, mutex := getSqliteClient(settings)
+	conn := getSqliteClient(settings)
 	sqlite := &adapter{
 		conn:     conn,
-		rw:       mutex,
 		settings: settings,
 	}
 

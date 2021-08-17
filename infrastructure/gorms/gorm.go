@@ -14,7 +14,6 @@ type adapter struct {
 	tableName string
 	model     core.Entitier
 	conn      *gorm.DB
-	rw        *sync.RWMutex
 	settings  GormSettings
 }
 
@@ -25,7 +24,6 @@ type GormSettings struct {
 
 type clients struct {
 	clients map[string]*gorm.DB
-	mutexes map[string]*sync.RWMutex
 	mutex   sync.Mutex
 }
 
@@ -39,7 +37,6 @@ func getClients() *clients {
 			func() {
 				clientsInstance = &clients{
 					clients: make(map[string]*gorm.DB),
-					mutexes: make(map[string]*sync.RWMutex),
 				}
 			})
 	}

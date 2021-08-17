@@ -2,13 +2,12 @@ package gorms
 
 import (
 	"context"
-	"sync"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func getMySqlClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
+func getMySqlClient(settings GormSettings) *gorm.DB {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -24,19 +23,16 @@ func getMySqlClient(settings GormSettings) (*gorm.DB, *sync.RWMutex) {
 		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
 		clientsInstance.clients[connectionString] = tx
-		clientsInstance.mutexes[connectionString] = new(sync.RWMutex)
 	}
 
 	client := clientsInstance.clients[connectionString]
-	mutex := clientsInstance.mutexes[connectionString]
-	return client, mutex
+	return client
 }
 
 func NewMySqlAdapter(ctx context.Context, settings GormSettings) *adapter {
-	conn, mutex := getMySqlClient(settings)
+	conn := getMySqlClient(settings)
 	mysql := &adapter{
 		conn:     conn,
-		rw:       mutex,
 		settings: settings,
 	}
 

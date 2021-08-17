@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -64,6 +65,20 @@ func (r *repositoryService) List(ctx context.Context, dest interface{}) (err err
 		return fmt.Errorf("%w dest is required", ErrInternalServerError)
 	}
 
+	resultsVal := reflect.ValueOf(dest)
+	if resultsVal.Kind() != reflect.Ptr {
+		return fmt.Errorf("%w dest argument must be a pointer to a slice", ErrInternalServerError)
+	}
+
+	sliceVal := resultsVal.Elem()
+	if sliceVal.Kind() == reflect.Interface {
+		sliceVal = sliceVal.Elem()
+	}
+
+	if sliceVal.Kind() != reflect.Slice {
+		return fmt.Errorf("%w dest argument must be a pointer to a slice", ErrInternalServerError)
+	}
+
 	_, err = r.cb.Execute(func() (interface{}, error) {
 		err = r.queryRepository.List(ctx, dest)
 		return nil, err
@@ -74,6 +89,20 @@ func (r *repositoryService) List(ctx context.Context, dest interface{}) (err err
 func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
 	if dest == nil {
 		return fmt.Errorf("%w dest is required", ErrInternalServerError)
+	}
+
+	resultsVal := reflect.ValueOf(dest)
+	if resultsVal.Kind() != reflect.Ptr {
+		return fmt.Errorf("%w dest argument must be a pointer to a slice", ErrInternalServerError)
+	}
+
+	sliceVal := resultsVal.Elem()
+	if sliceVal.Kind() == reflect.Interface {
+		sliceVal = sliceVal.Elem()
+	}
+
+	if sliceVal.Kind() != reflect.Slice {
+		return fmt.Errorf("%w dest argument must be a pointer to a slice", ErrInternalServerError)
 	}
 
 	_, err = r.cb.Execute(func() (interface{}, error) {
