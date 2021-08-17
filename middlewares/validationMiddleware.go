@@ -18,9 +18,9 @@ func NewValidationMiddleware() *validationMiddleware {
 	}
 }
 
-func (m *validationMiddleware) Run(ctx context.Context, request core.Request) (ok bool, err error) {
-	if err = m.validate.Struct(request); err != nil {
-		return false, core.ErrBadRequest
+func (m *validationMiddleware) Run(ctx context.Context, request core.Request) core.Result {
+	if err := m.validate.Struct(request); err != nil {
+		return core.Result{E: core.ErrBadRequest}
 	}
-	return true, nil
+	return m.Next()
 }

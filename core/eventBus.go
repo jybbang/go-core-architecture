@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -91,6 +92,7 @@ func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
 func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+	defer publishEventsPanicRecover()
 
 	var err error
 	now := time.Now()
@@ -127,4 +129,18 @@ func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
 	}
 
 	return err
+}
+
+func (e *eventbus) Subscribe(ctx context.Context, topic string, handler ReplyHandler) error {
+	return e.messaging.Subscribe(ctx, topic, handler)
+}
+
+func (e *eventbus) Unsubscribe(ctx context.Context, topic string) error {
+	return e.messaging.Unsubscribe(ctx, topic)
+}
+
+func publishEventsPanicRecover() {
+	if r := recover(); r != nil {
+		fmt.Println("publish domain events recovering from panic:", r)
+	}
 }

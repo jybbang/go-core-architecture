@@ -4,17 +4,14 @@ import (
 	"context"
 	"reflect"
 	"sync/atomic"
-	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
-	"go.uber.org/zap"
 )
 
 type mediator struct {
-	Middleware
+	middleware           Behavior
 	requestHandlers      cmap.ConcurrentMap
 	notificationHandlers cmap.ConcurrentMap
-	log                  *zap.Logger
 	sentCount            uint32
 	publishedCount       uint32
 }
@@ -29,6 +26,11 @@ func (m *mediator) GetSentCount() uint32 {
 
 func (m *mediator) GetPublishedCount() uint32 {
 	return m.publishedCount
+}
+
+func (m *mediator) AddMiddleware(next Behavior) Behavior {
+	m.middleware = next
+	return m.middleware
 }
 
 func (m *mediator) Send(ctx context.Context, request Request) Result {
@@ -48,10 +50,6 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 		defer span.Finish()
 	}
 
-	if m.log != nil {
-		defer m.timeMeasurement(time.Now(), typeName)
-	}
-
 	item, ok := m.requestHandlers.Get(typeName)
 	if !ok {
 		panic("request handler not found, you should register handler before use it")
@@ -59,7 +57,7 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 
 	handler := item.(RequestHandler)
 
-	result := m.nextRun(ctx, request, handler)
+	result := m.next(ctx, request, handler)
 
 	if result.E != nil {
 		return result
@@ -69,6 +67,15 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 	atomic.AddUint32(&m.sentCount, 1)
 
 	return result
+}
+
+func (m *mediator) next(ctx context.Context, request Request, handler RequestHandler) Result {
+	if m.middleware != nil {
+		m.middleware.setParameters(ctx, request, handler)
+		return m.middleware.Run(ctx, request)
+	} else {
+		return handler(ctx, request)
+	}
 }
 
 func (m *mediator) Publish(ctx context.Context, notification Notification) error {
@@ -103,11 +110,4 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 	atomic.AddUint32(&m.publishedCount, 1)
 
 	return nil
-}
-
-func (m *mediator) timeMeasurement(start time.Time, typeName string) {
-	elapsed := time.Since(start)
-	if elapsed > time.Duration(500*time.Millisecond) {
-		m.log.Warn("send request long running", zap.String("request", typeName), zap.Duration("measure", elapsed))
-	}
 }
