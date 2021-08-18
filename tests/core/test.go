@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/jybbang/go-core-architecture/core"
-	"github.com/jybbang/go-core-architecture/infrastructure/mocks"
 )
 
 type testModel struct {
@@ -42,15 +41,4 @@ func okNotificationHandler(ctx context.Context, notification interface{}) error 
 
 func errNotificationHandler(ctx context.Context, notification interface{}) error {
 	return core.ErrForbiddenAcccess
-}
-
-func init() {
-	core.NewMediatorBuilder().
-		AddHandler(new(okCommand), okCommandHandler).
-		AddHandler(new(errCommand), errCommandHandler).
-		AddNotificationHandler(new(okNotification), okNotificationHandler).
-		AddNotificationHandler(new(errNotification), errNotificationHandler).
-		Build()
-
-	core.NewEventbusBuilder().MessaingAdapter(mocks.NewMockAdapter()).Build()
 }

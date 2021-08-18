@@ -15,11 +15,17 @@ import (
 func TestEventBus_AddDomainEvents(t *testing.T) {
 	expect := 1000000
 	mock := mocks.NewMockAdapter()
+
+	m := core.NewMediatorBuilder().
+		Create()
 	e := core.NewEventbusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t1",
 			SamplingFailureCount: expect,
-		}).MessaingAdapter(mock).Create()
+		}).
+		MessaingAdapter(mock).
+		CustomMediator(m).
+		Create()
 
 	for i := 0; i < expect; i++ {
 		go e.AddDomainEvent(&core.DomainEvent{
@@ -53,11 +59,18 @@ loop:
 func TestEventBus_PublishDomainEvents(t *testing.T) {
 	expect := 10000
 	mock := mocks.NewMockAdapter()
+
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(okNotification), okNotificationHandler).
+		Create()
 	e := core.NewEventbusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t2",
 			SamplingFailureCount: expect,
-		}).MessaingAdapter(mock).Create()
+		}).
+		MessaingAdapter(mock).
+		CustomMediator(m).
+		Create()
 
 	for i := 0; i < expect; i++ {
 		event := new(okNotification)
@@ -88,13 +101,21 @@ func TestEventBus_PublishDomainEvents(t *testing.T) {
 }
 
 func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *testing.T) {
+	timeout := time.Duration(500 * time.Millisecond)
 	expect := 1000
 	mock := mocks.NewMockAdapter()
+
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(okNotification), okNotificationHandler).
+		Create()
 	e := core.NewEventbusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t3",
 			SamplingFailureCount: expect,
-		}).MessaingAdapter(mock).Create()
+		}).
+		MessaingAdapter(mock).
+		CustomMediator(m).
+		Create()
 
 	for i := 0; i < expect; i++ {
 		event := new(okNotification)
@@ -102,10 +123,10 @@ func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *t
 		e.AddDomainEvent(event)
 	}
 
-	ctx, c := context.WithTimeout(context.TODO(), time.Duration(1*time.Second))
+	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(timeout * 2)
 	err := e.PublishDomainEvents(ctx)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded() err = %v, expect %v", err, context.DeadlineExceeded)
@@ -115,11 +136,18 @@ func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *t
 func TestEventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
 	expect := 1000
 	mock := mocks.NewMockAdapter()
+
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(errNotification), errNotificationHandler).
+		Create()
 	e := core.NewEventbusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t4",
 			SamplingFailureCount: expect,
-		}).MessaingAdapter(mock).Create()
+		}).
+		MessaingAdapter(mock).
+		CustomMediator(m).
+		Create()
 
 	for i := 0; i < expect; i++ {
 		event := new(errNotification)
@@ -137,11 +165,18 @@ func TestEventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
 func TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking(t *testing.T) {
 	expect := 1000
 	mock := mocks.NewMockAdapter()
+
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(okNotification), okNotificationHandler).
+		Create()
 	e := core.NewEventbusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t5",
 			SamplingFailureCount: expect,
-		}).MessaingAdapter(mock).Create()
+		}).
+		MessaingAdapter(mock).
+		CustomMediator(m).
+		Create()
 
 	for i := 0; i < expect; i++ {
 		event := new(okNotification)
@@ -168,16 +203,23 @@ func TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking(t *testi
 }
 
 func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) {
-	var timeout = time.Duration(500 * time.Millisecond)
-	var expect = 10
-
+	timeout := time.Duration(500 * time.Millisecond)
+	expect := 10
 	mock := mocks.NewMockAdapter()
+
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(okNotification), okNotificationHandler).
+		AddNotificationHandler(new(errNotification), errNotificationHandler).
+		Create()
 	e := core.NewEventbusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t6",
 			DurationOfBreak:      timeout,
 			SamplingFailureCount: expect,
-		}).MessaingAdapter(mock).Create()
+		}).
+		MessaingAdapter(mock).
+		CustomMediator(m).
+		Create()
 
 	ctx := context.Background()
 	for i := 0; i < expect; i++ {
@@ -219,10 +261,13 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 }
 
 func TestEventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) {
-	var timeout = time.Duration(500 * time.Millisecond)
-	var expect = 10
-
+	timeout := time.Duration(500 * time.Millisecond)
+	expect := 10
 	mock := mocks.NewMockAdapter()
+
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(okNotification), okNotificationHandler).
+		Create()
 	e := core.NewEventbusBuilder().
 		Settings(core.EventbusSettings{
 			BufferedEventBufferTime: timeout,
@@ -230,7 +275,10 @@ func TestEventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) 
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t7",
 			SamplingFailureCount: expect,
-		}).MessaingAdapter(mock).Create()
+		}).
+		MessaingAdapter(mock).
+		CustomMediator(m).
+		Create()
 
 	ctx := context.Background()
 	for i := 0; i < expect; i++ {

@@ -9,10 +9,13 @@ import (
 )
 
 func Test_mediator_Send(t *testing.T) {
-	expect := 1000000
-	m := core.GetMediator()
 	ctx := context.Background()
+	m := core.NewMediatorBuilder().
+		AddHandler(new(okCommand), okCommandHandler).
+		AddHandler(new(errCommand), errCommandHandler).
+		Create()
 
+	expect := 1000000
 	sumExpect := 0
 	sum := 0
 	for i := 0; i < expect; i++ {
@@ -38,10 +41,12 @@ func Test_mediator_Send(t *testing.T) {
 }
 
 func Test_mediator_Publish(t *testing.T) {
-	expect := 1000000
-	m := core.GetMediator()
 	ctx := context.Background()
+	m := core.NewMediatorBuilder().
+		AddNotificationHandler(new(okNotification), okNotificationHandler).
+		Create()
 
+	expect := 1000000
 	for i := 0; i < expect; i++ {
 		go m.Publish(ctx, &okNotification{})
 	}

@@ -55,17 +55,6 @@ func (b *mediatorBuilder) AddNotificationHandler(notification Notification, hand
 }
 
 // Build Method which creates Mediator
-func (b *mediatorBuilder) Build() *mediator {
-	if mediatorInstance != nil {
-		panic("mediator already created")
-	}
-
-	mediatorInstance = b.Create()
-
-	return mediatorInstance
-}
-
-// Build Method which creates Mediator
 func (b *mediatorBuilder) Create() *mediator {
 	instance := &mediator{
 		requestHandlers:      b.requestHandlers,
@@ -74,4 +63,15 @@ func (b *mediatorBuilder) Create() *mediator {
 	instance.initialize()
 
 	return instance
+}
+
+// Build Method which creates Mediator
+func (b *mediatorBuilder) Build() *mediator {
+	if mediatorInstance != nil {
+		panic("mediator already created")
+	}
+
+	mediatorInstance = b.Create()
+
+	return mediatorInstance
 }

@@ -63,7 +63,6 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 		return result
 	}
 
-	GetEventbus().PublishDomainEvents(ctx)
 	atomic.AddUint32(&m.sentCount, 1)
 
 	return result

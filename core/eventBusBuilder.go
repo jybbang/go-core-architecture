@@ -11,6 +11,7 @@ import (
 
 // Builder Object for EventBus
 type eventbusBuilder struct {
+	mediator  *mediator
 	messaging messagingAdapter
 	cb        *gobreaker.CircuitBreaker
 	setting   EventbusSettings
@@ -26,36 +27,6 @@ func NewEventbusBuilder() *eventbusBuilder {
 
 	o.cb = gobreaker.NewCircuitBreaker(st)
 	return o
-}
-
-// Build Method which creates EventBus
-func (b *eventbusBuilder) Build() *eventbus {
-	if eventBusInstance != nil {
-		panic("eventbus already created")
-	}
-
-	eventBusInstance = b.Create()
-
-	return eventBusInstance
-}
-
-// Build Method which creates EventBus
-func (b *eventbusBuilder) Create() *eventbus {
-	if b.messaging == nil {
-		panic("messaging adapter is required")
-	}
-
-	instance := &eventbus{
-		mediator:     GetMediator(),
-		domainEvents: goconcurrentqueue.NewFIFO(),
-		ch:           make(chan rxgo.Item, 1),
-		messaging:    b.messaging,
-		cb:           b.cb,
-		settings:     b.setting,
-	}
-	instance.initialize()
-
-	return instance
 }
 
 // Builder method to set the field messaging in EventBusBuilder
@@ -76,6 +47,16 @@ func (b *eventbusBuilder) Settings(settings EventbusSettings) *eventbusBuilder {
 }
 
 // Builder method to set the field messaging in EventBusBuilder
+func (b *eventbusBuilder) CustomMediator(mediator *mediator) *eventbusBuilder {
+	if mediator == nil {
+		panic("mediator is required")
+	}
+
+	b.mediator = mediator
+	return b
+}
+
+// Builder method to set the field messaging in EventBusBuilder
 func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBuilder {
 	if adapter == nil {
 		panic("adapter is required")
@@ -89,4 +70,37 @@ func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBui
 func (b *eventbusBuilder) CircuitBreaker(setting CircuitBreakerSettings) *eventbusBuilder {
 	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
 	return b
+}
+
+// Build Method which creates EventBus
+func (b *eventbusBuilder) Create() *eventbus {
+	if b.messaging == nil {
+		panic("messaging adapter is required")
+	}
+	if b.mediator == nil {
+		b.mediator = GetMediator()
+	}
+
+	instance := &eventbus{
+		mediator:     b.mediator,
+		domainEvents: goconcurrentqueue.NewFIFO(),
+		ch:           make(chan rxgo.Item, 1),
+		messaging:    b.messaging,
+		cb:           b.cb,
+		settings:     b.setting,
+	}
+	instance.initialize()
+
+	return instance
+}
+
+// Build Method which creates EventBus
+func (b *eventbusBuilder) Build() *eventbus {
+	if eventBusInstance != nil {
+		panic("eventbus already created")
+	}
+
+	eventBusInstance = b.Create()
+
+	return eventBusInstance
 }
