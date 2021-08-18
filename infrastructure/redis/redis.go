@@ -91,15 +91,15 @@ func (a *adapter) Close() {
 	a.redis.Close()
 }
 
-func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
+func (a *adapter) Has(ctx context.Context, key string) bool {
 	value, err := a.redis.Exists(ctx, key).Result()
-	if err == redis.Nil {
-		return false, core.ErrNotFound
+	if err != nil {
+		return false
 	}
-	return value > 0, err
+	return value > 0
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 	value, err := a.redis.Get(ctx, key).Bytes()
 	if errors.Is(err, redis.Nil) {
 		return core.ErrNotFound

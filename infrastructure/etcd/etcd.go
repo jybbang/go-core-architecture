@@ -95,15 +95,15 @@ func (a *adapter) Close() {
 	a.etcd.Close()
 }
 
-func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
+func (a *adapter) Has(ctx context.Context, key string) bool {
 	value, err := a.etcd.Get(ctx, key)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return value.Count > 0, err
+	return value.Count > 0
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 	value, err := a.etcd.Get(ctx, key)
 	if err != nil {
 		return err

@@ -15,7 +15,7 @@ func Test_leveldbStateService_Has(t *testing.T) {
 	ctx := context.Background()
 
 	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
-		Path: "test_db.db",
+		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(leveldb).
@@ -46,32 +46,11 @@ func Test_leveldbStateService_Has(t *testing.T) {
 	}
 }
 
-func Test_leveldbStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
-	ctx := context.Background()
-
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
-		Path: "test_db.db",
-	})
-	s := core.NewStateServiceBuilder().
-		StateAdapter(leveldb).
-		Create()
-
-	result := s.Has(ctx, "zxc")
-
-	if result.V != false {
-		t.Errorf("Test_leveldbStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
-	}
-
-	if result.E != nil {
-		t.Errorf("Test_leveldbStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
-	}
-}
-
 func Test_leveldbStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
 	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
-		Path: "test_db.db",
+		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(leveldb).
@@ -107,7 +86,7 @@ func Test_leveldbStateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
 	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
-		Path: "test_db.db",
+		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(leveldb).
@@ -125,7 +104,7 @@ func Test_leveldbStateService_Set(t *testing.T) {
 	ctx := context.Background()
 
 	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
-		Path: "test_db.db",
+		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(leveldb).
@@ -160,7 +139,7 @@ func Test_leveldbStateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
-		Path: "test_db.db",
+		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(leveldb).
@@ -196,7 +175,7 @@ func Test_leveldbStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
 	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
-		Path: "test_db.db",
+		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(leveldb).

@@ -27,12 +27,13 @@ func (s *stateService) Has(ctx context.Context, key string) Result {
 	}
 
 	resp, err := s.cb.Execute(func() (interface{}, error) {
-		return s.state.Has(ctx, key)
+		ok := s.state.Has(ctx, key)
+		return ok, nil
 	})
 	if err != nil {
 		return Result{V: false, E: err}
 	}
-	return Result{V: resp.(bool), E: err}
+	return Result{V: resp.(bool), E: nil}
 }
 
 func (s *stateService) Get(ctx context.Context, key string, dest interface{}) Result {

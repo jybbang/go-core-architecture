@@ -49,13 +49,6 @@ func getLevelDbClient(ctx context.Context, settings LevelDbSettings) *leveldb.DB
 	defer clientsInstance.mutex.Unlock()
 
 	path := settings.Path
-
-	// if _, err := os.Stat(path); err != nil {
-	// 	if os.IsNotExist(err) {
-	// 		panic("file not exist")
-	// 	}
-	// }
-
 	_, ok := clientsInstance.clients[path]
 	if !ok {
 		leveldbClient, err := leveldb.OpenFile(path, &opt.Options{
@@ -89,15 +82,15 @@ func (a *adapter) Close() {
 	a.leveldb.Close()
 }
 
-func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
-	value, err := a.leveldb.Has([]byte(key), nil)
+func (a *adapter) Has(ctx context.Context, key string) bool {
+	ok, err := a.leveldb.Has([]byte(key), nil)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return value, err
+	return ok
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 	value, err := a.leveldb.Get([]byte(key), nil)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {

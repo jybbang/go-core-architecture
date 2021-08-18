@@ -71,20 +71,17 @@ func (a *adapter) GetStatesCount() int {
 	return a.states.Count()
 }
 
-func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
+func (a *adapter) Has(ctx context.Context, key string) bool {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
-		return false, err
+		return false
 	}
 
-	ok = a.states.Has(key)
-
-	defer a.setting.Log.Debugw("mock has", "key", key, "ok", ok)
-
-	return ok, nil
+	defer a.setting.Log.Debugw("mock has", "key", key)
+	return a.states.Has(key)
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {
 		return err

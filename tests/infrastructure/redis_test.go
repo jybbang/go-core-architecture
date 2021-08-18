@@ -72,27 +72,6 @@ func Test_redisStateService_Has(t *testing.T) {
 	}
 }
 
-func Test_redisStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
-	ctx := context.Background()
-
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
-	})
-	s := core.NewStateServiceBuilder().
-		StateAdapter(redis).
-		Create()
-
-	result := s.Has(ctx, "zxc")
-
-	if result.V != false {
-		t.Errorf("Test_redisStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
-	}
-
-	if result.E != nil {
-		t.Errorf("Test_redisStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
-	}
-}
-
 func Test_redisStateService_Get(t *testing.T) {
 	ctx := context.Background()
 

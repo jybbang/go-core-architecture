@@ -44,25 +44,6 @@ func Test_stateService_Has(t *testing.T) {
 	}
 }
 
-func Test_stateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
-	ctx := context.Background()
-
-	mock := mocks.NewMockAdapter()
-	s := core.NewStateServiceBuilder().
-		StateAdapter(mock).
-		Create()
-
-	result := s.Has(ctx, "zxc")
-
-	if result.V != false {
-		t.Errorf("Test_stateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
-	}
-
-	if result.E != nil {
-		t.Errorf("Test_stateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
-	}
-}
-
 func Test_stateService_Get(t *testing.T) {
 	ctx := context.Background()
 

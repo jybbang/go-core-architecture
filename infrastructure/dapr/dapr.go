@@ -57,18 +57,21 @@ func (a *adapter) Close() {
 	a.dapr.Close()
 }
 
-func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
+func (a *adapter) Has(ctx context.Context, key string) bool {
 	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return value.Value != nil, err
+	return value.Value != nil
 }
 
-func (a *adapter) Get(ctx context.Context, key string, dest interface{}) (err error) {
+func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
 	if err != nil {
 		return err
+	}
+	if value == nil {
+		return core.ErrNotFound
 	}
 	return json.Unmarshal(value.Value, dest)
 }

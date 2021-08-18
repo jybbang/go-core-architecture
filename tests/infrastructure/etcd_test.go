@@ -72,27 +72,6 @@ func Test_etcdStateService_Has(t *testing.T) {
 	}
 }
 
-func Test_etcdStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
-	ctx := context.Background()
-
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
-		Endpoints: []string{"localhost:2379"},
-	})
-	s := core.NewStateServiceBuilder().
-		StateAdapter(etcd).
-		Create()
-
-	result := s.Has(ctx, "zxc")
-
-	if result.V != false {
-		t.Errorf("Test_etcdStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
-	}
-
-	if result.E != nil {
-		t.Errorf("Test_etcdStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
-	}
-}
-
 func Test_etcdStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
