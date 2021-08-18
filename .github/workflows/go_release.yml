@@ -21,10 +21,10 @@ jobs:
         uses: kyoh86/git-vertag-action@v1
         with:
           method: patch # "major", "minor", "patch" or "get"
-        id: newtag
+        id: vertag
 
       - name: Push new tag ver
         uses: hole19/git-tag-action@master
         env:
-          TAG: ${{ steps.vertag.outputs.newtag }}
+          TAG: ${{ steps.vertag.outputs.vertag }}
           GITHUB_TOKEN: ${{ secrets.PUBLISH_TO_GITHUB_COM }}
