@@ -17,9 +17,14 @@ jobs:
         with:
           go-version: 1.16
 
-      - name: Tag version
+      - name: Get new tag ver
         uses: kyoh86/git-vertag-action@v1
         with:
           method: patch # "major", "minor", "patch" or "get"
+        id: newtag
+
+      - name: Push new tag ver
+        uses: hole19/git-tag-action@master
         env:
+          TAG: ${{ steps.vertag.outputs.newtag }}
           GITHUB_TOKEN: ${{ secrets.PUBLISH_TO_GITHUB_COM }}
