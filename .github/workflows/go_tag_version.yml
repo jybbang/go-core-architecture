@@ -20,10 +20,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PUBLISH_TO_GITHUB_COM }}
           WITH_V: true
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --rm-dist
+      - name: Commit Changes
+        id: commit
+        uses: packagrio/action-releasr-go@master
         env:
           GITHUB_TOKEN: ${{ secrets.PUBLISH_TO_GITHUB_COM }}
