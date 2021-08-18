@@ -11,7 +11,7 @@ import (
 	"github.com/jybbang/go-core-architecture/infrastructure/mocks"
 )
 
-func TestStateService_Has(t *testing.T) {
+func Test_stateService_Has(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
@@ -36,15 +36,15 @@ func TestStateService_Has(t *testing.T) {
 	result := s.Has(ctx, key)
 
 	if result.V != true {
-		t.Errorf("TestStateService_Has() ok = %v, expect %v", result.V, true)
+		t.Errorf("Test_stateService_Has() ok = %v, expect %v", result.V, true)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestStateService_Has() err = %v", result.E)
+		t.Errorf("Test_stateService_Has() err = %v", result.E)
 	}
 }
 
-func TestStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
+func Test_stateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
@@ -55,15 +55,15 @@ func TestStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 	result := s.Has(ctx, "zxc")
 
 	if result.V != false {
-		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
+		t.Errorf("Test_stateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
+		t.Errorf("Test_stateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
 	}
 }
 
-func TestStateService_Get(t *testing.T) {
+func Test_stateService_Get(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
@@ -89,15 +89,15 @@ func TestStateService_Get(t *testing.T) {
 	result := s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
-		t.Errorf("TestStateService_Get() dest = %v, expect %v", dest, expect)
+		t.Errorf("Test_stateService_Get() dest = %v, expect %v", dest, expect)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestStateService_Get() err = %v", result.E)
+		t.Errorf("Test_stateService_Get() err = %v", result.E)
 	}
 }
 
-func TestStateService_GetNotFoundShouldBeError(t *testing.T) {
+func Test_stateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
@@ -109,11 +109,11 @@ func TestStateService_GetNotFoundShouldBeError(t *testing.T) {
 	result := s.Get(ctx, "zxc", dest)
 
 	if !errors.Is(result.E, core.ErrNotFound) {
-		t.Errorf("TestStateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
+		t.Errorf("Test_stateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
-func TestStateService_Set(t *testing.T) {
+func Test_stateService_Set(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
@@ -135,18 +135,18 @@ func TestStateService_Set(t *testing.T) {
 	result := s.Set(ctx, key, expect)
 
 	if result.E != nil {
-		t.Errorf("TestStateService_Set() err = %v", result.E)
+		t.Errorf("Test_stateService_Set() err = %v", result.E)
 	}
 
 	dest := &okCommand{}
 	s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
-		t.Errorf("TestStateService_Set() dest = %v, expect %v", dest, expect)
+		t.Errorf("Test_stateService_Set() dest = %v, expect %v", dest, expect)
 	}
 }
 
-func TestStateService_Delete(t *testing.T) {
+func Test_stateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
@@ -172,15 +172,15 @@ func TestStateService_Delete(t *testing.T) {
 	result := s.Has(ctx, key)
 
 	if result.V != false {
-		t.Errorf("TestStateService_Delete() ok = %v, expect %v", result.V, false)
+		t.Errorf("Test_stateService_Delete() ok = %v, expect %v", result.V, false)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestStateService_Delete() err = %v", result.E)
+		t.Errorf("Test_stateService_Delete() err = %v", result.E)
 	}
 }
 
-func TestStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
+func Test_stateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
 	mock := mocks.NewMockAdapter()
@@ -193,6 +193,6 @@ func TestStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	result := s.Delete(ctx, key)
 
 	if result.E != nil {
-		t.Errorf("TestStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
+		t.Errorf("Test_stateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
 	}
 }

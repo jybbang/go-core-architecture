@@ -12,7 +12,7 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-func TestEventBus_AddDomainEvents(t *testing.T) {
+func Test_eventBus_AddDomainEvents(t *testing.T) {
 	expect := 1000000
 	mock := mocks.NewMockAdapter()
 
@@ -52,11 +52,11 @@ loop:
 	}
 
 	if then != expect {
-		t.Errorf("TestEventBus_AddDomainEvents() count = %v, expect %v", then, expect)
+		t.Errorf("Test_eventBus_AddDomainEvents() count = %v, expect %v", then, expect)
 	}
 }
 
-func TestEventBus_PublishDomainEvents(t *testing.T) {
+func Test_eventBus_PublishDomainEvents(t *testing.T) {
 	expect := 10000
 	mock := mocks.NewMockAdapter()
 
@@ -80,27 +80,27 @@ func TestEventBus_PublishDomainEvents(t *testing.T) {
 
 	when := e.GetDomainEventsQueueCount()
 	if when != expect {
-		t.Errorf("TestEventBus_PublishDomainEvents() count = %v, expect %v", when, expect)
+		t.Errorf("Test_eventBus_PublishDomainEvents() count = %v, expect %v", when, expect)
 	}
 
 	ctx := context.Background()
 	err := e.PublishDomainEvents(ctx)
 	if err != nil {
-		t.Errorf("TestEventBus_PublishDomainEvents() err = %v", err)
+		t.Errorf("Test_eventBus_PublishDomainEvents() err = %v", err)
 	}
 
 	then := e.GetDomainEventsQueueCount()
 	if then != 0 {
-		t.Errorf("TestEventBus_PublishDomainEvents() count = %v, expect %v", then, 0)
+		t.Errorf("Test_eventBus_PublishDomainEvents() count = %v, expect %v", then, 0)
 	}
 
 	then2 := mock.GetPublishedCount()
 	if then2 != uint32(expect) {
-		t.Errorf("TestEventBus_PublishDomainEvents() count = %v, expect %v", then2, expect)
+		t.Errorf("Test_eventBus_PublishDomainEvents() count = %v, expect %v", then2, expect)
 	}
 }
 
-func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *testing.T) {
+func Test_eventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *testing.T) {
 	timeout := time.Duration(500 * time.Millisecond)
 	expect := 1000
 	mock := mocks.NewMockAdapter()
@@ -129,11 +129,11 @@ func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *t
 	time.Sleep(timeout * 2)
 	err := e.PublishDomainEvents(ctx)
 	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded() err = %v, expect %v", err, context.DeadlineExceeded)
+		t.Errorf("Test_eventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded() err = %v, expect %v", err, context.DeadlineExceeded)
 	}
 }
 
-func TestEventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
+func Test_eventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
 	expect := 1000
 	mock := mocks.NewMockAdapter()
 
@@ -158,11 +158,11 @@ func TestEventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
 	ctx := context.Background()
 	err := e.PublishDomainEvents(ctx)
 	if !errors.Is(err, core.ErrForbiddenAcccess) {
-		t.Errorf("TestEventBus_PublishDomainEventsMediatorErrShouldBeError() err = %v, expect %v", err, core.ErrForbiddenAcccess)
+		t.Errorf("Test_eventBus_PublishDomainEventsMediatorErrShouldBeError() err = %v, expect %v", err, core.ErrForbiddenAcccess)
 	}
 }
 
-func TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking(t *testing.T) {
+func Test_eventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking(t *testing.T) {
 	expect := 1000
 	mock := mocks.NewMockAdapter()
 
@@ -188,21 +188,21 @@ func TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking(t *testi
 	ctx := context.Background()
 	err := e.PublishDomainEvents(ctx)
 	if err != nil {
-		t.Errorf("TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking() err = %v", err)
+		t.Errorf("Test_eventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking() err = %v", err)
 	}
 
 	then := e.GetDomainEventsQueueCount()
 	if then != 0 {
-		t.Errorf("TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking() count = %v, expect %v", then, 0)
+		t.Errorf("Test_eventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking() count = %v, expect %v", then, 0)
 	}
 
 	then2 := mock.GetPublishedCount()
 	if then2 != 0 {
-		t.Errorf("TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking() count = %v, expect %v", then2, 0)
+		t.Errorf("Test_eventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking() count = %v, expect %v", then2, 0)
 	}
 }
 
-func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) {
+func Test_eventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) {
 	timeout := time.Duration(500 * time.Millisecond)
 	expect := 10
 	mock := mocks.NewMockAdapter()
@@ -235,12 +235,12 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 
 	err := e.PublishDomainEvents(ctx)
 	if !errors.Is(err, gobreaker.ErrOpenState) {
-		t.Errorf("TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() err = %v, expect %v", err, gobreaker.ErrOpenState)
+		t.Errorf("Test_eventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() err = %v, expect %v", err, gobreaker.ErrOpenState)
 	}
 
 	then := mock.GetPublishedCount()
 	if then != 0 {
-		t.Errorf("TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 0)
+		t.Errorf("Test_eventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 0)
 	}
 
 	time.Sleep(timeout)
@@ -251,16 +251,16 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 
 	err = e.PublishDomainEvents(ctx)
 	if err != nil {
-		t.Errorf("TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() err = %v", err)
+		t.Errorf("Test_eventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() err = %v", err)
 	}
 
 	then = mock.GetPublishedCount()
 	if then != 1 {
-		t.Errorf("TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 1)
+		t.Errorf("Test_eventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 1)
 	}
 }
 
-func TestEventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) {
+func Test_eventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) {
 	timeout := time.Duration(500 * time.Millisecond)
 	expect := 10
 	mock := mocks.NewMockAdapter()
@@ -291,13 +291,13 @@ func TestEventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) 
 	e.PublishDomainEvents(ctx)
 	then := mock.GetPublishedCount()
 	if then != 0 {
-		t.Errorf("TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 0)
+		t.Errorf("Test_eventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 0)
 	}
 
 	time.Sleep(timeout * 2)
 
 	then = mock.GetPublishedCount()
 	if then != 1 {
-		t.Errorf("TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 1)
+		t.Errorf("Test_eventBus_PublishDomainEventsCircuitBrakerShouldBeWorking() count = %v, expect %v", then, 1)
 	}
 }

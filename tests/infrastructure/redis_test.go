@@ -11,7 +11,7 @@ import (
 	"github.com/jybbang/go-core-architecture/infrastructure/redis"
 )
 
-func TestRedisStateService_ConnectionTimeout(t *testing.T) {
+func Test_redisStateService_ConnectionTimeout(t *testing.T) {
 	timeout := time.Duration(1 * time.Second)
 	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
@@ -33,11 +33,11 @@ func TestRedisStateService_ConnectionTimeout(t *testing.T) {
 	result := s.Set(ctx, key, &expect)
 
 	if !errors.Is(result.E, context.DeadlineExceeded) {
-		t.Errorf("TestRedisStateService_ConnectionTimeout() err = %v, expect %v", result.E, context.DeadlineExceeded)
+		t.Errorf("Test_redisStateService_ConnectionTimeout() err = %v, expect %v", result.E, context.DeadlineExceeded)
 	}
 }
 
-func TestRedisStateService_Has(t *testing.T) {
+func Test_redisStateService_Has(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
@@ -64,15 +64,15 @@ func TestRedisStateService_Has(t *testing.T) {
 	result := s.Has(ctx, key)
 
 	if result.V != true {
-		t.Errorf("TestRedisStateService_Has() ok = %v, expect %v", result.V, true)
+		t.Errorf("Test_redisStateService_Has() ok = %v, expect %v", result.V, true)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestRedisStateService_Has() err = %v", result.E)
+		t.Errorf("Test_redisStateService_Has() err = %v", result.E)
 	}
 }
 
-func TestRedisStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
+func Test_redisStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
@@ -85,15 +85,15 @@ func TestRedisStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 	result := s.Has(ctx, "zxc")
 
 	if result.V != false {
-		t.Errorf("TestRedisStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
+		t.Errorf("Test_redisStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestRedisStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
+		t.Errorf("Test_redisStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
 	}
 }
 
-func TestRedisStateService_Get(t *testing.T) {
+func Test_redisStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
@@ -121,15 +121,15 @@ func TestRedisStateService_Get(t *testing.T) {
 	result := s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
-		t.Errorf("TestRedisStateService_Get() dest = %v, expect %v", dest, expect)
+		t.Errorf("Test_redisStateService_Get() dest = %v, expect %v", dest, expect)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestRedisStateService_Get() err = %v", result.E)
+		t.Errorf("Test_redisStateService_Get() err = %v", result.E)
 	}
 }
 
-func TestRedisStateService_GetNotFoundShouldBeError(t *testing.T) {
+func Test_redisStateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
@@ -143,11 +143,11 @@ func TestRedisStateService_GetNotFoundShouldBeError(t *testing.T) {
 	result := s.Get(ctx, "zxc", dest)
 
 	if !errors.Is(result.E, core.ErrNotFound) {
-		t.Errorf("TestRedisStateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
+		t.Errorf("Test_redisStateService_GetNotFoundShouldBeError() err = %v, expect %v", result.E, core.ErrNotFound)
 	}
 }
 
-func TestRedisStateService_Set(t *testing.T) {
+func Test_redisStateService_Set(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
@@ -171,18 +171,18 @@ func TestRedisStateService_Set(t *testing.T) {
 	result := s.Set(ctx, key, expect)
 
 	if result.E != nil {
-		t.Errorf("TestRedisStateService_Set() err = %v", result.E)
+		t.Errorf("Test_redisStateService_Set() err = %v", result.E)
 	}
 
 	dest := &testModel{}
 	s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
-		t.Errorf("TestRedisStateService_Set() dest = %v, expect %v", dest, expect)
+		t.Errorf("Test_redisStateService_Set() dest = %v, expect %v", dest, expect)
 	}
 }
 
-func TestRedisStateService_Delete(t *testing.T) {
+func Test_redisStateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
@@ -210,15 +210,15 @@ func TestRedisStateService_Delete(t *testing.T) {
 	result := s.Has(ctx, key)
 
 	if result.E != nil {
-		t.Errorf("TestRedisStateService_Delete() err = %v", result.E)
+		t.Errorf("Test_redisStateService_Delete() err = %v", result.E)
 	}
 
 	if result.V != false {
-		t.Errorf("TestRedisStateService_Delete() ok = %v, expect %v", result.V, false)
+		t.Errorf("Test_redisStateService_Delete() ok = %v, expect %v", result.V, false)
 	}
 }
 
-func TestRedisStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
+func Test_redisStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
@@ -233,6 +233,6 @@ func TestRedisStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	result := s.Delete(ctx, key)
 
 	if result.E != nil {
-		t.Errorf("TestRedisStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
+		t.Errorf("Test_redisStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
 	}
 }

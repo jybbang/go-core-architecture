@@ -11,7 +11,7 @@ import (
 	"github.com/jybbang/go-core-architecture/infrastructure/etcd"
 )
 
-func TestEtcdStateService_ConnectionTimeout(t *testing.T) {
+func Test_etcdStateService_ConnectionTimeout(t *testing.T) {
 	timeout := time.Duration(1 * time.Second)
 	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
@@ -33,11 +33,11 @@ func TestEtcdStateService_ConnectionTimeout(t *testing.T) {
 	result := s.Set(ctx, key, &expect)
 
 	if !errors.Is(result.E, context.DeadlineExceeded) {
-		t.Errorf("TestEtcdStateService_ConnectionTimeout() err = %v, expect %v", result.E, context.DeadlineExceeded)
+		t.Errorf("Test_etcdStateService_ConnectionTimeout() err = %v, expect %v", result.E, context.DeadlineExceeded)
 	}
 }
 
-func TestEtcdStateService_Has(t *testing.T) {
+func Test_etcdStateService_Has(t *testing.T) {
 	ctx := context.Background()
 
 	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
@@ -64,15 +64,15 @@ func TestEtcdStateService_Has(t *testing.T) {
 	result := s.Has(ctx, key)
 
 	if result.V != true {
-		t.Errorf("TestEtcdStateService_Has() ok = %v, expect %v", result.V, true)
+		t.Errorf("Test_etcdStateService_Has() ok = %v, expect %v", result.V, true)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestEtcdStateService_Has() err = %v", result.E)
+		t.Errorf("Test_etcdStateService_Has() err = %v", result.E)
 	}
 }
 
-func TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
+func Test_etcdStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 	ctx := context.Background()
 
 	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
@@ -85,15 +85,15 @@ func TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError(t *testing.T) {
 	result := s.Has(ctx, "zxc")
 
 	if result.V != false {
-		t.Errorf("TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
+		t.Errorf("Test_etcdStateService_HasNotFoundShouldBeFalseNadNoError() ok = %v, expect %v", result.V, false)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestEtcdStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
+		t.Errorf("Test_etcdStateService_HasNotFoundShouldBeFalseNadNoError() err = %v", result.E)
 	}
 }
 
-func TestEtcdStateService_Get(t *testing.T) {
+func Test_etcdStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
 	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
@@ -121,15 +121,15 @@ func TestEtcdStateService_Get(t *testing.T) {
 	result := s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
-		t.Errorf("TestEtcdStateService_Get() dest = %v, expect %v", dest, expect)
+		t.Errorf("Test_etcdStateService_Get() dest = %v, expect %v", dest, expect)
 	}
 
 	if result.E != nil {
-		t.Errorf("TestEtcdStateService_Get() err = %v", result.E)
+		t.Errorf("Test_etcdStateService_Get() err = %v", result.E)
 	}
 }
 
-func TestEtcdStateService_GetNotFoundShouldBeError(t *testing.T) {
+func Test_etcdStateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
 	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
@@ -147,7 +147,7 @@ func TestEtcdStateService_GetNotFoundShouldBeError(t *testing.T) {
 	}
 }
 
-func TestEtcdStateService_Set(t *testing.T) {
+func Test_etcdStateService_Set(t *testing.T) {
 	ctx := context.Background()
 
 	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
@@ -171,18 +171,18 @@ func TestEtcdStateService_Set(t *testing.T) {
 	result := s.Set(ctx, key, expect)
 
 	if result.E != nil {
-		t.Errorf("TestEtcdStateService_Set() err = %v", result.E)
+		t.Errorf("Test_etcdStateService_Set() err = %v", result.E)
 	}
 
 	dest := &testModel{}
 	s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
-		t.Errorf("TestEtcdStateService_Set() dest = %v, expect %v", dest, expect)
+		t.Errorf("Test_etcdStateService_Set() dest = %v, expect %v", dest, expect)
 	}
 }
 
-func TestEtcdStateService_Delete(t *testing.T) {
+func Test_etcdStateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
@@ -210,15 +210,15 @@ func TestEtcdStateService_Delete(t *testing.T) {
 	result := s.Has(ctx, key)
 
 	if result.E != nil {
-		t.Errorf("TestEtcdStateService_Delete() err = %v", result.E)
+		t.Errorf("Test_etcdStateService_Delete() err = %v", result.E)
 	}
 
 	if result.V != false {
-		t.Errorf("TestEtcdStateService_Delete() ok = %v, expect %v", result.V, false)
+		t.Errorf("Test_etcdStateService_Delete() ok = %v, expect %v", result.V, false)
 	}
 }
 
-func TestEtcdStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
+func Test_etcdStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
 	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
@@ -233,6 +233,6 @@ func TestEtcdStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	result := s.Delete(ctx, key)
 
 	if result.E != nil {
-		t.Errorf("TestEtcdStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
+		t.Errorf("Test_etcdStateService_DeleteNotFoundShouldBeNoError() err = %v", result.E)
 	}
 }

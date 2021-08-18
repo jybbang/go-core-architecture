@@ -8,6 +8,7 @@ import (
 
 	"github.com/jybbang/go-core-architecture/core"
 	etcd "go.etcd.io/etcd/client/v3"
+	"gopkg.in/jeevatkm/go-model.v1"
 )
 
 type adapter struct {
@@ -22,7 +23,7 @@ type clients struct {
 
 type EtcdSettings struct {
 	Endpoints   []string
-	DialTimeout time.Duration
+	DialTimeout time.Duration `model:",omitempty"`
 }
 
 var clientsSync sync.Once
@@ -72,14 +73,19 @@ func getEtcdClient(ctx context.Context, settings EtcdSettings) *etcd.Client {
 }
 
 func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
-	if settings.DialTimeout <= time.Duration(0) {
-		settings.DialTimeout = time.Duration(5 * time.Second)
+	s := &EtcdSettings{
+		DialTimeout: time.Duration(5 * time.Second),
+	}
+
+	err := model.Copy(s, settings)
+	if err != nil {
+		panic(err)
 	}
 
 	client := getEtcdClient(ctx, settings)
 	etcdService := &adapter{
 		etcd:     client,
-		settings: settings,
+		settings: *s,
 	}
 
 	return etcdService

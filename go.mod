@@ -15,6 +15,7 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
 	github.com/reactivex/rxgo/v2 v2.5.0
 	github.com/sony/gobreaker v0.4.1
+	github.com/syndtr/goleveldb v1.0.0
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.mongodb.org/mongo-driver v1.7.1
 	go.uber.org/zap v1.19.0
