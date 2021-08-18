@@ -116,7 +116,7 @@ func (r *repositoryService) List(ctx context.Context, dest interface{}) Result {
 
 	resultsVal := reflect.ValueOf(dest)
 	if resultsVal.Kind() != reflect.Ptr {
-		panic("results argument must be a pointer to a slice")
+		panic("dest must be a pointer to a slice")
 	}
 
 	sliceVal := resultsVal.Elem()
@@ -125,7 +125,7 @@ func (r *repositoryService) List(ctx context.Context, dest interface{}) Result {
 	}
 
 	if sliceVal.Kind() != reflect.Slice {
-		panic("results argument must be a pointer to a slice")
+		panic("dest must be a pointer to a slice")
 	}
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:List")
@@ -148,7 +148,7 @@ func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{
 
 	resultsVal := reflect.ValueOf(dest)
 	if resultsVal.Kind() != reflect.Ptr {
-		panic("results argument must be a pointer to a slice")
+		panic("dest must be a pointer to a slice")
 	}
 
 	sliceVal := resultsVal.Elem()
@@ -157,7 +157,7 @@ func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{
 	}
 
 	if sliceVal.Kind() != reflect.Slice {
-		panic("results argument must be a pointer to a slice")
+		panic("dest must be a pointer to a slice")
 	}
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:ListWithFilter")

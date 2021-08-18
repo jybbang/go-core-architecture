@@ -10,19 +10,19 @@ import (
 )
 
 // Builder Object for EventBus
-type eventbusBuilder struct {
+type eventBusBuilder struct {
 	mediator  *mediator
 	messaging messagingAdapter
 	cb        *gobreaker.CircuitBreaker
-	setting   EventbusSettings
+	setting   EventBusSettings
 }
 
 // Constructor for EventBusBuilder
-func NewEventbusBuilder() *eventbusBuilder {
-	o := new(eventbusBuilder)
+func NewEventBusBuilder() *eventBusBuilder {
+	o := new(eventBusBuilder)
 
 	st := gobreaker.Settings{
-		Name: "eventbus",
+		Name: "eventBus",
 	}
 
 	o.cb = gobreaker.NewCircuitBreaker(st)
@@ -30,8 +30,8 @@ func NewEventbusBuilder() *eventbusBuilder {
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventbusBuilder) Settings(settings EventbusSettings) *eventbusBuilder {
-	s := &EventbusSettings{
+func (b *eventBusBuilder) Settings(settings EventBusSettings) *eventBusBuilder {
+	s := &EventBusSettings{
 		BufferedEventBufferCount: 1000,
 		BufferedEventBufferTime:  time.Duration(1 * time.Second),
 		BufferedEventTimeout:     time.Duration(5 * time.Second),
@@ -47,7 +47,7 @@ func (b *eventbusBuilder) Settings(settings EventbusSettings) *eventbusBuilder {
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventbusBuilder) CustomMediator(mediator *mediator) *eventbusBuilder {
+func (b *eventBusBuilder) CustomMediator(mediator *mediator) *eventBusBuilder {
 	if mediator == nil {
 		panic("mediator is required")
 	}
@@ -57,7 +57,7 @@ func (b *eventbusBuilder) CustomMediator(mediator *mediator) *eventbusBuilder {
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBuilder {
+func (b *eventBusBuilder) MessaingAdapter(adapter messagingAdapter) *eventBusBuilder {
 	if adapter == nil {
 		panic("adapter is required")
 	}
@@ -67,13 +67,13 @@ func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBui
 }
 
 // Builder method to set the field messaging in EventBusBuilder
-func (b *eventbusBuilder) CircuitBreaker(setting CircuitBreakerSettings) *eventbusBuilder {
+func (b *eventBusBuilder) CircuitBreaker(setting CircuitBreakerSettings) *eventBusBuilder {
 	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
 	return b
 }
 
 // Build Method which creates EventBus
-func (b *eventbusBuilder) Create() *eventbus {
+func (b *eventBusBuilder) Create() *eventBus {
 	if b.messaging == nil {
 		panic("messaging adapter is required")
 	}
@@ -81,7 +81,7 @@ func (b *eventbusBuilder) Create() *eventbus {
 		b.mediator = GetMediator()
 	}
 
-	instance := &eventbus{
+	instance := &eventBus{
 		mediator:     b.mediator,
 		domainEvents: goconcurrentqueue.NewFIFO(),
 		ch:           make(chan rxgo.Item, 1),
@@ -95,9 +95,9 @@ func (b *eventbusBuilder) Create() *eventbus {
 }
 
 // Build Method which creates EventBus
-func (b *eventbusBuilder) Build() *eventbus {
+func (b *eventBusBuilder) Build() *eventBus {
 	if eventBusInstance != nil {
-		panic("eventbus already created")
+		panic("eventBus already created")
 	}
 
 	eventBusInstance = b.Create()

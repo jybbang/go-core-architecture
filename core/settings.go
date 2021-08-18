@@ -13,7 +13,7 @@ type TracingSettings struct {
 	Endpoint    string
 }
 
-type EventbusSettings struct {
+type EventBusSettings struct {
 	BufferedEventBufferCount int           `model:",omitempty"`
 	BufferedEventBufferTime  time.Duration `model:",omitempty"`
 	BufferedEventTimeout     time.Duration `model:",omitempty"`

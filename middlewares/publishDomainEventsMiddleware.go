@@ -16,6 +16,6 @@ func NewPublishDomainEventsMiddleware() *publishDomainEventsMiddleware {
 
 func (m *publishDomainEventsMiddleware) Run(ctx context.Context, request core.Request) core.Result {
 	result := m.Next()
-	core.GetEventbus().PublishDomainEvents(ctx)
+	core.GetEventBus().PublishDomainEvents(ctx)
 	return result
 }

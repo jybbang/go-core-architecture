@@ -10,13 +10,13 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-type eventbus struct {
+type eventBus struct {
 	mediator     *mediator
 	messaging    messagingAdapter
 	domainEvents *goconcurrentqueue.FIFO
 	ch           chan rxgo.Item
 	cb           *gobreaker.CircuitBreaker
-	settings     EventbusSettings
+	settings     EventBusSettings
 }
 
 type bufferedEvent struct {
@@ -28,7 +28,7 @@ func bufferedEventHandler(ctx context.Context, notification interface{}) error {
 	return nil
 }
 
-func (e *eventbus) initialize() *eventbus {
+func (e *eventBus) initialize() *eventBus {
 	observable := rxgo.FromChannel(e.ch).
 		BufferWithTimeOrCount(rxgo.WithDuration(e.settings.BufferedEventBufferTime), e.settings.BufferedEventBufferCount)
 
@@ -37,11 +37,11 @@ func (e *eventbus) initialize() *eventbus {
 	return e
 }
 
-func (e *eventbus) close() {
+func (e *eventBus) close() {
 	e.messaging.Close()
 }
 
-func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
+func (e *eventBus) subscribeBufferedEvent(observable rxgo.Observable) {
 	ch := observable.Observe()
 
 	for {
@@ -65,15 +65,15 @@ func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 	}
 }
 
-func (e *eventbus) empty() bool {
+func (e *eventBus) empty() bool {
 	return e.GetDomainEventsQueueCount() == 0
 }
 
-func (e *eventbus) GetDomainEventsQueueCount() int {
+func (e *eventBus) GetDomainEventsQueueCount() int {
 	return e.domainEvents.GetLen()
 }
 
-func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
+func (e *eventBus) AddDomainEvent(domainEvent DomainEventer) {
 	if domainEvent.GetTopic() == "" {
 		panic("topic is required")
 	}
@@ -82,7 +82,7 @@ func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
 	e.domainEvents.Enqueue(domainEvent)
 }
 
-func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
+func (e *eventBus) PublishDomainEvents(ctx context.Context) error {
 	defer publishEventsPanicRecover()
 
 	var err error
@@ -123,11 +123,11 @@ func (e *eventbus) PublishDomainEvents(ctx context.Context) error {
 	return err
 }
 
-func (e *eventbus) Subscribe(ctx context.Context, topic string, handler ReplyHandler) error {
+func (e *eventBus) Subscribe(ctx context.Context, topic string, handler ReplyHandler) error {
 	return e.messaging.Subscribe(ctx, topic, handler)
 }
 
-func (e *eventbus) Unsubscribe(ctx context.Context, topic string) error {
+func (e *eventBus) Unsubscribe(ctx context.Context, topic string) error {
 	return e.messaging.Unsubscribe(ctx, topic)
 }
 

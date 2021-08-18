@@ -1,7 +1,6 @@
 package core
 
 import (
-	"log"
 	"reflect"
 
 	"github.com/opentracing/opentracing-go"
@@ -15,7 +14,7 @@ import (
 
 var mediatorInstance *mediator
 
-var eventBusInstance *eventbus
+var eventBusInstance *eventBus
 
 var statesInstance *stateService
 
@@ -27,7 +26,7 @@ func Close() {
 	if openTracerCloser != nil {
 		openTracerCloser.Close()
 	}
-	GetEventbus().close()
+	GetEventBus().close()
 	GetStateService().close()
 	for _, r := range repositories.Items() {
 		r.(*repositoryService).close()
@@ -44,13 +43,13 @@ func UseTracing(settings TracingSettings) {
 	// create our local service endpoint
 	endpoint, err := zipkin.NewEndpoint(settings.ServiceName, "localhost")
 	if err != nil {
-		log.Fatalf("unable to create local endpoint: %+v\n", err)
+		panic("unable to create local endpoint")
 	}
 
 	// initialize our tracer
 	nativeTracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint))
 	if err != nil {
-		log.Fatalf("unable to create tracer: %+v\n", err)
+		panic("unable to create tracer")
 	}
 
 	// use zipkin-go-opentracing to wrap our tracer
@@ -67,7 +66,7 @@ func GetMediator() *mediator {
 	return mediatorInstance
 }
 
-func GetEventbus() *eventbus {
+func GetEventBus() *eventBus {
 	if eventBusInstance == nil {
 		panic("you should create event bus before use it")
 	}

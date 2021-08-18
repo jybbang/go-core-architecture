@@ -18,7 +18,7 @@ func TestEventBus_AddDomainEvents(t *testing.T) {
 
 	m := core.NewMediatorBuilder().
 		Create()
-	e := core.NewEventbusBuilder().
+	e := core.NewEventBusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t1",
 			SamplingFailureCount: expect,
@@ -63,7 +63,7 @@ func TestEventBus_PublishDomainEvents(t *testing.T) {
 	m := core.NewMediatorBuilder().
 		AddNotificationHandler(new(okNotification), okNotificationHandler).
 		Create()
-	e := core.NewEventbusBuilder().
+	e := core.NewEventBusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t2",
 			SamplingFailureCount: expect,
@@ -108,7 +108,7 @@ func TestEventBus_PublishDomainEventsContextTimeoutShouldBeDeadlineExceeded(t *t
 	m := core.NewMediatorBuilder().
 		AddNotificationHandler(new(okNotification), okNotificationHandler).
 		Create()
-	e := core.NewEventbusBuilder().
+	e := core.NewEventBusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t3",
 			SamplingFailureCount: expect,
@@ -140,7 +140,7 @@ func TestEventBus_PublishDomainEventsMediatorErrShouldBeError(t *testing.T) {
 	m := core.NewMediatorBuilder().
 		AddNotificationHandler(new(errNotification), errNotificationHandler).
 		Create()
-	e := core.NewEventbusBuilder().
+	e := core.NewEventBusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t4",
 			SamplingFailureCount: expect,
@@ -169,7 +169,7 @@ func TestEventBus_PublishDomainEventsCanNotPublishOptionShouldBeWorking(t *testi
 	m := core.NewMediatorBuilder().
 		AddNotificationHandler(new(okNotification), okNotificationHandler).
 		Create()
-	e := core.NewEventbusBuilder().
+	e := core.NewEventBusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t5",
 			SamplingFailureCount: expect,
@@ -211,7 +211,7 @@ func TestEventBus_PublishDomainEventsCircuitBrakerShouldBeWorking(t *testing.T) 
 		AddNotificationHandler(new(okNotification), okNotificationHandler).
 		AddNotificationHandler(new(errNotification), errNotificationHandler).
 		Create()
-	e := core.NewEventbusBuilder().
+	e := core.NewEventBusBuilder().
 		CircuitBreaker(core.CircuitBreakerSettings{
 			Name:                 "t6",
 			DurationOfBreak:      timeout,
@@ -268,8 +268,8 @@ func TestEventBus_PublishDomainEventsBufferedEventShouldBeWorking(t *testing.T) 
 	m := core.NewMediatorBuilder().
 		AddNotificationHandler(new(okNotification), okNotificationHandler).
 		Create()
-	e := core.NewEventbusBuilder().
-		Settings(core.EventbusSettings{
+	e := core.NewEventBusBuilder().
+		Settings(core.EventBusSettings{
 			BufferedEventBufferTime: timeout,
 		}).
 		CircuitBreaker(core.CircuitBreakerSettings{

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/sony/gobreaker"
 )
@@ -40,6 +41,14 @@ func (s *stateService) Get(ctx context.Context, key string, dest interface{}) Re
 	}
 	if dest == nil {
 		return Result{V: nil, E: fmt.Errorf("%w dest is required", ErrInternalServerError)}
+	}
+
+	resultsVal := reflect.ValueOf(dest)
+	if resultsVal.Kind() == reflect.Interface {
+		resultsVal = resultsVal.Elem()
+	}
+	if resultsVal.Kind() != reflect.Ptr {
+		panic("dest must be a pointer")
 	}
 
 	_, err := s.cb.Execute(func() (interface{}, error) {
