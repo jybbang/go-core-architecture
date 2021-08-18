@@ -3,7 +3,6 @@ module github.com/jybbang/go-core-architecture
 go 1.16
 
 require (
-	github.com/HdrHistogram/hdrhistogram-go v1.1.1 // indirect
 	github.com/dapr/go-sdk v1.2.0
 	github.com/enriquebris/goconcurrentqueue v0.6.0
 	github.com/go-playground/validator/v10 v10.9.0
@@ -11,11 +10,11 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/nats-io/nats.go v1.11.0
 	github.com/opentracing/opentracing-go v1.2.0
+	github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5
+	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
 	github.com/reactivex/rxgo/v2 v2.5.0
 	github.com/sony/gobreaker v0.4.1
-	github.com/uber/jaeger-client-go v2.29.1+incompatible
-	github.com/uber/jaeger-lib v2.4.1+incompatible
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.mongodb.org/mongo-driver v1.7.1
 	go.uber.org/zap v1.19.0

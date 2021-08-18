@@ -3,15 +3,17 @@ package core
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"reflect"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sony/gobreaker"
 )
 
 type repositoryService struct {
+	tableName         string
+	userIdKey         string
 	queryRepository   queryRepositoryAdapter
 	commandRepository commandRepositoryAdapter
 	cb                *gobreaker.CircuitBreaker
@@ -30,6 +32,10 @@ func (r *repositoryService) Find(ctx context.Context, id uuid.UUID, dest Entitie
 	if dest == nil {
 		return Result{E: fmt.Errorf("%w dest is required", ErrInternalServerError)}
 	}
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:Find")
+	if span != nil {
+		defer span.Finish()
+	}
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.Find(ctx, id, dest)
@@ -40,6 +46,11 @@ func (r *repositoryService) Find(ctx context.Context, id uuid.UUID, dest Entitie
 }
 
 func (r *repositoryService) Any(ctx context.Context) Result {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:Any")
+	if span != nil {
+		defer span.Finish()
+	}
+
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.Any(ctx)
 	})
@@ -51,6 +62,11 @@ func (r *repositoryService) Any(ctx context.Context) Result {
 }
 
 func (r *repositoryService) AnyWithFilter(ctx context.Context, query interface{}, args interface{}) Result {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:AnyWithFilter")
+	if span != nil {
+		defer span.Finish()
+	}
+
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.AnyWithFilter(ctx, query, args)
 	})
@@ -62,6 +78,11 @@ func (r *repositoryService) AnyWithFilter(ctx context.Context, query interface{}
 }
 
 func (r *repositoryService) Count(ctx context.Context) Result {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:Count")
+	if span != nil {
+		defer span.Finish()
+	}
+
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.Count(ctx)
 	})
@@ -73,6 +94,11 @@ func (r *repositoryService) Count(ctx context.Context) Result {
 }
 
 func (r *repositoryService) CountWithFilter(ctx context.Context, query interface{}, args interface{}) Result {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:CountWithFilter")
+	if span != nil {
+		defer span.Finish()
+	}
+
 	resp, err := r.cb.Execute(func() (interface{}, error) {
 		return r.queryRepository.CountWithFilter(ctx, query, args)
 	})
@@ -102,6 +128,11 @@ func (r *repositoryService) List(ctx context.Context, dest interface{}) Result {
 		panic("results argument must be a pointer to a slice")
 	}
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:List")
+	if span != nil {
+		defer span.Finish()
+	}
+
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.List(ctx, dest)
 		return nil, err
@@ -129,6 +160,11 @@ func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{
 		panic("results argument must be a pointer to a slice")
 	}
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:ListWithFilter")
+	if span != nil {
+		defer span.Finish()
+	}
+
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.queryRepository.ListWithFilter(ctx, query, args, dest)
 		return nil, err
@@ -140,6 +176,11 @@ func (r *repositoryService) ListWithFilter(ctx context.Context, query interface{
 func (r *repositoryService) Remove(ctx context.Context, id uuid.UUID) Result {
 	if id == uuid.Nil {
 		return Result{E: fmt.Errorf("%w id is required", ErrInternalServerError)}
+	}
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:Remove")
+	if span != nil {
+		defer span.Finish()
 	}
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
@@ -155,6 +196,11 @@ func (r *repositoryService) RemoveRange(ctx context.Context, ids []uuid.UUID) Re
 		return Result{E: fmt.Errorf("%w ids is required", ErrInternalServerError)}
 	}
 
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:RemoveRange")
+	if span != nil {
+		defer span.Finish()
+	}
+
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.RemoveRange(ctx, ids)
 		return nil, err
@@ -168,9 +214,14 @@ func (r *repositoryService) Add(ctx context.Context, entity Entitier) Result {
 		return Result{E: fmt.Errorf("%w entity is required", ErrInternalServerError)}
 	}
 
-	key := http.CanonicalHeaderKey("Userid")
-	user, _ := ctx.Value(key).(string)
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:Add")
+	if span != nil {
+		defer span.Finish()
+	}
+
+	user, _ := ctx.Value(r.userIdKey).(string)
 	entity.SetCreatedAt(user, time.Now())
+
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Add(ctx, entity)
 		return nil, err
@@ -184,8 +235,12 @@ func (r *repositoryService) AddRange(ctx context.Context, entities []Entitier) R
 		return Result{E: fmt.Errorf("%w entities is required", ErrInternalServerError)}
 	}
 
-	key := http.CanonicalHeaderKey("Userid")
-	user, _ := ctx.Value(key).(string)
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:AddRange")
+	if span != nil {
+		defer span.Finish()
+	}
+
+	user, _ := ctx.Value(r.userIdKey).(string)
 	now := time.Now()
 	for _, v := range entities {
 		v.SetCreatedAt(user, now)
@@ -204,8 +259,12 @@ func (r *repositoryService) Update(ctx context.Context, entity Entitier) Result 
 		return Result{E: fmt.Errorf("%w entity is required", ErrInternalServerError)}
 	}
 
-	key := http.CanonicalHeaderKey("Userid")
-	user, _ := ctx.Value(key).(string)
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:Update")
+	if span != nil {
+		defer span.Finish()
+	}
+
+	user, _ := ctx.Value(r.userIdKey).(string)
 	entity.SetUpdatedAt(user, time.Now())
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
@@ -221,8 +280,12 @@ func (r *repositoryService) UpdateRange(ctx context.Context, entities []Entitier
 		return Result{E: fmt.Errorf("%w entities is required", ErrInternalServerError)}
 	}
 
-	key := http.CanonicalHeaderKey("Userid")
-	user, _ := ctx.Value(key).(string)
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Repository:UpdateRange")
+	if span != nil {
+		defer span.Finish()
+	}
+
+	user, _ := ctx.Value(r.userIdKey).(string)
 	now := time.Now()
 	for _, v := range entities {
 		v.SetUpdatedAt(user, now)

@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"sync/atomic"
 
@@ -43,22 +42,13 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 	typeOf := reflect.TypeOf(request)
 	typeName := typeOf.Elem().Name()
 
-	if typeName == "" {
-		panic("typeName is required")
-	}
-
 	item, ok := m.requestHandlers.Get(typeName)
 	if !ok {
 		panic("request handler not found, you should register handler before use it")
 	}
 
-	if openTracer != nil {
-		span := opentracing.SpanFromContext(ctx)
-		if span == nil {
-			span = openTracer.StartSpan(typeName)
-		}
-		ctx = opentracing.ContextWithSpan(ctx, span)
-		fmt.Printf("span.Tracer(): %v\n", span.Tracer())
+	span, ctx := opentracing.StartSpanFromContext(ctx, typeName)
+	if span != nil {
 		defer span.Finish()
 	}
 
@@ -92,20 +82,14 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 	typeOf := reflect.TypeOf(notification)
 	typeName := typeOf.Elem().Name()
 
-	if typeName == "" {
-		panic("typeName is required")
-	}
-
 	item, ok := m.notificationHandlers.Get(typeName)
 	if !ok {
 		panic("request handler not found, you should register handler before use it")
 	}
 
-	if openTracer != nil {
-		span := opentracing.SpanFromContext(ctx)
-		if span != nil {
-			defer span.Finish()
-		}
+	span, ctx := opentracing.StartSpanFromContext(ctx, typeName)
+	if span != nil {
+		defer span.Finish()
 	}
 
 	handler := item.(NotificationHandler)

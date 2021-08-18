@@ -1,13 +1,16 @@
 package core
 
 import (
-	"io"
+	"log"
 	"reflect"
 
 	"github.com/opentracing/opentracing-go"
+	zipkinot "github.com/openzipkin-contrib/zipkin-go-opentracing"
+	"github.com/openzipkin/zipkin-go"
+	"github.com/openzipkin/zipkin-go/reporter"
+	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
+
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/uber/jaeger-client-go/config"
-	"github.com/uber/jaeger-lib/metrics/prometheus"
 )
 
 var mediatorInstance *mediator
@@ -18,8 +21,7 @@ var statesInstance *stateService
 
 var repositories cmap.ConcurrentMap = cmap.New()
 
-var openTracer opentracing.Tracer
-var openTracerCloser io.Closer
+var openTracerCloser reporter.Reporter
 
 func Close() {
 	if openTracerCloser != nil {
@@ -32,19 +34,30 @@ func Close() {
 	}
 }
 
+// reference:
+// https://github.com/openzipkin/zipkin-go/blob/master/examples/httpserver_test.go
 func UseTracing(settings TracingSettings) {
-	metricsFactory := prometheus.New()
-	tracer, closer, err := config.Configuration{
-		ServiceName: settings.ServiceName,
-		Reporter:    &config.ReporterConfig{CollectorEndpoint: settings.Endpoint},
-	}.NewTracer(
-		config.Metrics(metricsFactory),
-	)
+	// set up a span reporter
+	reporter := zipkinhttp.NewReporter(settings.Endpoint)
+	openTracerCloser = reporter
+
+	// create our local service endpoint
+	endpoint, err := zipkin.NewEndpoint(settings.ServiceName, "localhost")
 	if err != nil {
-		panic(err)
+		log.Fatalf("unable to create local endpoint: %+v\n", err)
 	}
-	openTracer = tracer
-	openTracerCloser = closer
+
+	// initialize our tracer
+	nativeTracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint))
+	if err != nil {
+		log.Fatalf("unable to create tracer: %+v\n", err)
+	}
+
+	// use zipkin-go-opentracing to wrap our tracer
+	tracer := zipkinot.Wrap(nativeTracer)
+
+	// optionally set as Global OpenTracing tracer instance
+	opentracing.SetGlobalTracer(tracer)
 }
 
 func GetMediator() *mediator {

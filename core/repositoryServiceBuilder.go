@@ -1,7 +1,9 @@
 package core
 
 import (
+	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/sony/gobreaker"
@@ -10,6 +12,7 @@ import (
 // Builder Object for RepositoryService
 type repositoryServiceBuilder struct {
 	tableName         string
+	userIdKey         string
 	model             Entitier
 	queryRepository   queryRepositoryAdapter
 	commandRepository commandRepositoryAdapter
@@ -21,7 +24,7 @@ func NewRepositoryServiceBuilder(model Entitier, tableName string) *repositorySe
 	if model == nil {
 		panic("model is required")
 	}
-	if tableName == "" {
+	if strings.TrimSpace(tableName) == "" {
 		panic("tableName is required")
 	}
 
@@ -34,6 +37,7 @@ func NewRepositoryServiceBuilder(model Entitier, tableName string) *repositorySe
 		Name: tableName + "-repository",
 	}
 	o.cb = gobreaker.NewCircuitBreaker(st)
+	o.userIdKey = http.CanonicalHeaderKey("Userid")
 
 	return o
 }
@@ -63,6 +67,8 @@ func (b *repositoryServiceBuilder) Create() *repositoryService {
 	}
 
 	instance := &repositoryService{
+		tableName:         b.tableName,
+		userIdKey:         b.userIdKey,
 		queryRepository:   b.queryRepository,
 		commandRepository: b.commandRepository,
 		cb:                b.cb,
@@ -79,6 +85,17 @@ func (b *repositoryServiceBuilder) QueryRepositoryAdapter(adapter queryRepositor
 	}
 
 	b.queryRepository = adapter
+	b.queryRepository.SetModel(b.model, b.tableName)
+	return b
+}
+
+// Builder method to set the field queryRepository in RepositoryServiceBuilder
+func (b *repositoryServiceBuilder) UserIdKeyInContext(useridKey string) *repositoryServiceBuilder {
+	if strings.TrimSpace(useridKey) == "" {
+		panic("useridKey is required")
+	}
+
+	b.userIdKey = http.CanonicalHeaderKey(useridKey)
 	b.queryRepository.SetModel(b.model, b.tableName)
 	return b
 }
