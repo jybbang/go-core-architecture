@@ -19,9 +19,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PUBLISH_TO_GITHUB_COM }}
           WITH_V: true
-
-      - name: Commit Changes
-        id: commit
-        uses: packagrio/action-releasr-go@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.PUBLISH_TO_GITHUB_COM }}

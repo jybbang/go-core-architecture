@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sync/atomic"
 
@@ -57,6 +58,7 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 			span = openTracer.StartSpan(typeName)
 		}
 		ctx = opentracing.ContextWithSpan(ctx, span)
+		fmt.Printf("span.Tracer(): %v\n", span.Tracer())
 		defer span.Finish()
 	}
 
