@@ -49,6 +49,12 @@ func NewMockAdapterWithSettings(setting MockSettings) *adapter {
 	}
 }
 
+func (a *adapter) Close() {
+	a.db.Clear()
+	a.pubsubs.Clear()
+	a.states.Clear()
+}
+
 func (a *adapter) GetPublishedCount() uint32 {
 	return a.publishedCount
 }

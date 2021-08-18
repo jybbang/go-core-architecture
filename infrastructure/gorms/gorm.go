@@ -43,6 +43,8 @@ func getClients() *clients {
 	return clientsInstance
 }
 
+func (a *adapter) Close() {}
+
 func (a *adapter) SetModel(model core.Entitier, tableName string) {
 	a.model = model
 	a.tableName = tableName

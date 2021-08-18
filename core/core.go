@@ -1,6 +1,7 @@
 package core
 
 import (
+	"io"
 	"reflect"
 
 	"github.com/opentracing/opentracing-go"
@@ -18,11 +19,24 @@ var statesInstance *stateService
 var repositories cmap.ConcurrentMap = cmap.New()
 
 var openTracer opentracing.Tracer
+var openTracerCloser io.Closer
+
+func Close() {
+	if openTracerCloser != nil {
+		openTracerCloser.Close()
+	}
+	GetEventbus().close()
+	GetStateService().close()
+	for _, r := range repositories.Items() {
+		r.(*repositoryService).close()
+	}
+}
 
 func UseTracing(settings TracingSettings) {
 	metricsFactory := prometheus.New()
-	tracer, _, err := config.Configuration{
+	tracer, closer, err := config.Configuration{
 		ServiceName: settings.ServiceName,
+		Reporter:    &config.ReporterConfig{CollectorEndpoint: settings.Endpoint},
 	}.NewTracer(
 		config.Metrics(metricsFactory),
 	)
@@ -30,6 +44,7 @@ func UseTracing(settings TracingSettings) {
 		panic(err)
 	}
 	openTracer = tracer
+	openTracerCloser = closer
 }
 
 func GetMediator() *mediator {

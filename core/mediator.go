@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync/atomic"
 
+	"github.com/opentracing/opentracing-go"
 	cmap "github.com/orcaman/concurrent-map"
 )
 
@@ -51,7 +52,11 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 	}
 
 	if openTracer != nil {
-		span := openTracer.StartSpan(typeName)
+		span := opentracing.SpanFromContext(ctx)
+		if span == nil {
+			span = openTracer.StartSpan(typeName)
+		}
+		ctx = opentracing.ContextWithSpan(ctx, span)
 		defer span.Finish()
 	}
 
@@ -95,8 +100,10 @@ func (m *mediator) Publish(ctx context.Context, notification Notification) error
 	}
 
 	if openTracer != nil {
-		span := openTracer.StartSpan(typeName)
-		defer span.Finish()
+		span := opentracing.SpanFromContext(ctx)
+		if span != nil {
+			defer span.Finish()
+		}
 	}
 
 	handler := item.(NotificationHandler)

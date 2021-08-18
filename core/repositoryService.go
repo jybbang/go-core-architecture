@@ -21,6 +21,11 @@ func (r *repositoryService) initialize() *repositoryService {
 	return r
 }
 
+func (r *repositoryService) close() {
+	r.queryRepository.Close()
+	r.commandRepository.Close()
+}
+
 func (r *repositoryService) Find(ctx context.Context, id uuid.UUID, dest Entitier) Result {
 	if dest == nil {
 		return Result{E: fmt.Errorf("%w dest is required", ErrInternalServerError)}

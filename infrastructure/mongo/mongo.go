@@ -85,6 +85,10 @@ func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
 	return mongo
 }
 
+func (a *adapter) Close() {
+	a.conn.Disconnect(context.Background())
+}
+
 func (a *adapter) SetModel(model core.Entitier, tableName string) {
 	a.model = model
 	a.tableName = tableName

@@ -37,6 +37,10 @@ func (e *eventbus) initialize() *eventbus {
 	return e
 }
 
+func (e *eventbus) close() {
+	e.messaging.Close()
+}
+
 func (e *eventbus) subscribeBufferedEvent(observable rxgo.Observable) {
 	ch := observable.Observe()
 

@@ -85,6 +85,10 @@ func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
 	return etcdService
 }
 
+func (a *adapter) Close() {
+	a.etcd.Close()
+}
+
 func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 	value, err := a.etcd.Get(ctx, key)
 	if err != nil {

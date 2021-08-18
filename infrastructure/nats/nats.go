@@ -82,6 +82,10 @@ func NewNatsAdapter(ctx context.Context, settings NatsSettings) *adapter {
 	return natsService
 }
 
+func (a *adapter) Close() {
+	a.nats.Close()
+}
+
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
 	bytes, err := json.Marshal(coreEvent)
 	if err != nil {

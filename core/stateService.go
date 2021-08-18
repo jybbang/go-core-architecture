@@ -16,6 +16,10 @@ func (s *stateService) initialize() *stateService {
 	return s
 }
 
+func (s *stateService) close() {
+	s.state.Close()
+}
+
 func (s *stateService) Has(ctx context.Context, key string) Result {
 	if key == "" {
 		return Result{V: false, E: fmt.Errorf("%w key is required", ErrInternalServerError)}

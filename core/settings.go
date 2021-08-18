@@ -10,6 +10,7 @@ import (
 
 type TracingSettings struct {
 	ServiceName string
+	Endpoint    string
 }
 
 type EventbusSettings struct {

@@ -87,6 +87,10 @@ func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
 	return redisService
 }
 
+func (a *adapter) Close() {
+	a.redis.Close()
+}
+
 func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 	value, err := a.redis.Exists(ctx, key).Result()
 	if err == redis.Nil {

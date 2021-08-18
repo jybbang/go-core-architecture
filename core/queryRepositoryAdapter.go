@@ -7,6 +7,7 @@ import (
 )
 
 type queryRepositoryAdapter interface {
+	Close()
 	SetModel(model Entitier, tableName string)
 	Find(ctx context.Context, id uuid.UUID, dest Entitier) (err error)
 	Any(ctx context.Context) (ok bool, err error)

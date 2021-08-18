@@ -53,6 +53,10 @@ func NewDaprAdapter(ctx context.Context, settings DaprSettings) *adapter {
 	return daprService
 }
 
+func (a *adapter) Close() {
+	a.dapr.Close()
+}
+
 func (a *adapter) Has(ctx context.Context, key string) (ok bool, err error) {
 	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
 	if err != nil {
