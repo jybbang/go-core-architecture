@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -162,7 +163,8 @@ func (r *repositoryService) Add(ctx context.Context, entity Entitier) Result {
 		return Result{E: fmt.Errorf("%w entity is required", ErrInternalServerError)}
 	}
 
-	user, _ := ctx.Value("userId").(string)
+	key := http.CanonicalHeaderKey("Userid")
+	user, _ := ctx.Value(key).(string)
 	entity.SetCreatedAt(user, time.Now())
 	_, err := r.cb.Execute(func() (interface{}, error) {
 		err := r.commandRepository.Add(ctx, entity)
@@ -177,7 +179,8 @@ func (r *repositoryService) AddRange(ctx context.Context, entities []Entitier) R
 		return Result{E: fmt.Errorf("%w entities is required", ErrInternalServerError)}
 	}
 
-	user, _ := ctx.Value("userId").(string)
+	key := http.CanonicalHeaderKey("Userid")
+	user, _ := ctx.Value(key).(string)
 	now := time.Now()
 	for _, v := range entities {
 		v.SetCreatedAt(user, now)
@@ -196,7 +199,8 @@ func (r *repositoryService) Update(ctx context.Context, entity Entitier) Result 
 		return Result{E: fmt.Errorf("%w entity is required", ErrInternalServerError)}
 	}
 
-	user, _ := ctx.Value("userId").(string)
+	key := http.CanonicalHeaderKey("Userid")
+	user, _ := ctx.Value(key).(string)
 	entity.SetUpdatedAt(user, time.Now())
 
 	_, err := r.cb.Execute(func() (interface{}, error) {
@@ -212,7 +216,8 @@ func (r *repositoryService) UpdateRange(ctx context.Context, entities []Entitier
 		return Result{E: fmt.Errorf("%w entities is required", ErrInternalServerError)}
 	}
 
-	user, _ := ctx.Value("userId").(string)
+	key := http.CanonicalHeaderKey("Userid")
+	user, _ := ctx.Value(key).(string)
 	now := time.Now()
 	for _, v := range entities {
 		v.SetUpdatedAt(user, now)

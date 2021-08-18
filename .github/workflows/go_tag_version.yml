@@ -1,4 +1,4 @@
-name: Go new tag
+name: Go tag version
 
 on:
   push:
