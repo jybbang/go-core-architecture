@@ -70,12 +70,11 @@ func (e *eventbus) GetDomainEventsQueueCount() int {
 }
 
 func (e *eventbus) AddDomainEvent(domainEvent DomainEventer) {
-	domainEvent.SetAddingEvent()
-
 	if domainEvent.GetTopic() == "" {
 		panic("topic is required")
 	}
 
+	domainEvent.SetAddingEvent()
 	e.domainEvents.Enqueue(domainEvent)
 }
 

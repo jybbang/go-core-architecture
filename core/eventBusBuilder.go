@@ -6,6 +6,7 @@ import (
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/reactivex/rxgo/v2"
 	"github.com/sony/gobreaker"
+	"gopkg.in/jeevatkm/go-model.v1"
 )
 
 // Builder Object for EventBus
@@ -24,13 +25,6 @@ func NewEventbusBuilder() *eventbusBuilder {
 	}
 
 	o.cb = gobreaker.NewCircuitBreaker(st)
-
-	o.setting = EventbusSettings{
-		BufferedEventBufferTime:  time.Duration(1 * time.Second),
-		BufferedEventBufferCount: 1000,
-		BufferedEventTimeout:     time.Duration(2 * time.Second),
-	}
-
 	return o
 }
 
@@ -66,17 +60,18 @@ func (b *eventbusBuilder) Create() *eventbus {
 
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventbusBuilder) Settings(settings EventbusSettings) *eventbusBuilder {
-	if settings.BufferedEventBufferCount < 1 {
-		settings.BufferedEventBufferCount = 1000
-	}
-	if settings.BufferedEventBufferTime <= time.Duration(0) {
-		settings.BufferedEventBufferTime = time.Duration(1 * time.Second)
-	}
-	if settings.BufferedEventTimeout <= time.Duration(0) {
-		settings.BufferedEventTimeout = time.Duration(2 * time.Second)
+	s := &EventbusSettings{
+		BufferedEventBufferCount: 1000,
+		BufferedEventBufferTime:  time.Duration(1 * time.Second),
+		BufferedEventTimeout:     time.Duration(5 * time.Second),
 	}
 
-	b.setting = settings
+	err := model.Copy(s, settings)
+	if err != nil {
+		panic(err)
+	}
+
+	b.setting = *s
 	return b
 }
 
@@ -92,6 +87,6 @@ func (b *eventbusBuilder) MessaingAdapter(adapter messagingAdapter) *eventbusBui
 
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventbusBuilder) CircuitBreaker(setting CircuitBreakerSettings) *eventbusBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings(b.cb.Name()))
+	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
 	return b
 }

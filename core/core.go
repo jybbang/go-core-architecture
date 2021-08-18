@@ -1,12 +1,10 @@
 package core
 
 import (
-	"net/http"
 	"reflect"
 
 	"github.com/opentracing/opentracing-go"
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-lib/metrics/prometheus"
 )
@@ -21,11 +19,7 @@ var repositories cmap.ConcurrentMap = cmap.New()
 
 var openTracer opentracing.Tracer
 
-func AddMetrics(settings MetricsSettings) {
-	http.Handle(settings.Endpoint, promhttp.Handler())
-}
-
-func AddTracing(settings TracingSettings) {
+func UseTracing(settings TracingSettings) {
 	metricsFactory := prometheus.New()
 	tracer, _, err := config.Configuration{
 		ServiceName: settings.ServiceName,

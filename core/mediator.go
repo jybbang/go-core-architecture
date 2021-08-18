@@ -45,14 +45,14 @@ func (m *mediator) Send(ctx context.Context, request Request) Result {
 		panic("typeName is required")
 	}
 
-	if openTracer != nil {
-		span := openTracer.StartSpan(typeName)
-		defer span.Finish()
-	}
-
 	item, ok := m.requestHandlers.Get(typeName)
 	if !ok {
 		panic("request handler not found, you should register handler before use it")
+	}
+
+	if openTracer != nil {
+		span := openTracer.StartSpan(typeName)
+		defer span.Finish()
 	}
 
 	handler := item.(RequestHandler)

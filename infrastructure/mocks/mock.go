@@ -28,7 +28,7 @@ type MockSettings struct {
 }
 
 func NewMockAdapter() *adapter {
-	logger, _ := zap.NewDevelopment()
+	logger, _ := zap.NewProduction()
 
 	return &adapter{
 		db:      cmap.New(),
@@ -41,7 +41,6 @@ func NewMockAdapter() *adapter {
 }
 
 func NewMockAdapterWithSettings(setting MockSettings) *adapter {
-
 	return &adapter{
 		db:      cmap.New(),
 		pubsubs: cmap.New(),

@@ -5,64 +5,64 @@ import (
 	"time"
 
 	"github.com/sony/gobreaker"
+	"gopkg.in/jeevatkm/go-model.v1"
 )
-
-type MetricsSettings struct {
-	Endpoint string
-}
 
 type TracingSettings struct {
 	ServiceName string
 }
 
 type EventbusSettings struct {
-	BufferedEventBufferTime  time.Duration
-	BufferedEventBufferCount int
-	BufferedEventTimeout     time.Duration
+	BufferedEventBufferCount int           `model:",omitempty"`
+	BufferedEventBufferTime  time.Duration `model:",omitempty"`
+	BufferedEventTimeout     time.Duration `model:",omitempty"`
 }
 
 type CircuitBreakerSettings struct {
 	Name                     string
-	AllowedRequestInHalfOpen int
-	SamplingFailureCount     int
+	AllowedRequestInHalfOpen int           `model:",omitempty"`
+	DurationOfBreak          time.Duration `model:",omitempty"`
+	SamplingDuration         time.Duration `model:",omitempty"`
+	SamplingFailureCount     int           `model:",omitempty"`
 	SamplingFailureRatio     float64
-	SamplingDuration         time.Duration
-	DurationOfBreak          time.Duration
 	OnStateChange            func(name string, from string, to string)
 }
 
-func (s *CircuitBreakerSettings) toGobreakerSettings(defaultName string) gobreaker.Settings {
+func (s *CircuitBreakerSettings) ToGobreakerSettings(defaultName string) gobreaker.Settings {
+	settings := &CircuitBreakerSettings{
+		AllowedRequestInHalfOpen: 1,
+		DurationOfBreak:          time.Duration(60 * time.Second),
+		SamplingDuration:         time.Duration(60 * time.Second),
+		SamplingFailureCount:     5,
+	}
+
+	err := model.Copy(settings, s)
+	if err != nil {
+		panic(err)
+	}
+
 	if strings.TrimSpace(s.Name) == "" {
-		s.Name = defaultName
+		settings.Name = defaultName
 	}
-	if s.AllowedRequestInHalfOpen < 1 {
-		s.AllowedRequestInHalfOpen = 1
-	}
-	if s.SamplingDuration <= time.Duration(0) {
-		s.SamplingDuration = time.Duration(60 * time.Second)
-	}
-	if s.DurationOfBreak <= time.Duration(0) {
-		s.DurationOfBreak = time.Duration(60 * time.Second)
-	}
-	if s.SamplingFailureCount < 1 {
-		s.SamplingFailureCount = 5
+	if strings.TrimSpace(settings.Name) == "" {
+		panic("name is required")
 	}
 
 	return gobreaker.Settings{
-		Name:        s.Name,
-		MaxRequests: uint32(s.AllowedRequestInHalfOpen),
-		Interval:    s.SamplingDuration,
-		Timeout:     s.DurationOfBreak,
+		Name:        settings.Name,
+		MaxRequests: uint32(settings.AllowedRequestInHalfOpen),
+		Interval:    settings.SamplingDuration,
+		Timeout:     settings.DurationOfBreak,
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
-			if s.SamplingFailureRatio > 0 {
+			if settings.SamplingFailureRatio > 0 {
 				failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
-				return counts.Requests >= uint32(s.SamplingFailureCount) && failureRatio >= s.SamplingFailureRatio
+				return counts.Requests >= uint32(settings.SamplingFailureCount) && failureRatio >= settings.SamplingFailureRatio
 			}
-			return counts.TotalFailures >= uint32(s.SamplingFailureCount)
+			return counts.TotalFailures >= uint32(settings.SamplingFailureCount)
 		},
 		OnStateChange: func(name string, from, to gobreaker.State) {
-			if s.OnStateChange != nil {
-				s.OnStateChange(name, from.String(), to.String())
+			if settings.OnStateChange != nil {
+				settings.OnStateChange(name, from.String(), to.String())
 			}
 		},
 	}

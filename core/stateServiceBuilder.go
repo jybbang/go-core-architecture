@@ -58,6 +58,6 @@ func (b *stateServiceBuilder) StateAdapter(adapter stateAdapter) *stateServiceBu
 
 // Builder method to set the field cb in StateServiceBuilder
 func (b *stateServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *stateServiceBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings(b.cb.Name()))
+	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
 	return b
 }

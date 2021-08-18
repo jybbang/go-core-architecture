@@ -96,6 +96,6 @@ func (b *repositoryServiceBuilder) CommandRepositoryAdapter(adapter commandRepos
 
 // Builder method to set the field messaging in RepositoryServiceBuilder
 func (b *repositoryServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *repositoryServiceBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.toGobreakerSettings(b.cb.Name()))
+	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
 	return b
 }
