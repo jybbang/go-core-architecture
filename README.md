@@ -51,10 +51,10 @@
 | Adapter  | Status        |
 |:----------|:------------|
 | [MongoDB](https://github.com/mongodb/mongo-go-driver) | beta
-| [MySQL](https://gorm.io/) | beta
 | [PostgreSQL](https://gorm.io/) | beta
-| [SQLite](https://gorm.io/) | beta
-| [SQL Server](https://gorm.io/) | beta
+| [MySQL](https://gorm.io/) | alpha
+| [SQL Server](https://gorm.io/) | alpha
+| [SQLite](https://gorm.io/) | alpha
 
 #### State adapters
 | Adapter  | Status        |
