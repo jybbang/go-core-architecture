@@ -8,5 +8,3 @@
 <p align='center'>
 <a href="https://github.com/jybbang/go-nexinterface">Example</a>
 </p>
-
-<br>
