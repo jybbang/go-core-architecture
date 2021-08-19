@@ -55,6 +55,7 @@
 | [MySQL](https://gorm.io/) | alpha
 | [SQL Server](https://gorm.io/) | alpha
 | [SQLite](https://gorm.io/) | alpha
+| Oracle | scheduled
 
 #### State adapters
 | Adapter  | Status        |
@@ -70,6 +71,7 @@
 | [redis](https://github.com/go-redis/redis) | beta
 | [dapr](https://github.com/dapr/go-sdk) | alpha
 | [NATS](https://github.com/nats-io/nats.go) | alpha
+| AMQP | scheduled
 
 <br>
 
