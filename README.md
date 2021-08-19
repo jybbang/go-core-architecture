@@ -77,8 +77,11 @@
 
 ## Getting Started
 
-Install 🧿 using the "go get" command:
+Use go get 🧿
 
-```
-go get github.com/jybbang/go-core-architecture
-```
+	go get github.com/jybbang/go-core-architecture
+
+Then import the 🧿 package into your own code.
+
+	import "github.com/jybbang/go-core-architecture"
+    
