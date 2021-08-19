@@ -40,7 +40,6 @@
   - check long running requests > 500 ms
   - panic recovery
   - ...and yours
-  - 
 
 - 📜 [Open tracing](https://github.com/openzipkin-contrib/zipkin-go-opentracing)
 
