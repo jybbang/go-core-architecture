@@ -30,6 +30,11 @@
 
 - 📦 [Clean Architecture](https://github.com/jasontaylordev/CleanArchitecture) - mostly inspired
 
+- 🔷 Hexagonal Architecture 
+  - Repository adapters 
+  - State adapters
+  - Messaing adapters
+
 - 💾 CQRS
 
 - ⚡️ Event Sourcing
@@ -42,6 +47,8 @@
   - ...and yours
 
 - 📜 [Open tracing](https://github.com/openzipkin-contrib/zipkin-go-opentracing)
+
+- ⚙ [Circuit breaker](https://github.com/sony/gobreaker)
 
 <br>
 
@@ -77,7 +84,7 @@
 
 ## Getting Started
 
-Use go get 🧿
+Use go get
 
 	go get github.com/jybbang/go-core-architecture
 
