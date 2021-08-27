@@ -67,11 +67,11 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
-	if err != nil {
-		return err
-	}
 	if value == nil {
 		return core.ErrNotFound
+	}
+	if err != nil {
+		return err
 	}
 	return json.Unmarshal(value.Value, dest)
 }

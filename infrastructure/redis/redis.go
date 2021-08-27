@@ -101,9 +101,10 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 	value, err := a.redis.Get(ctx, key).Bytes()
-	if errors.Is(err, redis.Nil) {
-		return core.ErrNotFound
-	} else if err != nil {
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return core.ErrNotFound
+		}
 		return err
 	}
 	return json.Unmarshal(value, dest)

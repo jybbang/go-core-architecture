@@ -96,6 +96,7 @@ func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 		if errors.Is(err, leveldb.ErrNotFound) {
 			return core.ErrNotFound
 		}
+		return err
 	}
 	return json.Unmarshal(value, dest)
 }
