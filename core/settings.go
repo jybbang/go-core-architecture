@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -30,40 +31,40 @@ type CircuitBreakerSettings struct {
 }
 
 func (s *CircuitBreakerSettings) ToGobreakerSettings(defaultName string) gobreaker.Settings {
-	settings := &CircuitBreakerSettings{
+	ss := &CircuitBreakerSettings{
 		AllowedRequestInHalfOpen: 1,
 		DurationOfBreak:          time.Duration(60 * time.Second),
 		SamplingDuration:         time.Duration(60 * time.Second),
 		SamplingFailureCount:     5,
 	}
 
-	err := model.Copy(settings, s)
+	err := model.Copy(ss, s)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("mapping errors occurred: %v", err))
 	}
 
 	if strings.TrimSpace(s.Name) == "" {
-		settings.Name = defaultName
+		ss.Name = defaultName
 	}
-	if strings.TrimSpace(settings.Name) == "" {
+	if strings.TrimSpace(ss.Name) == "" {
 		panic("name is required")
 	}
 
 	return gobreaker.Settings{
-		Name:        settings.Name,
-		MaxRequests: uint32(settings.AllowedRequestInHalfOpen),
-		Interval:    settings.SamplingDuration,
-		Timeout:     settings.DurationOfBreak,
+		Name:        ss.Name,
+		MaxRequests: uint32(ss.AllowedRequestInHalfOpen),
+		Interval:    ss.SamplingDuration,
+		Timeout:     ss.DurationOfBreak,
 		ReadyToTrip: func(counts gobreaker.Counts) bool {
-			if settings.SamplingFailureRatio > 0 {
+			if ss.SamplingFailureRatio > 0 {
 				failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
-				return counts.Requests >= uint32(settings.SamplingFailureCount) && failureRatio >= settings.SamplingFailureRatio
+				return counts.Requests >= uint32(ss.SamplingFailureCount) && failureRatio >= ss.SamplingFailureRatio
 			}
-			return counts.TotalFailures >= uint32(settings.SamplingFailureCount)
+			return counts.TotalFailures >= uint32(ss.SamplingFailureCount)
 		},
 		OnStateChange: func(name string, from, to gobreaker.State) {
-			if settings.OnStateChange != nil {
-				settings.OnStateChange(name, from.String(), to.String())
+			if ss.OnStateChange != nil {
+				ss.OnStateChange(name, from.String(), to.String())
 			}
 		},
 	}

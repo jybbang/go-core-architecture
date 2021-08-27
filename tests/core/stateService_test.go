@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -21,7 +22,7 @@ func Test_stateService_Has(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
 
@@ -54,13 +55,13 @@ func Test_stateService_Get(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := &okCommand{
+	expect := &testModel{
 		Expect: 123,
 	}
 
 	s.Set(ctx, key, expect)
 
-	dest := &okCommand{}
+	dest := &testModel{}
 	for i := 0; i < count; i++ {
 		go s.Get(ctx, key, dest)
 	}
@@ -86,7 +87,7 @@ func Test_stateService_GetNotFoundShouldBeError(t *testing.T) {
 		StateAdapter(mock).
 		Create()
 
-	dest := &okCommand{}
+	dest := &testModel{}
 	result := s.Get(ctx, "zxc", dest)
 
 	if !errors.Is(result.E, core.ErrNotFound) {
@@ -104,7 +105,7 @@ func Test_stateService_Set(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := &okCommand{
+	expect := &testModel{
 		Expect: 123,
 	}
 	for i := 0; i < count; i++ {
@@ -119,11 +120,46 @@ func Test_stateService_Set(t *testing.T) {
 		t.Errorf("Test_stateService_Set() err = %v", result.E)
 	}
 
-	dest := &okCommand{}
+	dest := &testModel{}
 	s.Get(ctx, key, dest)
 
 	if !reflect.DeepEqual(dest, expect) {
 		t.Errorf("Test_stateService_Set() dest = %v, expect %v", dest, expect)
+	}
+}
+
+func Test_stateService_BatchSet(t *testing.T) {
+	ctx := context.Background()
+
+	mock := mocks.NewMockAdapter()
+	s := core.NewStateServiceBuilder().
+		StateAdapter(mock).
+		Create()
+
+	expect := 10000
+
+	kvs := make([]core.Kvs, 0)
+	for i := 0; i < expect; i++ {
+		kvs = append(
+			kvs,
+			core.Kvs{
+				K: strconv.Itoa(i),
+				V: &testModel{
+					Expect: i,
+				}})
+	}
+
+	result := s.BatchSet(ctx, kvs)
+
+	if result.E != nil {
+		t.Errorf("Test_stateService_BatchSet() err = %v", result.E)
+	}
+
+	dest := &testModel{}
+	s.Get(ctx, strconv.Itoa(expect), dest)
+
+	if dest.Expect == expect {
+		t.Errorf("Test_stateService_BatchSet() dest.Expect = %d, expect %d", dest.Expect, expect)
 	}
 }
 
@@ -137,7 +173,7 @@ func Test_stateService_Delete(t *testing.T) {
 
 	count := 10000
 	key := "qwe"
-	expect := okCommand{
+	expect := testModel{
 		Expect: 123,
 	}
 

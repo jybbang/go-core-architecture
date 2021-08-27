@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ func Test_redisStateService_ConnectionTimeout(t *testing.T) {
 	defer c()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
+		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(redis).
@@ -41,7 +42,7 @@ func Test_redisStateService_Has(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
+		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(redis).
@@ -76,7 +77,7 @@ func Test_redisStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
+		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(redis).
@@ -112,7 +113,7 @@ func Test_redisStateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
+		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(redis).
@@ -130,7 +131,7 @@ func Test_redisStateService_Set(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
+		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(redis).
@@ -161,11 +162,48 @@ func Test_redisStateService_Set(t *testing.T) {
 	}
 }
 
+func Test_redisStateService_BatchSet(t *testing.T) {
+	ctx := context.Background()
+
+	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+		Host: "localhost:16379",
+	})
+	s := core.NewStateServiceBuilder().
+		StateAdapter(redis).
+		Create()
+
+	expect := 10000
+
+	kvs := make([]core.Kvs, 0)
+	for i := 0; i < expect; i++ {
+		kvs = append(
+			kvs,
+			core.Kvs{
+				K: strconv.Itoa(i),
+				V: &testModel{
+					Expect: i,
+				}})
+	}
+
+	result := s.BatchSet(ctx, kvs)
+
+	if result.E != nil {
+		t.Errorf("Test_redisStateService_BatchSet() err = %v", result.E)
+	}
+
+	dest := &testModel{}
+	s.Get(ctx, strconv.Itoa(expect), dest)
+
+	if dest.Expect == expect {
+		t.Errorf("Test_redisStateService_BatchSet() dest.Expect = %d, expect %d", dest.Expect, expect)
+	}
+}
+
 func Test_redisStateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
+		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(redis).
@@ -201,7 +239,7 @@ func Test_redisStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
 	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
-		Host: "localhost:6379",
+		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
 		StateAdapter(redis).

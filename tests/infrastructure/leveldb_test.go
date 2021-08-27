@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -132,6 +133,43 @@ func Test_leveldbStateService_Set(t *testing.T) {
 
 	if !reflect.DeepEqual(dest, expect) {
 		t.Errorf("Test_leveldbStateService_Set() dest = %v, expect %v", dest, expect)
+	}
+}
+
+func Test_leveldbStateService_BatchSet(t *testing.T) {
+	ctx := context.Background()
+
+	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+		Path: "_test.db",
+	})
+	s := core.NewStateServiceBuilder().
+		StateAdapter(leveldb).
+		Create()
+
+	expect := 10000
+
+	kvs := make([]core.Kvs, 0)
+	for i := 0; i < expect; i++ {
+		kvs = append(
+			kvs,
+			core.Kvs{
+				K: strconv.Itoa(i),
+				V: &testModel{
+					Expect: i,
+				}})
+	}
+
+	result := s.BatchSet(ctx, kvs)
+
+	if result.E != nil {
+		t.Errorf("Test_leveldbStateService_BatchSet() err = %v", result.E)
+	}
+
+	dest := &testModel{}
+	s.Get(ctx, strconv.Itoa(expect), dest)
+
+	if dest.Expect == expect {
+		t.Errorf("Test_leveldbStateService_BatchSet() dest.Expect = %d, expect %d", dest.Expect, expect)
 	}
 }
 

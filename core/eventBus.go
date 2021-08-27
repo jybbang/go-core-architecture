@@ -24,6 +24,7 @@ type bufferedEvent struct {
 	BufferedEvents []DomainEventer
 }
 
+// dummy
 func bufferedEventHandler(ctx context.Context, notification interface{}) error {
 	return nil
 }
@@ -39,6 +40,7 @@ func (e *eventBus) initialize() *eventBus {
 
 func (e *eventBus) close() {
 	e.messaging.Close()
+	close(e.ch)
 }
 
 func (e *eventBus) subscribeBufferedEvent(observable rxgo.Observable) {

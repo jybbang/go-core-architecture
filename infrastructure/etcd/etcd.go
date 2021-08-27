@@ -3,6 +3,7 @@ package etcd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -79,10 +80,10 @@ func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
 
 	err := model.Copy(s, settings)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("mapping errors occurred: %v", err))
 	}
 
-	client := getEtcdClient(ctx, settings)
+	client := getEtcdClient(ctx, *s)
 	etcdService := &adapter{
 		etcd:     client,
 		settings: *s,
@@ -122,6 +123,16 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 
 	_, err = a.etcd.Put(ctx, key, string(bytes))
 	return err
+}
+
+func (a *adapter) BatchSet(ctx context.Context, kvs []core.Kvs) error {
+	for _, v := range kvs {
+		err := a.Set(ctx, v.K, v.V)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {

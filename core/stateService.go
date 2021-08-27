@@ -75,6 +75,19 @@ func (s *stateService) Set(ctx context.Context, key string, value interface{}) R
 	return Result{V: nil, E: err}
 }
 
+func (s *stateService) BatchSet(ctx context.Context, kvs []Kvs) Result {
+	if len(kvs) == 0 {
+		return Result{V: nil, E: fmt.Errorf("%w kvs is required", ErrInternalServerError)}
+	}
+
+	_, err := s.cb.Execute(func() (interface{}, error) {
+		err := s.state.BatchSet(ctx, kvs)
+		return nil, err
+	})
+
+	return Result{V: nil, E: err}
+}
+
 func (s *stateService) Delete(ctx context.Context, key string) Result {
 	if key == "" {
 		return Result{V: nil, E: fmt.Errorf("%w key is required", ErrInternalServerError)}

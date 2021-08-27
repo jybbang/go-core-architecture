@@ -2,10 +2,16 @@ package core
 
 import "context"
 
+type Kvs struct {
+	K string
+	V interface{}
+}
+
 type stateAdapter interface {
 	Close()
 	Has(ctx context.Context, key string) bool
 	Get(ctx context.Context, key string, dest interface{}) error
 	Set(ctx context.Context, key string, value interface{}) error
+	BatchSet(ctx context.Context, kvs []Kvs) error
 	Delete(ctx context.Context, key string) error
 }

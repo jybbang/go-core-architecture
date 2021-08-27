@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -158,6 +159,43 @@ func Test_etcdStateService_Set(t *testing.T) {
 
 	if !reflect.DeepEqual(dest, expect) {
 		t.Errorf("Test_etcdStateService_Set() dest = %v, expect %v", dest, expect)
+	}
+}
+
+func Test_etcdStateService_BatchSet(t *testing.T) {
+	ctx := context.Background()
+
+	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+		Endpoints: []string{"localhost:2379"},
+	})
+	s := core.NewStateServiceBuilder().
+		StateAdapter(etcd).
+		Create()
+
+	expect := 10000
+
+	kvs := make([]core.Kvs, 0)
+	for i := 0; i < expect; i++ {
+		kvs = append(
+			kvs,
+			core.Kvs{
+				K: strconv.Itoa(i),
+				V: &testModel{
+					Expect: i,
+				}})
+	}
+
+	result := s.BatchSet(ctx, kvs)
+
+	if result.E != nil {
+		t.Errorf("Test_etcdStateService_BatchSet() err = %v", result.E)
+	}
+
+	dest := &testModel{}
+	s.Get(ctx, strconv.Itoa(expect), dest)
+
+	if dest.Expect == expect {
+		t.Errorf("Test_etcdStateService_BatchSet() dest.Expect = %d, expect %d", dest.Expect, expect)
 	}
 }
 

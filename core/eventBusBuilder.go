@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/enriquebris/goconcurrentqueue"
@@ -39,7 +40,7 @@ func (b *eventBusBuilder) Settings(settings EventBusSettings) *eventBusBuilder {
 
 	err := model.Copy(s, settings)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("mapping errors occurred: %v", err))
 	}
 
 	b.setting = *s

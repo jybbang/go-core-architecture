@@ -56,6 +56,16 @@ func (b *stateServiceBuilder) StateAdapter(adapter stateAdapter) *stateServiceBu
 	return b
 }
 
+// Builder method to set the field state in StateServiceBuilder
+func (b *stateServiceBuilder) UseCache(settings CacheSettings) *stateServiceBuilder {
+	if b.state == nil {
+		panic("adapter is required")
+	}
+
+	b.state = newCache(b.state, settings)
+	return b
+}
+
 // Builder method to set the field cb in StateServiceBuilder
 func (b *stateServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *stateServiceBuilder {
 	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))

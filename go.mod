@@ -13,6 +13,7 @@ require (
 	github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/reactivex/rxgo/v2 v2.5.0
 	github.com/sony/gobreaker v0.4.1
 	github.com/syndtr/goleveldb v1.0.0

@@ -110,6 +110,16 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	return nil
 }
 
+func (a *adapter) BatchSet(ctx context.Context, kvs []core.Kvs) error {
+	for _, v := range kvs {
+		err := a.Set(ctx, v.K, v.V)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (a *adapter) Delete(ctx context.Context, key string) error {
 	// Check context cancellation
 	if err := ctx.Err(); err != nil {

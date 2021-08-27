@@ -110,6 +110,22 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	return a.leveldb.Put([]byte(key), bytes, nil)
 }
 
+func (a *adapter) BatchSet(ctx context.Context, kvs []core.Kvs) error {
+	batch := new(leveldb.Batch)
+
+	for _, v := range kvs {
+		bytes, err := json.Marshal(v.V)
+		if err != nil {
+			return err
+		}
+
+		batch.Put([]byte(v.K), bytes)
+	}
+
+	err := a.leveldb.Write(batch, nil)
+	return err
+}
+
 func (a *adapter) Delete(ctx context.Context, key string) error {
 	return a.leveldb.Delete([]byte(key), nil)
 }
