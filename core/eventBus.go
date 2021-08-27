@@ -48,20 +48,22 @@ func (e *eventBus) subscribeBufferedEvent(observable rxgo.Observable) {
 
 	for {
 		items := <-ch
-		if items.V == nil {
+
+		events, ok := items.V.([]interface{})
+		if !ok || len(events) == 0 {
 			continue
 		}
 
-		events := &bufferedEvent{}
-		for _, v := range items.V.([]interface{}) {
+		bufferedEvent := &bufferedEvent{}
+		for _, v := range events {
 			if event, ok := v.(DomainEventer); ok {
-				events.BufferedEvents = append(events.BufferedEvents, event)
+				bufferedEvent.BufferedEvents = append(bufferedEvent.BufferedEvents, event)
 			}
 		}
 
-		events.Topic = "BufferedEvents"
+		bufferedEvent.Topic = "BufferedEvents"
 		timeout, cancel := context.WithTimeout(context.Background(), e.settings.BufferedEventTimeout)
-		e.AddDomainEvent(events)
+		e.AddDomainEvent(bufferedEvent)
 		e.PublishDomainEvents(timeout)
 		cancel()
 	}

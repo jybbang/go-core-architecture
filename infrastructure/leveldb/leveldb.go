@@ -110,7 +110,7 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	return a.leveldb.Put([]byte(key), bytes, nil)
 }
 
-func (a *adapter) BatchSet(ctx context.Context, kvs []core.Kvs) error {
+func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 	batch := new(leveldb.Batch)
 
 	for _, v := range kvs {

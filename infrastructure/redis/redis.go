@@ -120,7 +120,7 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	return result.Err()
 }
 
-func (a *adapter) BatchSet(ctx context.Context, kvs []core.Kvs) error {
+func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 	for _, v := range kvs {
 		err := a.Set(ctx, v.K, v.V)
 		if err != nil {

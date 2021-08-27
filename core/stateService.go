@@ -75,7 +75,7 @@ func (s *stateService) Set(ctx context.Context, key string, value interface{}) R
 	return Result{V: nil, E: err}
 }
 
-func (s *stateService) BatchSet(ctx context.Context, kvs []Kvs) Result {
+func (s *stateService) BatchSet(ctx context.Context, kvs []KV) Result {
 	if len(kvs) == 0 {
 		return Result{V: nil, E: fmt.Errorf("%w kvs is required", ErrInternalServerError)}
 	}

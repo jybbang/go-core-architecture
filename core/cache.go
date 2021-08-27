@@ -75,19 +75,26 @@ func (c *cacheProxy) subscribeBatch(observable rxgo.Observable) {
 
 	for {
 		items := <-ch
-		if items.V == nil {
+
+		batch, ok := items.V.([]interface{})
+		if !ok || len(batch) == 0 {
 			continue
 		}
 
-		kvs := make([]Kvs, 0)
-		for _, v := range items.V.([]interface{}) {
-			if kv, ok := v.(Kvs); ok {
-				kvs = append(kvs, kv)
+		kvs := make(map[string]KV)
+		for _, v := range batch {
+			if kv, ok := v.(KV); ok {
+				kvs[kv.K] = kv
 			}
 		}
 
+		values := make([]KV, 0, len(kvs))
+		for _, v := range kvs {
+			values = append(values, v)
+		}
+
 		timeout, cancel := context.WithTimeout(context.Background(), c.settings.BatchTimeout)
-		c.BatchSet(timeout, kvs)
+		c.BatchSet(timeout, values)
 		cancel()
 	}
 }
@@ -128,7 +135,7 @@ func (c *cacheProxy) Set(ctx context.Context, key string, value interface{}) err
 	c.cache.SetDefault(key, value)
 	if c.settings.UseBatch {
 		c.ch <- rxgo.Item{
-			V: Kvs{
+			V: KV{
 				K: key,
 				V: value,
 			},
@@ -144,6 +151,6 @@ func (c *cacheProxy) Delete(ctx context.Context, key string) error {
 	return c.adapter.Delete(ctx, key)
 }
 
-func (c *cacheProxy) BatchSet(ctx context.Context, kvs []Kvs) error {
+func (c *cacheProxy) BatchSet(ctx context.Context, kvs []KV) error {
 	return c.adapter.BatchSet(ctx, kvs)
 }

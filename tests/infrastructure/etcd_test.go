@@ -174,11 +174,11 @@ func Test_etcdStateService_BatchSet(t *testing.T) {
 
 	expect := 10000
 
-	kvs := make([]core.Kvs, 0)
+	kvs := make([]core.KV, 0)
 	for i := 0; i < expect; i++ {
 		kvs = append(
 			kvs,
-			core.Kvs{
+			core.KV{
 				K: strconv.Itoa(i),
 				V: &testModel{
 					Expect: i,
