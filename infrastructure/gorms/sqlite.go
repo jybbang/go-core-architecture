@@ -14,6 +14,6 @@ func NewSqliteAdapter(ctx context.Context, settings GormSettings) *adapter {
 		settings:  settings,
 	}
 
-	sqlite.open(ctx)
+	sqlite.setClient(ctx)
 	return sqlite
 }

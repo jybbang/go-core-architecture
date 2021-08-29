@@ -61,12 +61,12 @@ func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
 	mongoService := &adapter{
 		settings: settings,
 	}
-	mongoService.open(ctx)
 
+	mongoService.setClient(ctx)
 	return mongoService
 }
 
-func (a *adapter) open(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -113,7 +113,7 @@ func (a *adapter) OnCircuitOpen() {
 func (a *adapter) Open() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.open(ctx)
+	a.setClient(ctx)
 }
 
 func (a *adapter) Close() {

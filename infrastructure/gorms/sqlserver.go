@@ -14,6 +14,6 @@ func NewSqlServerAdapter(ctx context.Context, settings GormSettings) *adapter {
 		settings:  settings,
 	}
 
-	sqlserver.open(ctx)
+	sqlserver.setClient(ctx)
 	return sqlserver
 }

@@ -17,6 +17,6 @@ func NewPostgresAdapter(ctx context.Context, settings GormSettings) *adapter {
 		settings: settings,
 	}
 
-	postgres.open(ctx)
+	postgres.setClient(ctx)
 	return postgres
 }

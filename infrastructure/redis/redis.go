@@ -58,10 +58,11 @@ func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
 		settings: settings,
 	}
 
+	redisService.setClient(ctx)
 	return redisService
 }
 
-func (a *adapter) open(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -119,7 +120,7 @@ func (a *adapter) OnCircuitOpen() {
 func (a *adapter) Open() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.open(ctx)
+	a.setClient(ctx)
 }
 
 func (a *adapter) Close() {
