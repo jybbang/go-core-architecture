@@ -60,7 +60,7 @@ func newCache(state stateAdapter, settings CacheSettings) *cacheProxy {
 		ch:       make(chan rxgo.Item, 1),
 	}
 
-	if settings.UseBatch {
+	if s.UseBatch {
 		observable := rxgo.FromChannel(cache.ch).
 			BufferWithTime(rxgo.WithDuration(s.BatchBufferInterval))
 

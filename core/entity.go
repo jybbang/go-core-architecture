@@ -8,10 +8,10 @@ import (
 
 type Entity struct {
 	ID         uuid.UUID `gorm:"primaryKey" bson:"_id,omitempty"`
-	CreateUser string    `bson:"create_user,omitempty"`
-	UpdateUser string    `bson:"update_user,omitempty"`
-	CreatedAt  time.Time `bson:"created_at,omitempty"`
-	UpdatedAt  time.Time `bson:"updated_at,omitempty"`
+	CreateUser string
+	UpdateUser string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type Entitier interface {
