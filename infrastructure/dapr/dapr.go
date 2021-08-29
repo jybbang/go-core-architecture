@@ -12,7 +12,7 @@ import (
 )
 
 type adapter struct {
-	dapr     dapr.Client
+	client   dapr.Client
 	settings DaprSettings
 	mutex    sync.Mutex
 }
@@ -30,12 +30,12 @@ func NewDaprAdapter(ctx context.Context, settings DaprSettings) *adapter {
 	daprService := &adapter{
 		settings: settings,
 	}
-	daprService.open(ctx)
 
+	daprService.setClient(ctx)
 	return daprService
 }
 
-func (a *adapter) open(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) {
 	if daprClient == nil {
 		clientsSync.Do(
 			func() {
@@ -53,7 +53,7 @@ func (a *adapter) open(ctx context.Context) {
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	a.dapr = daprClient
+	a.client = daprClient
 }
 
 func (a *adapter) OnCircuitOpen() {}
@@ -61,11 +61,11 @@ func (a *adapter) OnCircuitOpen() {}
 func (a *adapter) Open() {}
 
 func (a *adapter) Close() {
-	a.dapr.Close()
+	a.client.Close()
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
-	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
+	value, err := a.client.GetState(ctx, a.settings.StoreName, key)
 	if err != nil {
 		return false
 	}
@@ -73,7 +73,7 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
-	value, err := a.dapr.GetState(ctx, a.settings.StoreName, key)
+	value, err := a.client.GetState(ctx, a.settings.StoreName, key)
 	if value == nil {
 		return core.ErrNotFound
 	}
@@ -88,7 +88,7 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	if err != nil {
 		return err
 	}
-	err = a.dapr.SaveState(ctx, a.settings.StoreName, key, bytes)
+	err = a.client.SaveState(ctx, a.settings.StoreName, key, bytes)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	return a.dapr.DeleteState(ctx, a.settings.StoreName, key)
+	return a.client.DeleteState(ctx, a.settings.StoreName, key)
 }
 
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
@@ -114,7 +114,7 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 	if err != nil {
 		return err
 	}
-	err = a.dapr.PublishEvent(ctx, a.settings.PubsubName, coreEvent.GetTopic(), bytes)
+	err = a.client.PublishEvent(ctx, a.settings.PubsubName, coreEvent.GetTopic(), bytes)
 	return err
 }
 

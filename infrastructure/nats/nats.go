@@ -14,19 +14,21 @@ import (
 )
 
 type adapter struct {
-	nats     *nats.Conn
-	pubsubs  cmap.ConcurrentMap
-	handlers cmap.ConcurrentMap
+	client   *client
 	settings NatsSettings
-	isOpened bool
 	mutex    sync.Mutex
 }
 
+type client struct {
+	nats     *nats.Conn
+	pubsubs  cmap.ConcurrentMap
+	handlers cmap.ConcurrentMap
+	isOpened bool
+}
+
 type clients struct {
-	clients  map[string]*nats.Conn
-	pubsubs  map[string]cmap.ConcurrentMap
-	handlers map[string]cmap.ConcurrentMap
-	mutex    sync.Mutex
+	clients map[string]*client
+	mutex   sync.Mutex
 }
 
 type NatsSettings struct {
@@ -42,8 +44,7 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*nats.Conn),
-					pubsubs: make(map[string]cmap.ConcurrentMap),
+					clients: make(map[string]*client),
 				}
 			})
 	}
@@ -71,8 +72,8 @@ func (a *adapter) open(ctx context.Context) {
 		panic("url is required")
 	}
 
-	_, ok := clientsInstance.clients[url]
-	if !ok || !a.isOpened {
+	cli, ok := clientsInstance.clients[url]
+	if !ok || !cli.isOpened {
 		natsClient, err := nats.Connect(url)
 		if err != nil {
 			panic(err)
@@ -82,34 +83,32 @@ func (a *adapter) open(ctx context.Context) {
 			panic(err)
 		}
 
-		if _, ok := clientsInstance.handlers[url]; !ok {
-			clientsInstance.handlers[url] = cmap.New()
+		handlers := cli.handlers
+		if handlers == nil {
+			handlers = cmap.New()
 		}
 
-		clientsInstance.pubsubs[url] = cmap.New()
-		clientsInstance.clients[url] = natsClient
-		a.isOpened = true
+		clientsInstance.clients[url] = &client{
+			nats:     natsClient,
+			pubsubs:  cmap.New(),
+			handlers: handlers,
+			isOpened: true,
+		}
 	}
 
 	client := clientsInstance.clients[url]
-	pubsubs := clientsInstance.pubsubs[url]
-	handlers := clientsInstance.handlers[url]
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	a.nats = client
-	a.pubsubs = pubsubs
-	a.handlers = handlers
-
-	for _, k := range handlers.Keys() {
-		if v, ok := handlers.Get(k); ok {
-			go a.Subscribe(context.Background(), k, v.(core.ReplyHandler))
-		}
+	a.client = client
+	for _, k := range a.client.handlers.Keys() {
+		v, _ := a.client.handlers.Get(k)
+		a.Subscribe(context.Background(), k, v.(core.ReplyHandler))
 	}
 }
 
 func (a *adapter) OnCircuitOpen() {
-	a.isOpened = false
+	a.client.isOpened = false
 }
 
 func (a *adapter) Open() {
@@ -119,11 +118,11 @@ func (a *adapter) Open() {
 }
 
 func (a *adapter) Close() {
-	a.nats.Close()
+	a.client.nats.Close()
 }
 
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
@@ -131,39 +130,38 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 	if err != nil {
 		return err
 	}
-	return a.nats.Publish(coreEvent.GetTopic(), bytes)
+	return a.client.nats.Publish(coreEvent.GetTopic(), bytes)
 }
 
 func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	pubsub, err := a.nats.Subscribe(topic, func(m *nats.Msg) {
+	pubsub, err := a.client.nats.Subscribe(topic, func(m *nats.Msg) {
 		handler(m.Data)
 	})
 	if err != nil {
 		return err
 	}
 
-	a.pubsubs.Set(topic, pubsub)
-	a.handlers.Set(topic, handler)
-
+	a.client.pubsubs.Set(topic, pubsub)
+	a.client.handlers.Set(topic, handler)
 	return nil
 }
 
 func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	if pubsub, ok := a.pubsubs.Get(topic); ok {
+	if pubsub, ok := a.client.pubsubs.Get(topic); ok {
 		if pubsub, ok := pubsub.(*nats.Subscription); ok {
 			pubsub.Unsubscribe()
 		}
 	}
 
-	a.pubsubs.Remove(topic)
-	a.handlers.Remove(topic)
+	a.client.pubsubs.Remove(topic)
+	a.client.handlers.Remove(topic)
 	return nil
 }

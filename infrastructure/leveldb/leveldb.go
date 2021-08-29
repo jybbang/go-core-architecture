@@ -14,14 +14,18 @@ import (
 )
 
 type adapter struct {
-	leveldb  *leveldb.DB
+	client   *client
 	settings LevelDbSettings
-	isOpened bool
 	mutex    sync.Mutex
 }
 
+type client struct {
+	leveldb  *leveldb.DB
+	isOpened bool
+}
+
 type clients struct {
-	clients map[string]*leveldb.DB
+	clients map[string]*client
 	mutex   sync.Mutex
 }
 
@@ -39,7 +43,7 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*leveldb.DB),
+					clients: make(map[string]*client),
 				}
 			})
 	}
@@ -67,8 +71,8 @@ func (a *adapter) open(ctx context.Context) {
 		panic("path is required")
 	}
 
-	_, ok := clientsInstance.clients[path]
-	if !ok || !a.isOpened {
+	cli, ok := clientsInstance.clients[path]
+	if !ok || !cli.isOpened {
 		leveldbClient, err := leveldb.OpenFile(path, &opt.Options{
 			ReadOnly: a.settings.ReadOnly,
 		})
@@ -80,19 +84,21 @@ func (a *adapter) open(ctx context.Context) {
 			panic(err)
 		}
 
-		clientsInstance.clients[path] = leveldbClient
-		a.isOpened = true
+		clientsInstance.clients[path] = &client{
+			leveldb:  leveldbClient,
+			isOpened: true,
+		}
 	}
 
 	client := clientsInstance.clients[path]
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	a.leveldb = client
+	a.client = client
 }
 
 func (a *adapter) OnCircuitOpen() {
-	a.isOpened = false
+	a.client.isOpened = false
 }
 
 func (a *adapter) Open() {
@@ -102,15 +108,15 @@ func (a *adapter) Open() {
 }
 
 func (a *adapter) Close() {
-	a.leveldb.Close()
+	a.client.leveldb.Close()
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	ok, err := a.leveldb.Has([]byte(key), nil)
+	ok, err := a.client.leveldb.Has([]byte(key), nil)
 	if err != nil {
 		return false
 	}
@@ -118,11 +124,11 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	value, err := a.leveldb.Get([]byte(key), nil)
+	value, err := a.client.leveldb.Get([]byte(key), nil)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
 			return core.ErrNotFound
@@ -133,7 +139,7 @@ func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
@@ -142,11 +148,11 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 		return err
 	}
 
-	return a.leveldb.Put([]byte(key), bytes, nil)
+	return a.client.leveldb.Put([]byte(key), bytes, nil)
 }
 
 func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
@@ -161,14 +167,14 @@ func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 		batch.Put([]byte(v.K), bytes)
 	}
 
-	err := a.leveldb.Write(batch, nil)
+	err := a.client.leveldb.Write(batch, nil)
 	return err
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	return a.leveldb.Delete([]byte(key), nil)
+	return a.client.leveldb.Delete([]byte(key), nil)
 }

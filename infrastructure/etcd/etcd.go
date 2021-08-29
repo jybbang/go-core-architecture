@@ -14,14 +14,18 @@ import (
 )
 
 type adapter struct {
-	etcd     *etcd.Client
+	client   *client
 	settings EtcdSettings
-	isOpened bool
 	mutex    sync.Mutex
 }
 
+type client struct {
+	etcd     *etcd.Client
+	isOpened bool
+}
+
 type clients struct {
-	clients map[string]*etcd.Client
+	clients map[string]*client
 	mutex   sync.Mutex
 }
 
@@ -39,7 +43,7 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*etcd.Client),
+					clients: make(map[string]*client),
 				}
 			})
 	}
@@ -60,11 +64,11 @@ func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
 		settings: *s,
 	}
 
-	etcdService.open(ctx)
+	etcdService.setClient(ctx)
 	return etcdService
 }
 
-func (a *adapter) open(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -80,8 +84,8 @@ func (a *adapter) open(ctx context.Context) {
 		panic("endpoint is required")
 	}
 
-	_, ok := clientsInstance.clients[endpoint]
-	if !ok || !a.isOpened {
+	cli, ok := clientsInstance.clients[endpoint]
+	if !ok || !cli.isOpened {
 		etcdClient, err := etcd.New(etcd.Config{
 			Endpoints:   a.settings.Endpoints,
 			DialTimeout: a.settings.DialTimeout,
@@ -94,37 +98,39 @@ func (a *adapter) open(ctx context.Context) {
 			panic(err)
 		}
 
-		clientsInstance.clients[endpoint] = etcdClient
-		a.isOpened = true
+		clientsInstance.clients[endpoint] = &client{
+			etcd:     etcdClient,
+			isOpened: true,
+		}
 	}
 
 	client := clientsInstance.clients[endpoint]
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	a.etcd = client
+	a.client = client
 }
 
 func (a *adapter) OnCircuitOpen() {
-	a.isOpened = false
+	a.client.isOpened = false
 }
 
 func (a *adapter) Open() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.open(ctx)
+	a.setClient(ctx)
 }
 
 func (a *adapter) Close() {
-	a.etcd.Close()
+	a.client.etcd.Close()
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	value, err := a.etcd.Get(ctx, key)
+	value, err := a.client.etcd.Get(ctx, key)
 	if err != nil {
 		return false
 	}
@@ -132,11 +138,11 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	value, err := a.etcd.Get(ctx, key)
+	value, err := a.client.etcd.Get(ctx, key)
 	if value == nil || value.Count < 1 {
 		return core.ErrNotFound
 	}
@@ -147,7 +153,7 @@ func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
@@ -156,7 +162,7 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 		return err
 	}
 
-	_, err = a.etcd.Put(ctx, key, string(bytes))
+	_, err = a.client.etcd.Put(ctx, key, string(bytes))
 	return err
 }
 
@@ -171,10 +177,10 @@ func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	_, err := a.etcd.Delete(ctx, key)
+	_, err := a.client.etcd.Delete(ctx, key)
 	return err
 }

@@ -16,18 +16,22 @@ import (
 )
 
 type adapter struct {
-	tableName  string
-	model      core.Entitier
+	tableName string
+	model     core.Entitier
+	client    *client
+	settings  MongoSettings
+	mutex     sync.Mutex
+}
+
+type client struct {
 	conn       *mongo.Client
 	database   *mongo.Database
 	collection *mongo.Collection
-	settings   MongoSettings
 	isOpened   bool
-	mutex      sync.Mutex
 }
 
 type clients struct {
-	clients map[string]*mongo.Client
+	clients map[string]*client
 	mutex   sync.Mutex
 }
 
@@ -46,7 +50,7 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*mongo.Client),
+					clients: make(map[string]*client),
 				}
 			})
 	}
@@ -74,9 +78,9 @@ func (a *adapter) open(ctx context.Context) {
 		panic("uri is required")
 	}
 
-	_, ok := clientsInstance.clients[uri]
-	if !ok || !a.isOpened {
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	cli, ok := clientsInstance.clients[uri]
+	if !ok || !cli.isOpened {
+		mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 		if err != nil {
 			panic(err)
 		}
@@ -85,20 +89,25 @@ func (a *adapter) open(ctx context.Context) {
 			panic(err)
 		}
 
-		clientsInstance.clients[uri] = client
-		a.isOpened = true
+		clientsInstance.clients[uri] = &client{
+			conn:     mongoClient,
+			database: mongoClient.Database(a.settings.DatabaseName),
+			isOpened: true,
+		}
 	}
 
 	client := clientsInstance.clients[uri]
 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	a.conn = client
-	a.database = client.Database(a.settings.DatabaseName)
+	a.client = client
+	if a.model != nil {
+		a.SetModel(a.model, a.tableName)
+	}
 }
 
 func (a *adapter) OnCircuitOpen() {
-	a.isOpened = false
+	a.client.isOpened = false
 }
 
 func (a *adapter) Open() {
@@ -108,7 +117,7 @@ func (a *adapter) Open() {
 }
 
 func (a *adapter) Close() {
-	a.conn.Disconnect(context.Background())
+	a.client.conn.Disconnect(context.Background())
 }
 
 func (a *adapter) SetModel(model core.Entitier, tableName string) {
@@ -116,7 +125,7 @@ func (a *adapter) SetModel(model core.Entitier, tableName string) {
 	a.tableName = tableName
 
 	ctx := context.Background()
-	names, err := a.database.ListCollectionNames(
+	names, err := a.client.database.ListCollectionNames(
 		ctx,
 		bson.D{})
 	if err != nil {
@@ -132,21 +141,21 @@ func (a *adapter) SetModel(model core.Entitier, tableName string) {
 	}
 
 	if !hasCollection && a.settings.CanCreateCollection {
-		err := a.database.CreateCollection(ctx, a.tableName)
+		err := a.client.database.CreateCollection(ctx, a.tableName)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	a.collection = a.database.Collection(a.tableName)
+	a.client.collection = a.client.database.Collection(a.tableName)
 }
 
 func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (err error) {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	err = a.collection.FindOne(ctx, bson.M{"entity._id": id}).Decode(dest)
+	err = a.client.collection.FindOne(ctx, bson.M{"entity._id": id}).Decode(dest)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return core.ErrNotFound
@@ -167,11 +176,11 @@ func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args int
 }
 
 func (a *adapter) Count(ctx context.Context) (count int64, err error) {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	count, err = a.collection.CountDocuments(ctx, bson.M{})
+	count, err = a.client.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return 0, err
 	}
@@ -180,11 +189,11 @@ func (a *adapter) Count(ctx context.Context) (count int64, err error) {
 }
 
 func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	count, err = a.collection.CountDocuments(ctx, query)
+	count, err = a.client.collection.CountDocuments(ctx, query)
 	if err != nil {
 		return 0, err
 	}
@@ -193,11 +202,11 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 }
 
 func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	cursor, err := a.collection.Find(ctx, bson.M{})
+	cursor, err := a.client.collection.Find(ctx, bson.M{})
 	if err != nil {
 		return err
 	}
@@ -209,11 +218,11 @@ func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
 }
 
 func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	cursor, err := a.collection.Find(ctx, query)
+	cursor, err := a.client.collection.Find(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -225,11 +234,11 @@ func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args in
 }
 
 func (a *adapter) Remove(ctx context.Context, id uuid.UUID) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	_, err := a.collection.DeleteOne(ctx, bson.M{"entity._id": id})
+	_, err := a.client.collection.DeleteOne(ctx, bson.M{"entity._id": id})
 	if err != nil {
 		return err
 	}
@@ -238,12 +247,12 @@ func (a *adapter) Remove(ctx context.Context, id uuid.UUID) error {
 }
 
 func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
 	for _, id := range ids {
-		_, err := a.collection.DeleteOne(ctx, bson.M{"entity._id": id})
+		_, err := a.client.collection.DeleteOne(ctx, bson.M{"entity._id": id})
 		if err != nil {
 			return err
 		}
@@ -253,11 +262,11 @@ func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
 }
 
 func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	_, err := a.collection.InsertOne(ctx, entity)
+	_, err := a.client.collection.InsertOne(ctx, entity)
 	if err != nil {
 		return err
 	}
@@ -266,7 +275,7 @@ func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
 }
 
 func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
@@ -274,7 +283,7 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 	for i, entity := range entities {
 		vals[i] = entity
 	}
-	_, err := a.collection.InsertMany(ctx, vals)
+	_, err := a.client.collection.InsertMany(ctx, vals)
 	if err != nil {
 		return err
 	}
@@ -283,20 +292,20 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 }
 
 func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
-	return a.collection.FindOneAndReplace(ctx, bson.M{"entity._id": entity.GetID()}, entity).Err()
+	return a.client.collection.FindOneAndReplace(ctx, bson.M{"entity._id": entity.GetID()}, entity).Err()
 }
 
 func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) error {
-	if !a.isOpened {
+	if !a.client.isOpened {
 		a.Open()
 	}
 
 	for _, entity := range entities {
-		err := a.collection.FindOneAndReplace(ctx, bson.M{"entity._id": entity.GetID()}, entity).Err()
+		err := a.client.collection.FindOneAndReplace(ctx, bson.M{"entity._id": entity.GetID()}, entity).Err()
 		if err != nil {
 			return err
 		}
