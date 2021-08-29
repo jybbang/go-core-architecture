@@ -16,6 +16,7 @@ import (
 type adapter struct {
 	etcd     *etcd.Client
 	settings EtcdSettings
+	isOpened bool
 	mutex    sync.Mutex
 }
 
@@ -58,8 +59,8 @@ func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
 	etcdService := &adapter{
 		settings: *s,
 	}
-	etcdService.open(ctx)
 
+	etcdService.open(ctx)
 	return etcdService
 }
 
@@ -80,7 +81,7 @@ func (a *adapter) open(ctx context.Context) {
 	}
 
 	_, ok := clientsInstance.clients[endpoint]
-	if !ok {
+	if !ok || !a.isOpened {
 		etcdClient, err := etcd.New(etcd.Config{
 			Endpoints:   a.settings.Endpoints,
 			DialTimeout: a.settings.DialTimeout,
@@ -92,7 +93,9 @@ func (a *adapter) open(ctx context.Context) {
 		if err := ctx.Err(); err != nil {
 			panic(err)
 		}
+
 		clientsInstance.clients[endpoint] = etcdClient
+		a.isOpened = true
 	}
 
 	client := clientsInstance.clients[endpoint]
@@ -103,6 +106,10 @@ func (a *adapter) open(ctx context.Context) {
 }
 
 func (a *adapter) OnCircuitOpen() {
+	a.isOpened = false
+}
+
+func (a *adapter) Open() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	a.open(ctx)
@@ -113,6 +120,10 @@ func (a *adapter) Close() {
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	value, err := a.etcd.Get(ctx, key)
 	if err != nil {
 		return false
@@ -121,6 +132,10 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	value, err := a.etcd.Get(ctx, key)
 	if value == nil || value.Count < 1 {
 		return core.ErrNotFound
@@ -132,6 +147,10 @@ func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	bytes, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -152,6 +171,10 @@ func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	_, err := a.etcd.Delete(ctx, key)
 	return err
 }

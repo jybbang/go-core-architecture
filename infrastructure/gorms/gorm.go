@@ -18,6 +18,7 @@ type adapter struct {
 	db        *gorm.DB
 	dialector gorm.Dialector
 	settings  GormSettings
+	isOpened  bool
 	mutex     sync.Mutex
 }
 
@@ -60,7 +61,7 @@ func (a *adapter) open(ctx context.Context) {
 	}
 
 	_, ok := clientsInstance.clients[connectionString]
-	if !ok {
+	if !ok || !a.isOpened {
 		db, err := gorm.Open(a.dialector, &gorm.Config{})
 		if err != nil {
 			panic(err)
@@ -72,6 +73,7 @@ func (a *adapter) open(ctx context.Context) {
 		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
 		clientsInstance.clients[connectionString] = tx
+		a.isOpened = true
 	}
 
 	client := clientsInstance.clients[connectionString]
@@ -82,6 +84,10 @@ func (a *adapter) open(ctx context.Context) {
 }
 
 func (a *adapter) OnCircuitOpen() {
+	a.isOpened = false
+}
+
+func (a *adapter) Open() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	a.open(ctx)
@@ -102,6 +108,10 @@ func (a *adapter) SetModel(model core.Entitier, tableName string) {
 }
 
 func (a *adapter) Find(ctx context.Context, id uuid.UUID, dest core.Entitier) (err error) {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	result := a.db.WithContext(ctx).Table(a.tableName).Take(dest, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return core.ErrNotFound
@@ -122,6 +132,10 @@ func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args int
 }
 
 func (a *adapter) Count(ctx context.Context) (count int64, err error) {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	resp := new(int64)
 	result := a.db.WithContext(ctx).Table(a.tableName).Count(resp)
 	if result.Error != nil {
@@ -131,6 +145,10 @@ func (a *adapter) Count(ctx context.Context) (count int64, err error) {
 }
 
 func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args interface{}) (count int64, err error) {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	resp := new(int64)
 	result := a.db.WithContext(ctx).Table(a.tableName).Where(query, args).Count(resp)
 	if result.Error != nil {
@@ -140,21 +158,37 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 }
 
 func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	result := a.db.WithContext(ctx).Table(a.tableName).Find(dest)
 	return result.Error
 }
 
 func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args interface{}, dest interface{}) (err error) {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	result := a.db.WithContext(ctx).Table(a.tableName).Where(query, args).Find(dest)
 	return result.Error
 }
 
 func (a *adapter) Remove(ctx context.Context, id uuid.UUID) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	result := a.db.WithContext(ctx).Table(a.tableName).Delete(a.model, id)
 	return result.Error
 }
 
 func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	err := a.db.WithContext(ctx).Table(a.tableName).Transaction(func(tx *gorm.DB) error {
 		for _, id := range ids {
 			err := a.db.WithContext(ctx).Table(a.tableName).Delete(a.model, id).Error
@@ -169,12 +203,19 @@ func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
 }
 
 func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	result := a.db.WithContext(ctx).Table(a.tableName).Create(entity)
 	return result.Error
 }
 
 func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error {
-	// result := a.conn.WithContext(ctx).Table(a.tableName).CreateInBatches(entities, 1000)
+	if !a.isOpened {
+		a.Open()
+	}
+
 	err := a.db.WithContext(ctx).Table(a.tableName).Transaction(func(tx *gorm.DB) error {
 		for _, entity := range entities {
 			err := a.db.WithContext(ctx).Table(a.tableName).Create(entity).Error
@@ -189,11 +230,19 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 }
 
 func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	result := a.db.WithContext(ctx).Table(a.tableName).Updates(entity)
 	return result.Error
 }
 
 func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	err := a.db.WithContext(ctx).Table(a.tableName).Transaction(func(tx *gorm.DB) error {
 		for _, entity := range entities {
 			err := a.db.WithContext(ctx).Table(a.tableName).Updates(entity).Error

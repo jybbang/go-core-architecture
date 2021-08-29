@@ -18,6 +18,7 @@ type adapter struct {
 	pubsubs  cmap.ConcurrentMap
 	handlers cmap.ConcurrentMap
 	settings NatsSettings
+	isOpened bool
 	mutex    sync.Mutex
 }
 
@@ -71,7 +72,7 @@ func (a *adapter) open(ctx context.Context) {
 	}
 
 	_, ok := clientsInstance.clients[url]
-	if !ok {
+	if !ok || !a.isOpened {
 		natsClient, err := nats.Connect(url)
 		if err != nil {
 			panic(err)
@@ -81,12 +82,13 @@ func (a *adapter) open(ctx context.Context) {
 			panic(err)
 		}
 
-		clientsInstance.clients[url] = natsClient
-		clientsInstance.pubsubs[url] = cmap.New()
-
 		if _, ok := clientsInstance.handlers[url]; !ok {
 			clientsInstance.handlers[url] = cmap.New()
 		}
+
+		clientsInstance.pubsubs[url] = cmap.New()
+		clientsInstance.clients[url] = natsClient
+		a.isOpened = true
 	}
 
 	client := clientsInstance.clients[url]
@@ -107,6 +109,10 @@ func (a *adapter) open(ctx context.Context) {
 }
 
 func (a *adapter) OnCircuitOpen() {
+	a.isOpened = false
+}
+
+func (a *adapter) Open() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	a.open(ctx)
@@ -117,6 +123,10 @@ func (a *adapter) Close() {
 }
 
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	bytes, err := json.Marshal(coreEvent)
 	if err != nil {
 		return err
@@ -125,6 +135,10 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 }
 
 func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	pubsub, err := a.nats.Subscribe(topic, func(m *nats.Msg) {
 		handler(m.Data)
 	})
@@ -139,6 +153,10 @@ func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.Repl
 }
 
 func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	if pubsub, ok := a.pubsubs.Get(topic); ok {
 		if pubsub, ok := pubsub.(*nats.Subscription); ok {
 			pubsub.Unsubscribe()

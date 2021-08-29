@@ -16,6 +16,7 @@ import (
 type adapter struct {
 	leveldb  *leveldb.DB
 	settings LevelDbSettings
+	isOpened bool
 	mutex    sync.Mutex
 }
 
@@ -67,7 +68,7 @@ func (a *adapter) open(ctx context.Context) {
 	}
 
 	_, ok := clientsInstance.clients[path]
-	if !ok {
+	if !ok || !a.isOpened {
 		leveldbClient, err := leveldb.OpenFile(path, &opt.Options{
 			ReadOnly: a.settings.ReadOnly,
 		})
@@ -78,7 +79,9 @@ func (a *adapter) open(ctx context.Context) {
 		if err := ctx.Err(); err != nil {
 			panic(err)
 		}
+
 		clientsInstance.clients[path] = leveldbClient
+		a.isOpened = true
 	}
 
 	client := clientsInstance.clients[path]
@@ -89,6 +92,10 @@ func (a *adapter) open(ctx context.Context) {
 }
 
 func (a *adapter) OnCircuitOpen() {
+	a.isOpened = false
+}
+
+func (a *adapter) Open() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	a.open(ctx)
@@ -99,6 +106,10 @@ func (a *adapter) Close() {
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	ok, err := a.leveldb.Has([]byte(key), nil)
 	if err != nil {
 		return false
@@ -107,6 +118,10 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	value, err := a.leveldb.Get([]byte(key), nil)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
@@ -118,6 +133,10 @@ func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	bytes, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -127,6 +146,10 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 }
 
 func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	batch := new(leveldb.Batch)
 
 	for _, v := range kvs {
@@ -143,5 +166,9 @@ func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
+	if !a.isOpened {
+		a.Open()
+	}
+
 	return a.leveldb.Delete([]byte(key), nil)
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
-	"time"
 
 	dapr "github.com/dapr/go-sdk/client"
 
@@ -57,11 +56,9 @@ func (a *adapter) open(ctx context.Context) {
 	a.dapr = daprClient
 }
 
-func (a *adapter) OnCircuitOpen() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	a.open(ctx)
-}
+func (a *adapter) OnCircuitOpen() {}
+
+func (a *adapter) Open() {}
 
 func (a *adapter) Close() {
 	a.dapr.Close()
