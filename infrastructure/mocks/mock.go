@@ -53,7 +53,9 @@ func (a *adapter) OnCircuitOpen() {
 	a.setting.Log.Debug("mock on circuit open")
 }
 
-func (a *adapter) Open() {}
+func (a *adapter) Open() error {
+	return nil
+}
 
 func (a *adapter) Close() {
 	a.db.Clear()

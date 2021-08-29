@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -58,11 +59,14 @@ func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
 		settings: settings,
 	}
 
-	redisService.setClient(ctx)
+	err := redisService.setClient(ctx)
+	if err != nil {
+		panic(err)
+	}
 	return redisService
 }
 
-func (a *adapter) setClient(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -71,7 +75,7 @@ func (a *adapter) setClient(ctx context.Context) {
 	host := a.settings.Host
 
 	if strings.TrimSpace(host) == "" {
-		panic("host is required")
+		return fmt.Errorf("host is required")
 	}
 
 	password := a.settings.Password
@@ -86,7 +90,7 @@ func (a *adapter) setClient(ctx context.Context) {
 		redisClient.Conn(ctx)
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
-			panic(err)
+			return err
 		}
 
 		handlers := cli.handlers
@@ -111,16 +115,18 @@ func (a *adapter) setClient(ctx context.Context) {
 		v, _ := a.client.handlers.Get(k)
 		a.Subscribe(context.Background(), k, v.(core.ReplyHandler))
 	}
+
+	return nil
 }
 
 func (a *adapter) OnCircuitOpen() {
 	a.client.isOpened = false
 }
 
-func (a *adapter) Open() {
+func (a *adapter) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.setClient(ctx)
+	return a.setClient(ctx)
 }
 
 func (a *adapter) Close() {

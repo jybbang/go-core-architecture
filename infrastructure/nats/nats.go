@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -56,11 +57,14 @@ func NewNatsAdapter(ctx context.Context, settings NatsSettings) *adapter {
 		settings: settings,
 	}
 
-	natsService.setClient(ctx)
+	err := natsService.setClient(ctx)
+	if err != nil {
+		panic(err)
+	}
 	return natsService
 }
 
-func (a *adapter) setClient(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -69,18 +73,18 @@ func (a *adapter) setClient(ctx context.Context) {
 	url := a.settings.Url
 
 	if strings.TrimSpace(url) == "" {
-		panic("url is required")
+		return fmt.Errorf("url is required")
 	}
 
 	cli, ok := clientsInstance.clients[url]
 	if !ok || !cli.isOpened {
 		natsClient, err := nats.Connect(url)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
-			panic(err)
+			return err
 		}
 
 		handlers := cli.handlers
@@ -105,16 +109,18 @@ func (a *adapter) setClient(ctx context.Context) {
 		v, _ := a.client.handlers.Get(k)
 		a.Subscribe(context.Background(), k, v.(core.ReplyHandler))
 	}
+
+	return nil
 }
 
 func (a *adapter) OnCircuitOpen() {
 	a.client.isOpened = false
 }
 
-func (a *adapter) Open() {
+func (a *adapter) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.setClient(ctx)
+	return a.setClient(ctx)
 }
 
 func (a *adapter) Close() {

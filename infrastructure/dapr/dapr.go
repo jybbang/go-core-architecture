@@ -58,7 +58,9 @@ func (a *adapter) setClient(ctx context.Context) {
 
 func (a *adapter) OnCircuitOpen() {}
 
-func (a *adapter) Open() {}
+func (a *adapter) Open() error {
+	return nil
+}
 
 func (a *adapter) Close() {
 	a.client.Close()

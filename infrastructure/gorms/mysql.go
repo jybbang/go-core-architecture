@@ -14,6 +14,10 @@ func NewMySqlAdapter(ctx context.Context, settings GormSettings) *adapter {
 		settings:  settings,
 	}
 
-	mysql.setClient(ctx)
+	err := mysql.setClient(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	return mysql
 }

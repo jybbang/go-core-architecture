@@ -55,33 +55,36 @@ func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
 		DialTimeout: time.Duration(5 * time.Second),
 	}
 
-	err := model.Copy(s, settings)
-	if err != nil {
-		panic(fmt.Errorf("mapping errors occurred: %v", err))
+	errs := model.Copy(s, settings)
+	if errs != nil {
+		panic(fmt.Errorf("mapping errors occurred: %v", errs))
 	}
 
 	etcdService := &adapter{
 		settings: *s,
 	}
 
-	etcdService.setClient(ctx)
+	err := etcdService.setClient(ctx)
+	if err != nil {
+		panic(err)
+	}
 	return etcdService
 }
 
-func (a *adapter) setClient(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
 	if len(a.settings.Endpoints) == 0 {
-		panic("at least 1 endpoint required")
+		return fmt.Errorf("at least 1 endpoint required")
 	}
 
 	endpoint := a.settings.Endpoints[0]
 
 	if strings.TrimSpace(endpoint) == "" {
-		panic("endpoint is required")
+		return fmt.Errorf("endpoint is required")
 	}
 
 	cli, ok := clientsInstance.clients[endpoint]
@@ -91,11 +94,11 @@ func (a *adapter) setClient(ctx context.Context) {
 			DialTimeout: a.settings.DialTimeout,
 		})
 		if err != nil {
-			panic(err)
+			return err
 		}
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
-			panic(err)
+			return err
 		}
 
 		clientsInstance.clients[endpoint] = &client{
@@ -109,16 +112,18 @@ func (a *adapter) setClient(ctx context.Context) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	a.client = client
+
+	return nil
 }
 
 func (a *adapter) OnCircuitOpen() {
 	a.client.isOpened = false
 }
 
-func (a *adapter) Open() {
+func (a *adapter) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.setClient(ctx)
+	return a.setClient(ctx)
 }
 
 func (a *adapter) Close() {

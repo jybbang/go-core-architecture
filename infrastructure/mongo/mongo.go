@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -62,11 +63,14 @@ func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
 		settings: settings,
 	}
 
-	mongoService.setClient(ctx)
+	err := mongoService.setClient(ctx)
+	if err != nil {
+		panic(err)
+	}
 	return mongoService
 }
 
-func (a *adapter) setClient(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -75,18 +79,18 @@ func (a *adapter) setClient(ctx context.Context) {
 	uri := a.settings.ConnectionUri
 
 	if strings.TrimSpace(uri) == "" {
-		panic("uri is required")
+		return fmt.Errorf("uri is required")
 	}
 
 	cli, ok := clientsInstance.clients[uri]
 	if !ok || !cli.isOpened {
 		mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 		if err != nil {
-			panic(err)
+			return err
 		}
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
-			panic(err)
+			return err
 		}
 
 		clientsInstance.clients[uri] = &client{
@@ -104,16 +108,18 @@ func (a *adapter) setClient(ctx context.Context) {
 	if a.model != nil {
 		a.SetModel(a.model, a.tableName)
 	}
+
+	return nil
 }
 
 func (a *adapter) OnCircuitOpen() {
 	a.client.isOpened = false
 }
 
-func (a *adapter) Open() {
+func (a *adapter) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.setClient(ctx)
+	return a.setClient(ctx)
 }
 
 func (a *adapter) Close() {

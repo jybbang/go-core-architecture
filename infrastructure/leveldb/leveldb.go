@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -55,11 +56,14 @@ func NewLevelDbAdapter(ctx context.Context, settings LevelDbSettings) *adapter {
 		settings: settings,
 	}
 
-	leveldbService.setClient(ctx)
+	err := leveldbService.setClient(ctx)
+	if err != nil {
+		panic(err)
+	}
 	return leveldbService
 }
 
-func (a *adapter) setClient(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -68,7 +72,7 @@ func (a *adapter) setClient(ctx context.Context) {
 	path := a.settings.Path
 
 	if strings.TrimSpace(path) == "" {
-		panic("path is required")
+		return fmt.Errorf("path is required")
 	}
 
 	cli, ok := clientsInstance.clients[path]
@@ -77,11 +81,11 @@ func (a *adapter) setClient(ctx context.Context) {
 			ReadOnly: a.settings.ReadOnly,
 		})
 		if err != nil {
-			panic(err)
+			return err
 		}
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
-			panic(err)
+			return err
 		}
 
 		clientsInstance.clients[path] = &client{
@@ -95,16 +99,18 @@ func (a *adapter) setClient(ctx context.Context) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	a.client = client
+
+	return nil
 }
 
 func (a *adapter) OnCircuitOpen() {
 	a.client.isOpened = false
 }
 
-func (a *adapter) Open() {
+func (a *adapter) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.setClient(ctx)
+	return a.setClient(ctx)
 }
 
 func (a *adapter) Close() {

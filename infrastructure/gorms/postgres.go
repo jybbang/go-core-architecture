@@ -17,6 +17,10 @@ func NewPostgresAdapter(ctx context.Context, settings GormSettings) *adapter {
 		settings: settings,
 	}
 
-	postgres.setClient(ctx)
+	err := postgres.setClient(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	return postgres
 }

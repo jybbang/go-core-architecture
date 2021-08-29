@@ -3,6 +3,7 @@ package gorms
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -52,7 +53,7 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func (a *adapter) setClient(ctx context.Context) {
+func (a *adapter) setClient(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -61,18 +62,18 @@ func (a *adapter) setClient(ctx context.Context) {
 	connectionString := a.settings.ConnectionString
 
 	if strings.TrimSpace(connectionString) == "" {
-		panic("connectionString is required")
+		return fmt.Errorf("connectionString is required")
 	}
 
 	cli, ok := clientsInstance.clients[connectionString]
 	if !ok || !cli.isOpened {
 		db, err := gorm.Open(a.dialector, &gorm.Config{})
 		if err != nil {
-			panic(err)
+			return err
 		}
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
-			panic(err)
+			return err
 		}
 		tx := db.Session(&gorm.Session{SkipDefaultTransaction: true})
 
@@ -90,16 +91,18 @@ func (a *adapter) setClient(ctx context.Context) {
 	if a.model != nil {
 		a.SetModel(a.model, a.tableName)
 	}
+
+	return nil
 }
 
 func (a *adapter) OnCircuitOpen() {
 	a.client.isOpened = false
 }
 
-func (a *adapter) Open() {
+func (a *adapter) Open() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	a.setClient(ctx)
+	return a.setClient(ctx)
 }
 
 func (a *adapter) Close() {}

@@ -104,7 +104,9 @@ func (c *cacheProxy) OnCircuitOpen() {
 	c.adapter.OnCircuitOpen()
 }
 
-func (c *cacheProxy) Open() {}
+func (c *cacheProxy) Open() error {
+	return nil
+}
 
 func (c *cacheProxy) Close() {
 	c.adapter.Close()
