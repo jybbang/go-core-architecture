@@ -13,7 +13,12 @@ type stateService struct {
 	cb    *gobreaker.CircuitBreaker
 }
 
-func (s *stateService) initialize() *stateService {
+func (s *stateService) initialize(cbSetting CircuitBreakerSettings) *stateService {
+	s.cb = cbSetting.ToCircuitBreaker(
+		"state service",
+		func() {
+			s.state.OnCircuitOpen()
+		})
 	return s
 }
 

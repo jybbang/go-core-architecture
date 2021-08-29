@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	cmap "github.com/orcaman/concurrent-map"
@@ -15,13 +17,16 @@ import (
 type adapter struct {
 	redis    *redis.Client
 	pubsubs  cmap.ConcurrentMap
+	handlers cmap.ConcurrentMap
 	settings RedisSettings
+	mutex    sync.Mutex
 }
 
 type clients struct {
-	clients map[string]*redis.Client
-	pubsubs map[string]cmap.ConcurrentMap
-	mutex   sync.Mutex
+	clients  map[string]*redis.Client
+	pubsubs  map[string]cmap.ConcurrentMap
+	handlers map[string]cmap.ConcurrentMap
+	mutex    sync.Mutex
 }
 
 type RedisSettings struct {
@@ -38,22 +43,36 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*redis.Client),
-					pubsubs: make(map[string]cmap.ConcurrentMap),
+					clients:  make(map[string]*redis.Client),
+					pubsubs:  make(map[string]cmap.ConcurrentMap),
+					handlers: make(map[string]cmap.ConcurrentMap),
 				}
 			})
 	}
 	return clientsInstance
 }
 
-func getRedisClient(ctx context.Context, settings RedisSettings) (*redis.Client, cmap.ConcurrentMap) {
+func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
+	redisService := &adapter{
+		settings: settings,
+	}
+
+	return redisService
+}
+
+func (a *adapter) open(ctx context.Context) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
-	host := settings.Host
-	password := settings.Password
+	host := a.settings.Host
+
+	if strings.TrimSpace(host) == "" {
+		panic("host is required")
+	}
+
+	password := a.settings.Password
 	_, ok := clientsInstance.clients[host]
 	if !ok {
 		redisClient := redis.NewClient(&redis.Options{
@@ -69,22 +88,33 @@ func getRedisClient(ctx context.Context, settings RedisSettings) (*redis.Client,
 
 		clientsInstance.clients[host] = redisClient
 		clientsInstance.pubsubs[host] = cmap.New()
+
+		if _, ok := clientsInstance.handlers[host]; !ok {
+			clientsInstance.handlers[host] = cmap.New()
+		}
 	}
 
 	client := clientsInstance.clients[host]
-	pubsub := clientsInstance.pubsubs[host]
-	return client, pubsub
+	pubsubs := clientsInstance.pubsubs[host]
+	handlers := clientsInstance.handlers[host]
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	a.redis = client
+	a.pubsubs = pubsubs
+	a.handlers = handlers
+
+	for _, k := range handlers.Keys() {
+		if v, ok := handlers.Get(k); ok {
+			go a.Subscribe(context.Background(), k, v.(core.ReplyHandler))
+		}
+	}
 }
 
-func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
-	client, pubsub := getRedisClient(ctx, settings)
-	redisService := &adapter{
-		redis:    client,
-		pubsubs:  pubsub,
-		settings: settings,
-	}
-
-	return redisService
+func (a *adapter) OnCircuitOpen() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	a.open(ctx)
 }
 
 func (a *adapter) Close() {
@@ -147,6 +177,7 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {
 	pubsub := a.redis.Subscribe(ctx, topic)
 	a.pubsubs.Set(topic, pubsub)
+	a.handlers.Set(topic, handler)
 
 	ch := pubsub.Channel()
 
@@ -164,5 +195,7 @@ func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
 		}
 	}
 
-	return core.ErrNotFound
+	a.pubsubs.Remove(topic)
+	a.handlers.Remove(topic)
+	return nil
 }

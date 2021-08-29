@@ -19,7 +19,13 @@ type repositoryService struct {
 	cb                *gobreaker.CircuitBreaker
 }
 
-func (r *repositoryService) initialize() *repositoryService {
+func (r *repositoryService) initialize(cbSetting CircuitBreakerSettings) *repositoryService {
+	r.cb = cbSetting.ToCircuitBreaker(
+		r.tableName+"-repository",
+		func() {
+			r.queryRepository.OnCircuitOpen()
+			r.commandRepository.OnCircuitOpen()
+		})
 	return r
 }
 

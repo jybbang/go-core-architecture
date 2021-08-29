@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 type adapter struct {
 	etcd     *etcd.Client
 	settings EtcdSettings
+	mutex    sync.Mutex
 }
 
 type clients struct {
@@ -43,21 +45,45 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getEtcdClient(ctx context.Context, settings EtcdSettings) *etcd.Client {
+func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
+	s := &EtcdSettings{
+		DialTimeout: time.Duration(5 * time.Second),
+	}
+
+	err := model.Copy(s, settings)
+	if err != nil {
+		panic(fmt.Errorf("mapping errors occurred: %v", err))
+	}
+
+	etcdService := &adapter{
+		settings: *s,
+	}
+	etcdService.open(ctx)
+
+	return etcdService
+}
+
+func (a *adapter) open(ctx context.Context) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
-	if settings.Endpoints == nil || len(settings.Endpoints) == 0 {
+	if len(a.settings.Endpoints) == 0 {
 		panic("at least 1 endpoint required")
 	}
-	endpoint := settings.Endpoints[0]
+
+	endpoint := a.settings.Endpoints[0]
+
+	if strings.TrimSpace(endpoint) == "" {
+		panic("endpoint is required")
+	}
+
 	_, ok := clientsInstance.clients[endpoint]
 	if !ok {
 		etcdClient, err := etcd.New(etcd.Config{
-			Endpoints:   settings.Endpoints,
-			DialTimeout: settings.DialTimeout,
+			Endpoints:   a.settings.Endpoints,
+			DialTimeout: a.settings.DialTimeout,
 		})
 		if err != nil {
 			panic(err)
@@ -70,26 +96,16 @@ func getEtcdClient(ctx context.Context, settings EtcdSettings) *etcd.Client {
 	}
 
 	client := clientsInstance.clients[endpoint]
-	return client
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	a.etcd = client
 }
 
-func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
-	s := &EtcdSettings{
-		DialTimeout: time.Duration(5 * time.Second),
-	}
-
-	err := model.Copy(s, settings)
-	if err != nil {
-		panic(fmt.Errorf("mapping errors occurred: %v", err))
-	}
-
-	client := getEtcdClient(ctx, *s)
-	etcdService := &adapter{
-		etcd:     client,
-		settings: *s,
-	}
-
-	return etcdService
+func (a *adapter) OnCircuitOpen() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	a.open(ctx)
 }
 
 func (a *adapter) Close() {

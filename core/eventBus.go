@@ -29,7 +29,13 @@ func bufferedEventHandler(ctx context.Context, notification interface{}) error {
 	return nil
 }
 
-func (e *eventBus) initialize() *eventBus {
+func (e *eventBus) initialize(cbSetting CircuitBreakerSettings) *eventBus {
+	e.cb = cbSetting.ToCircuitBreaker(
+		"eventbus",
+		func() {
+			e.messaging.OnCircuitOpen()
+		})
+
 	observable := rxgo.FromChannel(e.ch).
 		BufferWithTimeOrCount(rxgo.WithDuration(e.settings.BufferedEventBufferTime), e.settings.BufferedEventBufferCount)
 

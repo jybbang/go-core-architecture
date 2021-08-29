@@ -6,27 +6,21 @@ import (
 
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/reactivex/rxgo/v2"
-	"github.com/sony/gobreaker"
 	"gopkg.in/jeevatkm/go-model.v1"
 )
 
 // Builder Object for EventBus
 type eventBusBuilder struct {
-	mediator  *mediator
-	messaging messagingAdapter
-	cb        *gobreaker.CircuitBreaker
-	setting   EventBusSettings
+	mediator   *mediator
+	messaging  messagingAdapter
+	cbSettings CircuitBreakerSettings
+	setting    EventBusSettings
 }
 
 // Constructor for EventBusBuilder
 func NewEventBusBuilder() *eventBusBuilder {
 	o := new(eventBusBuilder)
-
-	st := gobreaker.Settings{
-		Name: "eventBus",
-	}
-
-	o.cb = gobreaker.NewCircuitBreaker(st)
+	o.cbSettings = CircuitBreakerSettings{Name: "eventbus"}
 	return o
 }
 
@@ -69,7 +63,7 @@ func (b *eventBusBuilder) MessaingAdapter(adapter messagingAdapter) *eventBusBui
 
 // Builder method to set the field messaging in EventBusBuilder
 func (b *eventBusBuilder) CircuitBreaker(setting CircuitBreakerSettings) *eventBusBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
+	b.cbSettings = setting
 	return b
 }
 
@@ -87,10 +81,9 @@ func (b *eventBusBuilder) Create() *eventBus {
 		domainEvents: goconcurrentqueue.NewFIFO(),
 		ch:           make(chan rxgo.Item, 1),
 		messaging:    b.messaging,
-		cb:           b.cb,
 		settings:     b.setting,
 	}
-	instance.initialize()
+	instance.initialize(b.cbSettings)
 
 	return instance
 }

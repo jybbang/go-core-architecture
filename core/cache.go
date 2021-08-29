@@ -99,6 +99,11 @@ func (c *cacheProxy) subscribeBatch(observable rxgo.Observable) {
 	}
 }
 
+func (c *cacheProxy) OnCircuitOpen() {
+	c.cache.DeleteExpired()
+	c.adapter.OnCircuitOpen()
+}
+
 func (c *cacheProxy) Close() {
 	c.adapter.Close()
 	close(c.ch)

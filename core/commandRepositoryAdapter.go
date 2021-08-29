@@ -7,6 +7,7 @@ import (
 )
 
 type commandRepositoryAdapter interface {
+	OnCircuitOpen()
 	Close()
 	SetModel(model Entitier, tableName string)
 	Remove(ctx context.Context, id uuid.UUID) error

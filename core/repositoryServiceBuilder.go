@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/sony/gobreaker"
 )
 
 // Builder Object for RepositoryService
@@ -16,7 +15,7 @@ type repositoryServiceBuilder struct {
 	model             Entitier
 	queryRepository   queryRepositoryAdapter
 	commandRepository commandRepositoryAdapter
-	cb                *gobreaker.CircuitBreaker
+	cbSettings        CircuitBreakerSettings
 }
 
 // Constructor for RepositoryServiceBuilder
@@ -32,12 +31,8 @@ func NewRepositoryServiceBuilder(model Entitier, tableName string) *repositorySe
 	o.tableName = tableName
 	o.model = model
 	o.model.SetID(uuid.Nil)
-
-	st := gobreaker.Settings{
-		Name: tableName + "-repository",
-	}
-	o.cb = gobreaker.NewCircuitBreaker(st)
 	o.userIdKey = http.CanonicalHeaderKey("Userid")
+	o.cbSettings = CircuitBreakerSettings{Name: o.tableName + "-repository"}
 
 	return o
 }
@@ -71,9 +66,8 @@ func (b *repositoryServiceBuilder) Create() *repositoryService {
 		userIdKey:         b.userIdKey,
 		queryRepository:   b.queryRepository,
 		commandRepository: b.commandRepository,
-		cb:                b.cb,
 	}
-	instance.initialize()
+	instance.initialize(b.cbSettings)
 
 	return instance
 }
@@ -113,6 +107,6 @@ func (b *repositoryServiceBuilder) CommandRepositoryAdapter(adapter commandRepos
 
 // Builder method to set the field messaging in RepositoryServiceBuilder
 func (b *repositoryServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *repositoryServiceBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
+	b.cbSettings = setting
 	return b
 }

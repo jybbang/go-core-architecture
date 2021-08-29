@@ -49,6 +49,10 @@ func NewMockAdapterWithSettings(setting MockSettings) *adapter {
 	}
 }
 
+func (a *adapter) OnCircuitOpen() {
+	a.setting.Log.Debug("mock on circuit open")
+}
+
 func (a *adapter) Close() {
 	a.db.Clear()
 	a.pubsubs.Clear()
@@ -226,7 +230,7 @@ func (a *adapter) AnyWithFilter(ctx context.Context, query interface{}, args int
 
 	ok = count > 0
 
-	defer a.setting.Log.Debugw("mock anywithfilter", "ok", ok)
+	defer a.setting.Log.Debugw("mock any with filter", "ok", ok)
 
 	return ok, err
 }
@@ -252,7 +256,7 @@ func (a *adapter) CountWithFilter(ctx context.Context, query interface{}, args i
 
 	resp := a.db.Count()
 
-	defer a.setting.Log.Debugw("mock countwithfilter", "count", resp, "query", query, "args", args)
+	defer a.setting.Log.Debugw("mock count with filter", "count", resp, "query", query, "args", args)
 
 	return int64(resp), nil
 }
@@ -300,7 +304,7 @@ func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args in
 
 	resultsVal.Elem().Set(sliceVal)
 
-	defer a.setting.Log.Debugw("mock listwithfilter", "dest", dest, "query", query, "args", args)
+	defer a.setting.Log.Debugw("mock list with filter", "dest", dest, "query", query, "args", args)
 
 	return nil
 }
@@ -323,7 +327,7 @@ func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
 		return err
 	}
 
-	defer a.setting.Log.Debugw("mock removerange")
+	defer a.setting.Log.Debugw("mock remove range")
 
 	for _, id := range ids {
 		a.Remove(ctx, id)
@@ -349,7 +353,7 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 		return err
 	}
 
-	defer a.setting.Log.Debugw("mock addrange")
+	defer a.setting.Log.Debugw("mock add range")
 
 	for _, v := range entities {
 		a.Add(ctx, v)
@@ -375,7 +379,7 @@ func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) err
 		return err
 	}
 
-	defer a.setting.Log.Debugw("mock updaterange")
+	defer a.setting.Log.Debugw("mock update range")
 
 	for _, v := range entities {
 		a.Update(ctx, v)

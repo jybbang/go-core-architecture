@@ -3,7 +3,9 @@ package mongo
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,6 +22,7 @@ type adapter struct {
 	database   *mongo.Database
 	collection *mongo.Collection
 	settings   MongoSettings
+	mutex      sync.Mutex
 }
 
 type clients struct {
@@ -49,13 +52,27 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getMongoClient(ctx context.Context, settings MongoSettings) *mongo.Client {
+func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
+	mongoService := &adapter{
+		settings: settings,
+	}
+	mongoService.open(ctx)
+
+	return mongoService
+}
+
+func (a *adapter) open(ctx context.Context) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
-	uri := settings.ConnectionUri
+	uri := a.settings.ConnectionUri
+
+	if strings.TrimSpace(uri) == "" {
+		panic("uri is required")
+	}
+
 	_, ok := clientsInstance.clients[uri]
 	if !ok {
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
@@ -71,18 +88,17 @@ func getMongoClient(ctx context.Context, settings MongoSettings) *mongo.Client {
 	}
 
 	client := clientsInstance.clients[uri]
-	return client
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	a.conn = client
+	a.database = client.Database(a.settings.DatabaseName)
 }
 
-func NewMongoAdapter(ctx context.Context, settings MongoSettings) *adapter {
-	client := getMongoClient(ctx, settings)
-	mongo := &adapter{
-		conn:     client,
-		database: client.Database(settings.DatabaseName),
-		settings: settings,
-	}
-
-	return mongo
+func (a *adapter) OnCircuitOpen() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	a.open(ctx)
 }
 
 func (a *adapter) Close() {

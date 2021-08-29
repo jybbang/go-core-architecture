@@ -30,7 +30,7 @@ type CircuitBreakerSettings struct {
 	OnStateChange            func(name string, from string, to string)
 }
 
-func (s *CircuitBreakerSettings) ToGobreakerSettings(defaultName string) gobreaker.Settings {
+func (s *CircuitBreakerSettings) ToCircuitBreaker(defaultName string, onCircuitOpen func()) *gobreaker.CircuitBreaker {
 	ss := &CircuitBreakerSettings{
 		AllowedRequestInHalfOpen: 1,
 		DurationOfBreak:          time.Duration(60 * time.Second),
@@ -50,7 +50,7 @@ func (s *CircuitBreakerSettings) ToGobreakerSettings(defaultName string) gobreak
 		panic("name is required")
 	}
 
-	return gobreaker.Settings{
+	settings := gobreaker.Settings{
 		Name:        ss.Name,
 		MaxRequests: uint32(ss.AllowedRequestInHalfOpen),
 		Interval:    ss.SamplingDuration,
@@ -66,6 +66,9 @@ func (s *CircuitBreakerSettings) ToGobreakerSettings(defaultName string) gobreak
 			if ss.OnStateChange != nil {
 				ss.OnStateChange(name, from.String(), to.String())
 			}
+			onCircuitOpen()
 		},
 	}
+
+	return gobreaker.NewCircuitBreaker(settings)
 }

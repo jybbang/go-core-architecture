@@ -1,22 +1,15 @@
 package core
 
-import "github.com/sony/gobreaker"
-
 // Builder Object for StateService
 type stateServiceBuilder struct {
-	state stateAdapter
-	cb    *gobreaker.CircuitBreaker
+	state      stateAdapter
+	cbSettings CircuitBreakerSettings
 }
 
 // Constructor for StateServiceBuilder
 func NewStateServiceBuilder() *stateServiceBuilder {
 	o := new(stateServiceBuilder)
-
-	st := gobreaker.Settings{
-		Name: "state service",
-	}
-	o.cb = gobreaker.NewCircuitBreaker(st)
-
+	o.cbSettings = CircuitBreakerSettings{Name: "state service"}
 	return o
 }
 
@@ -39,9 +32,8 @@ func (b *stateServiceBuilder) Create() *stateService {
 
 	instance := &stateService{
 		state: b.state,
-		cb:    b.cb,
 	}
-	instance.initialize()
+	instance.initialize(b.cbSettings)
 
 	return instance
 }
@@ -68,6 +60,6 @@ func (b *stateServiceBuilder) UseCache(settings CacheSettings) *stateServiceBuil
 
 // Builder method to set the field cb in StateServiceBuilder
 func (b *stateServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *stateServiceBuilder {
-	b.cb = gobreaker.NewCircuitBreaker(setting.ToGobreakerSettings(b.cb.Name()))
+	b.cbSettings = setting
 	return b
 }

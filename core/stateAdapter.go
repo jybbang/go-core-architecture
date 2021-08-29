@@ -8,6 +8,7 @@ type KV struct {
 }
 
 type stateAdapter interface {
+	OnCircuitOpen()
 	Close()
 	Has(ctx context.Context, key string) bool
 	Get(ctx context.Context, key string, dest interface{}) error

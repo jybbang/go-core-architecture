@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+	"time"
 
 	dapr "github.com/dapr/go-sdk/client"
 
@@ -14,6 +15,7 @@ import (
 type adapter struct {
 	dapr     dapr.Client
 	settings DaprSettings
+	mutex    sync.Mutex
 }
 
 type DaprSettings struct {
@@ -25,7 +27,16 @@ var daprClient dapr.Client
 
 var clientsSync sync.Once
 
-func getClient(ctx context.Context, settings DaprSettings) dapr.Client {
+func NewDaprAdapter(ctx context.Context, settings DaprSettings) *adapter {
+	daprService := &adapter{
+		settings: settings,
+	}
+	daprService.open(ctx)
+
+	return daprService
+}
+
+func (a *adapter) open(ctx context.Context) {
 	if daprClient == nil {
 		clientsSync.Do(
 			func() {
@@ -40,17 +51,16 @@ func getClient(ctx context.Context, settings DaprSettings) dapr.Client {
 				daprClient = client
 			})
 	}
-	return daprClient
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	a.dapr = daprClient
 }
 
-func NewDaprAdapter(ctx context.Context, settings DaprSettings) *adapter {
-	client := getClient(ctx, settings)
-	daprService := &adapter{
-		dapr:     client,
-		settings: settings,
-	}
-
-	return daprService
+func (a *adapter) OnCircuitOpen() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	a.open(ctx)
 }
 
 func (a *adapter) Close() {

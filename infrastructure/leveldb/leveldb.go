@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/jybbang/go-core-architecture/core"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -14,6 +16,7 @@ import (
 type adapter struct {
 	leveldb  *leveldb.DB
 	settings LevelDbSettings
+	mutex    sync.Mutex
 }
 
 type clients struct {
@@ -42,17 +45,31 @@ func getClients() *clients {
 	return clientsInstance
 }
 
-func getLevelDbClient(ctx context.Context, settings LevelDbSettings) *leveldb.DB {
+func NewLevelDbAdapter(ctx context.Context, settings LevelDbSettings) *adapter {
+	leveldbService := &adapter{
+		settings: settings,
+	}
+	leveldbService.open(ctx)
+
+	return leveldbService
+}
+
+func (a *adapter) open(ctx context.Context) {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
 	defer clientsInstance.mutex.Unlock()
 
-	path := settings.Path
+	path := a.settings.Path
+
+	if strings.TrimSpace(path) == "" {
+		panic("path is required")
+	}
+
 	_, ok := clientsInstance.clients[path]
 	if !ok {
 		leveldbClient, err := leveldb.OpenFile(path, &opt.Options{
-			ReadOnly: settings.ReadOnly,
+			ReadOnly: a.settings.ReadOnly,
 		})
 		if err != nil {
 			panic(err)
@@ -65,17 +82,16 @@ func getLevelDbClient(ctx context.Context, settings LevelDbSettings) *leveldb.DB
 	}
 
 	client := clientsInstance.clients[path]
-	return client
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	a.leveldb = client
 }
 
-func NewLevelDbAdapter(ctx context.Context, settings LevelDbSettings) *adapter {
-	client := getLevelDbClient(ctx, settings)
-	leveldbService := &adapter{
-		leveldb:  client,
-		settings: settings,
-	}
-
-	return leveldbService
+func (a *adapter) OnCircuitOpen() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	a.open(ctx)
 }
 
 func (a *adapter) Close() {
