@@ -109,6 +109,9 @@ func (a *adapter) Connect(ctx context.Context) error {
 }
 
 func (a *adapter) Disconnect() {
+	clientsInstance.mutex.Lock()
+	defer clientsInstance.mutex.Unlock()
+
 	a.client.isConnected = false
 }
 

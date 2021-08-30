@@ -25,12 +25,16 @@ func (s *stateService) initialize() *stateService {
 func (s *stateService) connect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.settings.ConnectionTimeout)
 	defer cancel()
+
 	return s.state.Connect(ctx)
 }
 
 func (s *stateService) onCircuitOpen() {
 	s.state.Disconnect()
-	s.connect()
+
+	if !s.state.IsConnected() {
+		s.connect()
+	}
 }
 
 func (s *stateService) Has(ctx context.Context, key string) Result {

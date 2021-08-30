@@ -45,12 +45,16 @@ func (e *eventBus) initialize() *eventBus {
 func (e *eventBus) connect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), e.settings.ConnectionTimeout)
 	defer cancel()
+
 	return e.messaging.Connect(ctx)
 }
 
 func (e *eventBus) onCircuitOpen() {
 	e.messaging.Disconnect()
-	e.connect()
+
+	if !e.messaging.IsConnected() {
+		e.connect()
+	}
 }
 
 func (e *eventBus) subscribeBufferedEvent(observable rxgo.Observable) {

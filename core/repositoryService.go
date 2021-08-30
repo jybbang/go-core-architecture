@@ -35,20 +35,29 @@ func (r *repositoryService) initialize() *repositoryService {
 func (r *repositoryService) queryRepositoryConnect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.settings.ConnectionTimeout)
 	defer cancel()
+
 	return r.queryRepository.Connect(ctx)
 }
 
 func (r *repositoryService) commandRepositoryConnect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.settings.ConnectionTimeout)
 	defer cancel()
+
 	return r.commandRepository.Connect(ctx)
 }
 
 func (r *repositoryService) onCircuitOpen() {
 	r.queryRepository.Disconnect()
+
 	r.commandRepository.Disconnect()
-	r.queryRepositoryConnect()
-	r.commandRepositoryConnect()
+
+	if !r.queryRepository.IsConnected() {
+		r.queryRepositoryConnect()
+	}
+
+	if !r.commandRepository.IsConnected() {
+		r.commandRepositoryConnect()
+	}
 }
 
 func (r *repositoryService) Find(ctx context.Context, id uuid.UUID, dest Entitier) Result {

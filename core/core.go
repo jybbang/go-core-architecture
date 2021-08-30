@@ -6,7 +6,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 	zipkinot "github.com/openzipkin-contrib/zipkin-go-opentracing"
 	"github.com/openzipkin/zipkin-go"
-	"github.com/openzipkin/zipkin-go/reporter"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 
 	cmap "github.com/orcaman/concurrent-map"
@@ -20,14 +19,11 @@ var statesInstance *stateService
 
 var repositories cmap.ConcurrentMap = cmap.New()
 
-var openTracerCloser reporter.Reporter
-
 // reference:
 // https://github.com/openzipkin/zipkin-go/blob/master/examples/httpserver_test.go
 func UseTracing(settings TracingSettings) {
 	// set up a span reporter
 	reporter := zipkinhttp.NewReporter(settings.Endpoint)
-	openTracerCloser = reporter
 
 	// create our local service endpoint
 	endpoint, err := zipkin.NewEndpoint(settings.ServiceName, "localhost")
