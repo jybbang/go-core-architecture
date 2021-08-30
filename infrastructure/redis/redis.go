@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	cmap "github.com/orcaman/concurrent-map"
@@ -16,20 +15,19 @@ import (
 )
 
 type adapter struct {
-	client   *client
+	client   *clientProxy
 	settings RedisSettings
-	mutex    sync.Mutex
 }
 
-type client struct {
-	redis    *redis.Client
-	pubsubs  cmap.ConcurrentMap
-	handlers cmap.ConcurrentMap
-	isOpened bool
+type clientProxy struct {
+	redis       *redis.Client
+	pubsubs     cmap.ConcurrentMap
+	handlers    cmap.ConcurrentMap
+	isConnected bool
 }
 
 type clients struct {
-	clients map[string]*client
+	clients map[string]*clientProxy
 	mutex   sync.Mutex
 }
 
@@ -47,26 +45,24 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*client),
+					clients: make(map[string]*clientProxy),
 				}
 			})
 	}
 	return clientsInstance
 }
 
-func NewRedisAdapter(ctx context.Context, settings RedisSettings) *adapter {
-	redisService := &adapter{
+func NewRedisAdapter(settings RedisSettings) *adapter {
+	return &adapter{
 		settings: settings,
 	}
-
-	err := redisService.setClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return redisService
 }
 
-func (a *adapter) setClient(ctx context.Context) error {
+func (a *adapter) IsConnected() bool {
+	return a.client.isConnected
+}
+
+func (a *adapter) Connect(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -81,36 +77,40 @@ func (a *adapter) setClient(ctx context.Context) error {
 	password := a.settings.Password
 
 	cli, ok := clientsInstance.clients[host]
-	if !ok || !cli.isOpened {
+
+	if !ok || !cli.isConnected {
 		redisClient := redis.NewClient(&redis.Options{
 			Addr:     host,
 			Password: password,
 			DB:       0,
 		})
+
 		redisClient.Conn(ctx)
+
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		handlers := cli.handlers
-		if handlers == nil {
+		var handlers cmap.ConcurrentMap
+		if cli == nil {
 			handlers = cmap.New()
+		} else {
+			handlers = cli.handlers
 		}
 
-		clientsInstance.clients[host] = &client{
-			redis:    redisClient,
-			pubsubs:  cmap.New(),
-			handlers: handlers,
-			isOpened: true,
+		clientsInstance.clients[host] = &clientProxy{
+			redis:       redisClient,
+			pubsubs:     cmap.New(),
+			handlers:    handlers,
+			isConnected: true,
 		}
 	}
 
 	client := clientsInstance.clients[host]
 
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
 	a.client = client
+
 	for _, k := range a.client.handlers.Keys() {
 		v, _ := a.client.handlers.Get(k)
 		a.Subscribe(context.Background(), k, v.(core.ReplyHandler))
@@ -119,100 +119,83 @@ func (a *adapter) setClient(ctx context.Context) error {
 	return nil
 }
 
-func (a *adapter) OnCircuitOpen() {
-	a.client.isOpened = false
-}
-
-func (a *adapter) Open() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return a.setClient(ctx)
-}
-
-func (a *adapter) Close() {
+func (a *adapter) Disconnect() {
 	a.client.redis.Close()
+
+	a.client.isConnected = false
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	value, err := a.client.redis.Exists(ctx, key).Result()
+
 	if err != nil {
 		return false
 	}
+
 	return value > 0
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	value, err := a.client.redis.Get(ctx, key).Bytes()
+
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return core.ErrNotFound
 		}
+
 		return err
 	}
+
 	return json.Unmarshal(value, dest)
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	bytes, err := json.Marshal(value)
+
 	if err != nil {
 		return err
 	}
 
 	result := a.client.redis.Set(ctx, key, bytes, 0)
+
 	return result.Err()
 }
 
 func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 	for _, v := range kvs {
 		err := a.Set(ctx, v.K, v.V)
+
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	result := a.client.redis.Del(ctx, key)
+
 	return result.Err()
 }
 
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	bytes, err := json.Marshal(coreEvent)
+
 	if err != nil {
 		return err
 	}
+
 	result := a.client.redis.Publish(ctx, coreEvent.GetTopic(), bytes)
+
 	return result.Err()
 }
 
 func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	pubsub := a.client.redis.Subscribe(ctx, topic)
+
 	a.client.pubsubs.Set(topic, pubsub)
+
 	a.client.handlers.Set(topic, handler)
 
 	go func() {
@@ -227,10 +210,6 @@ func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.Repl
 }
 
 func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	if pubsub, ok := a.client.pubsubs.Get(topic); ok {
 		if pubsub, ok := pubsub.(*redis.PubSub); ok {
 			pubsub.Unsubscribe(ctx)
@@ -238,6 +217,8 @@ func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
 	}
 
 	a.client.pubsubs.Remove(topic)
+
 	a.client.handlers.Remove(topic)
+
 	return nil
 }

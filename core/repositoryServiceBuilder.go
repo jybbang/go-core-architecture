@@ -1,11 +1,14 @@
 package core
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"gopkg.in/jeevatkm/go-model.v1"
 )
 
 // Builder Object for RepositoryService
@@ -16,6 +19,7 @@ type repositoryServiceBuilder struct {
 	queryRepository   queryRepositoryAdapter
 	commandRepository commandRepositoryAdapter
 	cbSettings        CircuitBreakerSettings
+	settings          RepositoryServiceSettings
 }
 
 // Constructor for RepositoryServiceBuilder
@@ -23,6 +27,7 @@ func NewRepositoryServiceBuilder(model Entitier, tableName string) *repositorySe
 	if model == nil {
 		panic("model is required")
 	}
+
 	if strings.TrimSpace(tableName) == "" {
 		panic("tableName is required")
 	}
@@ -30,9 +35,18 @@ func NewRepositoryServiceBuilder(model Entitier, tableName string) *repositorySe
 	o := new(repositoryServiceBuilder)
 	o.tableName = tableName
 	o.model = model
-	o.model.SetID(uuid.Nil)
 	o.userIdKey = http.CanonicalHeaderKey("Userid")
-	o.cbSettings = CircuitBreakerSettings{Name: o.tableName + "-repository"}
+	o.cbSettings = CircuitBreakerSettings{
+		AllowedRequestInHalfOpen: 1,
+		DurationOfBreak:          time.Duration(60 * time.Second),
+		SamplingDuration:         time.Duration(60 * time.Second),
+		SamplingFailureCount:     5,
+	}
+	o.settings = RepositoryServiceSettings{
+		ConnectionTimeout: time.Duration(10 * time.Second),
+	}
+
+	o.model.SetID(uuid.Nil)
 
 	return o
 }
@@ -40,6 +54,7 @@ func NewRepositoryServiceBuilder(model Entitier, tableName string) *repositorySe
 // Build Method which creates RepositoryService
 func (b *repositoryServiceBuilder) Build() *repositoryService {
 	typeOf := reflect.TypeOf(b.model)
+
 	key := typeOf.Elem().Name()
 
 	if repositories.Has(key) {
@@ -49,6 +64,7 @@ func (b *repositoryServiceBuilder) Build() *repositoryService {
 	repository := b.Create()
 
 	repositories.Set(key, repository)
+
 	return repository
 }
 
@@ -57,6 +73,7 @@ func (b *repositoryServiceBuilder) Create() *repositoryService {
 	if b.queryRepository == nil {
 		panic("queryRepository adapter is required")
 	}
+
 	if b.commandRepository == nil {
 		panic("commandRepository adapter is required")
 	}
@@ -66,20 +83,35 @@ func (b *repositoryServiceBuilder) Create() *repositoryService {
 		userIdKey:         b.userIdKey,
 		queryRepository:   b.queryRepository,
 		commandRepository: b.commandRepository,
+		settings:          b.settings,
 	}
-	instance.initialize(b.cbSettings)
+
+	instance.cb = b.cbSettings.ToCircuitBreaker(b.tableName+"-repository", instance.onCircuitOpen)
+
+	instance.initialize()
 
 	return instance
 }
 
-// Builder method to set the field queryRepository in RepositoryServiceBuilder
-func (b *repositoryServiceBuilder) QueryRepositoryAdapter(adapter queryRepositoryAdapter) *repositoryServiceBuilder {
-	if adapter == nil {
-		panic("adapter is required")
+// Builder method to set the field messaging in EventBusBuilder
+func (b *repositoryServiceBuilder) Settings(settings RepositoryServiceSettings) *repositoryServiceBuilder {
+	err := model.Copy(&b.settings, settings)
+
+	if err != nil {
+		panic(fmt.Errorf("settings mapping errors occurred: %v", err))
 	}
 
-	b.queryRepository = adapter
-	b.queryRepository.SetModel(b.model, b.tableName)
+	return b
+}
+
+// Builder method to set the field messaging in RepositoryServiceBuilder
+func (b *repositoryServiceBuilder) CircuitBreaker(settings CircuitBreakerSettings) *repositoryServiceBuilder {
+	err := model.Copy(&b.cbSettings, settings)
+
+	if err != nil {
+		panic(fmt.Errorf("cb settings mapping errors occurred: %v", err))
+	}
+
 	return b
 }
 
@@ -90,7 +122,20 @@ func (b *repositoryServiceBuilder) UserIdKeyInContext(useridKey string) *reposit
 	}
 
 	b.userIdKey = http.CanonicalHeaderKey(useridKey)
+
+	return b
+}
+
+// Builder method to set the field queryRepository in RepositoryServiceBuilder
+func (b *repositoryServiceBuilder) QueryRepositoryAdapter(adapter queryRepositoryAdapter) *repositoryServiceBuilder {
+	if adapter == nil {
+		panic("adapter is required")
+	}
+
+	b.queryRepository = adapter
+
 	b.queryRepository.SetModel(b.model, b.tableName)
+
 	return b
 }
 
@@ -101,12 +146,8 @@ func (b *repositoryServiceBuilder) CommandRepositoryAdapter(adapter commandRepos
 	}
 
 	b.commandRepository = adapter
-	b.commandRepository.SetModel(b.model, b.tableName)
-	return b
-}
 
-// Builder method to set the field messaging in RepositoryServiceBuilder
-func (b *repositoryServiceBuilder) CircuitBreaker(setting CircuitBreakerSettings) *repositoryServiceBuilder {
-	b.cbSettings = setting
+	b.commandRepository.SetModel(b.model, b.tableName)
+
 	return b
 }

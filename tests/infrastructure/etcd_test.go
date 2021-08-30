@@ -17,7 +17,7 @@ func Test_etcdStateService_ConnectionTimeout(t *testing.T) {
 	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().
@@ -41,7 +41,7 @@ func Test_etcdStateService_ConnectionTimeout(t *testing.T) {
 func Test_etcdStateService_Has(t *testing.T) {
 	ctx := context.Background()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().
@@ -76,7 +76,7 @@ func Test_etcdStateService_Has(t *testing.T) {
 func Test_etcdStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().
@@ -112,7 +112,7 @@ func Test_etcdStateService_Get(t *testing.T) {
 func Test_etcdStateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().
@@ -130,7 +130,7 @@ func Test_etcdStateService_GetNotFoundShouldBeError(t *testing.T) {
 func Test_etcdStateService_Set(t *testing.T) {
 	ctx := context.Background()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().
@@ -165,7 +165,7 @@ func Test_etcdStateService_Set(t *testing.T) {
 func Test_etcdStateService_BatchSet(t *testing.T) {
 	ctx := context.Background()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().
@@ -202,7 +202,7 @@ func Test_etcdStateService_BatchSet(t *testing.T) {
 func Test_etcdStateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().
@@ -238,7 +238,7 @@ func Test_etcdStateService_Delete(t *testing.T) {
 func Test_etcdStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
-	etcd := etcd.NewEtcdAdapter(ctx, etcd.EtcdSettings{
+	etcd := etcd.NewEtcdAdapter(etcd.EtcdSettings{
 		Endpoints: []string{"localhost:2379"},
 	})
 	s := core.NewStateServiceBuilder().

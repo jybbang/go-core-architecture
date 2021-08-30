@@ -17,7 +17,7 @@ func Test_redisStateService_ConnectionTimeout(t *testing.T) {
 	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
@@ -41,7 +41,7 @@ func Test_redisStateService_ConnectionTimeout(t *testing.T) {
 func Test_redisStateService_Has(t *testing.T) {
 	ctx := context.Background()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
@@ -76,7 +76,7 @@ func Test_redisStateService_Has(t *testing.T) {
 func Test_redisStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
@@ -112,7 +112,7 @@ func Test_redisStateService_Get(t *testing.T) {
 func Test_redisStateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
@@ -130,7 +130,7 @@ func Test_redisStateService_GetNotFoundShouldBeError(t *testing.T) {
 func Test_redisStateService_Set(t *testing.T) {
 	ctx := context.Background()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
@@ -165,7 +165,7 @@ func Test_redisStateService_Set(t *testing.T) {
 func Test_redisStateService_BatchSet(t *testing.T) {
 	ctx := context.Background()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
@@ -202,7 +202,7 @@ func Test_redisStateService_BatchSet(t *testing.T) {
 func Test_redisStateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().
@@ -238,7 +238,7 @@ func Test_redisStateService_Delete(t *testing.T) {
 func Test_redisStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
-	redis := redis.NewRedisAdapter(ctx, redis.RedisSettings{
+	redis := redis.NewRedisAdapter(redis.RedisSettings{
 		Host: "localhost:16379",
 	})
 	s := core.NewStateServiceBuilder().

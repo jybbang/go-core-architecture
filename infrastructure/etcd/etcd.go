@@ -14,18 +14,17 @@ import (
 )
 
 type adapter struct {
-	client   *client
+	client   *clientProxy
 	settings EtcdSettings
-	mutex    sync.Mutex
 }
 
-type client struct {
-	etcd     *etcd.Client
-	isOpened bool
+type clientProxy struct {
+	etcd        *etcd.Client
+	isConnected bool
 }
 
 type clients struct {
-	clients map[string]*client
+	clients map[string]*clientProxy
 	mutex   sync.Mutex
 }
 
@@ -43,14 +42,14 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*client),
+					clients: make(map[string]*clientProxy),
 				}
 			})
 	}
 	return clientsInstance
 }
 
-func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
+func NewEtcdAdapter(settings EtcdSettings) *adapter {
 	s := &EtcdSettings{
 		DialTimeout: time.Duration(5 * time.Second),
 	}
@@ -60,18 +59,16 @@ func NewEtcdAdapter(ctx context.Context, settings EtcdSettings) *adapter {
 		panic(fmt.Errorf("mapping errors occurred: %v", errs))
 	}
 
-	etcdService := &adapter{
+	return &adapter{
 		settings: *s,
 	}
-
-	err := etcdService.setClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return etcdService
 }
 
-func (a *adapter) setClient(ctx context.Context) error {
+func (a *adapter) IsConnected() bool {
+	return a.client.isConnected
+}
+
+func (a *adapter) Connect(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -88,104 +85,89 @@ func (a *adapter) setClient(ctx context.Context) error {
 	}
 
 	cli, ok := clientsInstance.clients[endpoint]
-	if !ok || !cli.isOpened {
+
+	if !ok || !cli.isConnected {
 		etcdClient, err := etcd.New(etcd.Config{
 			Endpoints:   a.settings.Endpoints,
 			DialTimeout: a.settings.DialTimeout,
 		})
+
 		if err != nil {
 			return err
 		}
+
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		clientsInstance.clients[endpoint] = &client{
-			etcd:     etcdClient,
-			isOpened: true,
+		clientsInstance.clients[endpoint] = &clientProxy{
+			etcd:        etcdClient,
+			isConnected: true,
 		}
 	}
 
-	client := clientsInstance.clients[endpoint]
-
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	a.client = client
+	a.client = clientsInstance.clients[endpoint]
 
 	return nil
 }
 
-func (a *adapter) OnCircuitOpen() {
-	a.client.isOpened = false
-}
-
-func (a *adapter) Open() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return a.setClient(ctx)
-}
-
-func (a *adapter) Close() {
+func (a *adapter) Disconnect() {
 	a.client.etcd.Close()
+
+	a.client.isConnected = false
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	value, err := a.client.etcd.Get(ctx, key)
+
 	if err != nil {
 		return false
 	}
+
 	return value.Count > 0
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	value, err := a.client.etcd.Get(ctx, key)
+
 	if value == nil || value.Count < 1 {
 		return core.ErrNotFound
 	}
+
 	if err != nil {
 		return err
 	}
+
 	return json.Unmarshal(value.Kvs[0].Value, dest)
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	bytes, err := json.Marshal(value)
+
 	if err != nil {
 		return err
 	}
 
 	_, err = a.client.etcd.Put(ctx, key, string(bytes))
+
 	return err
 }
 
 func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 	for _, v := range kvs {
 		err := a.Set(ctx, v.K, v.V)
+
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	_, err := a.client.etcd.Delete(ctx, key)
+
 	return err
 }

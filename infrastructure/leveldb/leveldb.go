@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/jybbang/go-core-architecture/core"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -15,18 +14,17 @@ import (
 )
 
 type adapter struct {
-	client   *client
+	client   *clientProxy
 	settings LevelDbSettings
-	mutex    sync.Mutex
 }
 
-type client struct {
-	leveldb  *leveldb.DB
-	isOpened bool
+type clientProxy struct {
+	leveldb     *leveldb.DB
+	isConnected bool
 }
 
 type clients struct {
-	clients map[string]*client
+	clients map[string]*clientProxy
 	mutex   sync.Mutex
 }
 
@@ -44,26 +42,24 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*client),
+					clients: make(map[string]*clientProxy),
 				}
 			})
 	}
 	return clientsInstance
 }
 
-func NewLevelDbAdapter(ctx context.Context, settings LevelDbSettings) *adapter {
-	leveldbService := &adapter{
+func NewLevelDbAdapter(settings LevelDbSettings) *adapter {
+	return &adapter{
 		settings: settings,
 	}
-
-	err := leveldbService.setClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return leveldbService
 }
 
-func (a *adapter) setClient(ctx context.Context) error {
+func (a *adapter) IsConnected() bool {
+	return a.client.isConnected
+}
+
+func (a *adapter) Connect(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -76,80 +72,65 @@ func (a *adapter) setClient(ctx context.Context) error {
 	}
 
 	cli, ok := clientsInstance.clients[path]
-	if !ok || !cli.isOpened {
+
+	if !ok || !cli.isConnected {
 		leveldbClient, err := leveldb.OpenFile(path, &opt.Options{
 			ReadOnly: a.settings.ReadOnly,
 		})
+
 		if err != nil {
 			return err
 		}
+
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		clientsInstance.clients[path] = &client{
-			leveldb:  leveldbClient,
-			isOpened: true,
+		clientsInstance.clients[path] = &clientProxy{
+			leveldb:     leveldbClient,
+			isConnected: true,
 		}
 	}
 
-	client := clientsInstance.clients[path]
-
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	a.client = client
+	a.client = clientsInstance.clients[path]
 
 	return nil
 }
 
-func (a *adapter) OnCircuitOpen() {
-	a.client.isOpened = false
-}
-
-func (a *adapter) Open() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return a.setClient(ctx)
-}
-
-func (a *adapter) Close() {
+func (a *adapter) Disconnect() {
 	a.client.leveldb.Close()
+
+	a.client.isConnected = false
 }
 
 func (a *adapter) Has(ctx context.Context, key string) bool {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	ok, err := a.client.leveldb.Has([]byte(key), nil)
+
 	if err != nil {
 		return false
 	}
+
 	return ok
 }
 
 func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	value, err := a.client.leveldb.Get([]byte(key), nil)
+
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
 			return core.ErrNotFound
 		}
+
 		return err
 	}
+
 	return json.Unmarshal(value, dest)
 }
 
 func (a *adapter) Set(ctx context.Context, key string, value interface{}) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	bytes, err := json.Marshal(value)
+
 	if err != nil {
 		return err
 	}
@@ -158,14 +139,11 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 }
 
 func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	batch := new(leveldb.Batch)
 
 	for _, v := range kvs {
 		bytes, err := json.Marshal(v.V)
+
 		if err != nil {
 			return err
 		}
@@ -174,13 +152,10 @@ func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 	}
 
 	err := a.client.leveldb.Write(batch, nil)
+
 	return err
 }
 
 func (a *adapter) Delete(ctx context.Context, key string) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	return a.client.leveldb.Delete([]byte(key), nil)
 }

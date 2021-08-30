@@ -49,17 +49,23 @@ func NewMockAdapterWithSettings(setting MockSettings) *adapter {
 	}
 }
 
-func (a *adapter) OnCircuitOpen() {
-	a.setting.Log.Debug("mock on circuit open")
+func (a *adapter) IsConnected() bool {
+	return true
 }
 
-func (a *adapter) Open() error {
+func (a *adapter) Connect(ctx context.Context) error {
+	defer a.setting.Log.Debug("mock connect")
+
 	return nil
 }
 
-func (a *adapter) Close() {
+func (a *adapter) Disconnect() {
+	defer a.setting.Log.Debug("mock disconnect")
+
 	a.db.Clear()
+
 	a.pubsubs.Clear()
+
 	a.states.Clear()
 }
 
@@ -86,6 +92,7 @@ func (a *adapter) Has(ctx context.Context, key string) bool {
 	}
 
 	defer a.setting.Log.Debugw("mock has", "key", key)
+
 	return a.states.Has(key)
 }
 
@@ -97,7 +104,9 @@ func (a *adapter) Get(ctx context.Context, key string, dest interface{}) error {
 
 	if resp, ok := a.states.Get(key); ok {
 		model.Copy(dest, resp)
+
 		defer a.setting.Log.Debugw("mock get", "key", key, "result", dest)
+
 		return nil
 	}
 
@@ -115,16 +124,19 @@ func (a *adapter) Set(ctx context.Context, key string, value interface{}) error 
 	defer a.setting.Log.Debugw("mock set", "key", key, "value", value)
 
 	a.states.Set(key, value)
+
 	return nil
 }
 
 func (a *adapter) BatchSet(ctx context.Context, kvs []core.KV) error {
 	for _, v := range kvs {
 		err := a.Set(ctx, v.K, v.V)
+
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -137,6 +149,7 @@ func (a *adapter) Delete(ctx context.Context, key string) error {
 	defer a.setting.Log.Debugw("mock delete", "key", key)
 
 	a.states.Remove(key)
+
 	return nil
 }
 
@@ -149,6 +162,7 @@ func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) err
 	defer a.setting.Log.Debugw("mock publish", "id", coreEvent.GetID(), "event", coreEvent)
 
 	atomic.AddUint32(&a.publishedCount, 1)
+
 	return nil
 }
 
@@ -161,6 +175,7 @@ func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.Repl
 	defer a.setting.Log.Debugw("mock subscribe", "topic", topic)
 
 	a.pubsubs.Set(topic, handler)
+
 	return nil
 }
 
@@ -173,6 +188,7 @@ func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
 	defer a.setting.Log.Debugw("mock unsubscribe", "topic", topic)
 
 	a.pubsubs.Remove(topic)
+
 	return nil
 }
 
@@ -272,13 +288,16 @@ func (a *adapter) List(ctx context.Context, dest interface{}) (err error) {
 	}
 
 	resultsVal := reflect.ValueOf(dest)
+
 	sliceVal := resultsVal.Elem()
+
 	if sliceVal.Kind() == reflect.Interface {
 		sliceVal = sliceVal.Elem()
 	}
 
 	for _, v := range a.db.Items() {
 		entityVal := reflect.ValueOf(v)
+
 		sliceVal = reflect.Append(sliceVal, entityVal)
 	}
 
@@ -296,13 +315,16 @@ func (a *adapter) ListWithFilter(ctx context.Context, query interface{}, args in
 	}
 
 	resultsVal := reflect.ValueOf(dest)
+
 	sliceVal := resultsVal.Elem()
+
 	if sliceVal.Kind() == reflect.Interface {
 		sliceVal = sliceVal.Elem()
 	}
 
 	for _, v := range a.db.Items() {
 		entityVal := reflect.ValueOf(v)
+
 		sliceVal = reflect.Append(sliceVal, entityVal)
 	}
 
@@ -322,6 +344,7 @@ func (a *adapter) Remove(ctx context.Context, id uuid.UUID) error {
 	defer a.setting.Log.Debugw("mock remove", "id", id)
 
 	a.db.Remove(id.String())
+
 	return nil
 }
 
@@ -336,6 +359,7 @@ func (a *adapter) RemoveRange(ctx context.Context, ids []uuid.UUID) error {
 	for _, id := range ids {
 		a.Remove(ctx, id)
 	}
+
 	return nil
 }
 
@@ -348,6 +372,7 @@ func (a *adapter) Add(ctx context.Context, entity core.Entitier) error {
 	defer a.setting.Log.Debugw("mock add", "entity", entity)
 
 	a.db.Set(entity.GetID().String(), entity)
+
 	return nil
 }
 
@@ -362,6 +387,7 @@ func (a *adapter) AddRange(ctx context.Context, entities []core.Entitier) error 
 	for _, v := range entities {
 		a.Add(ctx, v)
 	}
+
 	return nil
 }
 
@@ -374,6 +400,7 @@ func (a *adapter) Update(ctx context.Context, entity core.Entitier) error {
 	defer a.setting.Log.Debugw("mock update", "entity", entity)
 
 	a.db.Set(entity.GetID().String(), entity)
+
 	return nil
 }
 
@@ -388,5 +415,6 @@ func (a *adapter) UpdateRange(ctx context.Context, entities []core.Entitier) err
 	for _, v := range entities {
 		a.Update(ctx, v)
 	}
+
 	return nil
 }

@@ -29,12 +29,10 @@ func bufferedEventHandler(ctx context.Context, notification interface{}) error {
 	return nil
 }
 
-func (e *eventBus) initialize(cbSetting CircuitBreakerSettings) *eventBus {
-	e.cb = cbSetting.ToCircuitBreaker(
-		"eventbus",
-		func() {
-			e.messaging.OnCircuitOpen()
-		})
+func (e *eventBus) initialize() *eventBus {
+	if err := e.connect(); err != nil {
+		panic(err)
+	}
 
 	observable := rxgo.FromChannel(e.ch).
 		BufferWithTimeOrCount(rxgo.WithDuration(e.settings.BufferedEventBufferTime), e.settings.BufferedEventBufferCount)
@@ -44,9 +42,15 @@ func (e *eventBus) initialize(cbSetting CircuitBreakerSettings) *eventBus {
 	return e
 }
 
-func (e *eventBus) close() {
-	e.messaging.Close()
-	close(e.ch)
+func (e *eventBus) connect() error {
+	ctx, cancel := context.WithTimeout(context.Background(), e.settings.ConnectionTimeout)
+	defer cancel()
+	return e.messaging.Connect(ctx)
+}
+
+func (e *eventBus) onCircuitOpen() {
+	e.messaging.Disconnect()
+	e.connect()
 }
 
 func (e *eventBus) subscribeBufferedEvent(observable rxgo.Observable) {
@@ -121,7 +125,7 @@ func (e *eventBus) PublishDomainEvents(ctx context.Context) error {
 				return nil, nil
 			}
 
-			err = e.messaging.Publish(ctx, event)
+			err = e.Publish(ctx, event)
 			if err != nil {
 				return nil, err
 			}
@@ -131,6 +135,10 @@ func (e *eventBus) PublishDomainEvents(ctx context.Context) error {
 	}
 
 	return err
+}
+
+func (e *eventBus) Publish(ctx context.Context, event DomainEventer) error {
+	return e.messaging.Publish(ctx, event)
 }
 
 func (e *eventBus) Subscribe(ctx context.Context, topic string, handler ReplyHandler) error {

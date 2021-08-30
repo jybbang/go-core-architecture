@@ -37,6 +37,7 @@ func getCache(settings CacheSettings) *cache.Cache {
 				cacheInstance = cache.New(settings.ItemExpiration, settings.CacheCleanupInterval)
 			})
 	}
+
 	return cacheInstance
 }
 
@@ -48,26 +49,16 @@ func newCache(state stateAdapter, settings CacheSettings) *cacheProxy {
 		BatchTimeout:         time.Duration(10 * time.Second),
 	}
 
-	err := model.Copy(s, settings)
-	if err != nil {
-		panic(fmt.Errorf("mapping errors occurred: %v", err))
+	errs := model.Copy(s, settings)
+
+	if errs != nil {
+		panic(fmt.Errorf("mapping errors occurred: %v", errs))
 	}
 
-	cache := &cacheProxy{
-		cache:    getCache(*s),
+	return &cacheProxy{
 		adapter:  state,
-		settings: *s,
-		ch:       make(chan rxgo.Item, 1),
+		settings: settings,
 	}
-
-	if s.UseBatch {
-		observable := rxgo.FromChannel(cache.ch).
-			BufferWithTime(rxgo.WithDuration(s.BatchBufferInterval))
-
-		go cache.subscribeBatch(observable)
-	}
-
-	return cache
 }
 
 func (c *cacheProxy) subscribeBatch(observable rxgo.Observable) {
@@ -77,11 +68,13 @@ func (c *cacheProxy) subscribeBatch(observable rxgo.Observable) {
 		items := <-ch
 
 		batch, ok := items.V.([]interface{})
+
 		if !ok || len(batch) == 0 {
 			continue
 		}
 
 		kvs := make(map[string]KV)
+
 		for _, v := range batch {
 			if kv, ok := v.(KV); ok {
 				kvs[kv.K] = kv
@@ -89,50 +82,70 @@ func (c *cacheProxy) subscribeBatch(observable rxgo.Observable) {
 		}
 
 		values := make([]KV, 0, len(kvs))
+
 		for _, v := range kvs {
 			values = append(values, v)
 		}
 
 		timeout, cancel := context.WithTimeout(context.Background(), c.settings.BatchTimeout)
+
 		c.BatchSet(timeout, values)
+
 		cancel()
 	}
 }
 
-func (c *cacheProxy) OnCircuitOpen() {
+func (c *cacheProxy) IsConnected() bool {
+	return c.adapter.IsConnected()
+}
+
+func (c *cacheProxy) Connect(ctx context.Context) error {
+	c.cache = getCache(c.settings)
+	c.ch = make(chan rxgo.Item, 1)
+
+	if c.settings.UseBatch {
+		observable := rxgo.FromChannel(c.ch).
+			BufferWithTime(rxgo.WithDuration(c.settings.BatchBufferInterval))
+
+		go c.subscribeBatch(observable)
+	}
+
+	return c.adapter.Connect(ctx)
+}
+
+func (c *cacheProxy) Disconnect() {
+	c.adapter.Disconnect()
+
 	c.cache.DeleteExpired()
-	c.adapter.OnCircuitOpen()
-}
 
-func (c *cacheProxy) Open() error {
-	return nil
-}
-
-func (c *cacheProxy) Close() {
-	c.adapter.Close()
 	close(c.ch)
-	c.cache.DeleteExpired()
 }
 
 func (c *cacheProxy) Has(ctx context.Context, key string) bool {
 	_, ok := c.cache.Get(key)
+
 	if !ok {
 		return c.adapter.Has(ctx, key)
 	}
+
 	return ok
 }
 
 func (c *cacheProxy) Get(ctx context.Context, key string, dest interface{}) error {
 	value, ok := c.cache.Get(key)
+
 	if !ok {
 		err := c.adapter.Get(ctx, key, dest)
+
 		if err == nil {
 			c.cache.SetDefault(key, dest)
 		}
+
 		return err
 	}
 
 	err := model.Copy(dest, value)
+
 	if err != nil {
 		return fmt.Errorf("mapping errors occurred: %v", err)
 	}
@@ -142,6 +155,7 @@ func (c *cacheProxy) Get(ctx context.Context, key string, dest interface{}) erro
 
 func (c *cacheProxy) Set(ctx context.Context, key string, value interface{}) error {
 	c.cache.SetDefault(key, value)
+
 	if c.settings.UseBatch {
 		c.ch <- rxgo.Item{
 			V: KV{
@@ -152,11 +166,13 @@ func (c *cacheProxy) Set(ctx context.Context, key string, value interface{}) err
 	} else {
 		c.adapter.Set(ctx, key, value)
 	}
+
 	return nil
 }
 
 func (c *cacheProxy) Delete(ctx context.Context, key string) error {
 	c.cache.Delete(key)
+
 	return c.adapter.Delete(ctx, key)
 }
 

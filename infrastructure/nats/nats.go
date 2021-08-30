@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/nats-io/nats.go"
 	cmap "github.com/orcaman/concurrent-map"
@@ -15,20 +14,19 @@ import (
 )
 
 type adapter struct {
-	client   *client
+	client   *clientProxy
 	settings NatsSettings
-	mutex    sync.Mutex
 }
 
-type client struct {
-	nats     *nats.Conn
-	pubsubs  cmap.ConcurrentMap
-	handlers cmap.ConcurrentMap
-	isOpened bool
+type clientProxy struct {
+	nats        *nats.Conn
+	pubsubs     cmap.ConcurrentMap
+	handlers    cmap.ConcurrentMap
+	isConnected bool
 }
 
 type clients struct {
-	clients map[string]*client
+	clients map[string]*clientProxy
 	mutex   sync.Mutex
 }
 
@@ -45,26 +43,24 @@ func getClients() *clients {
 		clientsSync.Do(
 			func() {
 				clientsInstance = &clients{
-					clients: make(map[string]*client),
+					clients: make(map[string]*clientProxy),
 				}
 			})
 	}
 	return clientsInstance
 }
 
-func NewNatsAdapter(ctx context.Context, settings NatsSettings) *adapter {
-	natsService := &adapter{
+func NewNatsAdapter(settings NatsSettings) *adapter {
+	return &adapter{
 		settings: settings,
 	}
-
-	err := natsService.setClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return natsService
 }
 
-func (a *adapter) setClient(ctx context.Context) error {
+func (a *adapter) IsConnected() bool {
+	return a.client.isConnected
+}
+
+func (a *adapter) Connect(ctx context.Context) error {
 	clientsInstance := getClients()
 
 	clientsInstance.mutex.Lock()
@@ -77,90 +73,77 @@ func (a *adapter) setClient(ctx context.Context) error {
 	}
 
 	cli, ok := clientsInstance.clients[url]
-	if !ok || !cli.isOpened {
+
+	if !ok || !cli.isConnected {
 		natsClient, err := nats.Connect(url)
+
 		if err != nil {
 			return err
 		}
+
 		// Check context cancellation
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
 		handlers := cli.handlers
+
 		if handlers == nil {
 			handlers = cmap.New()
 		}
 
-		clientsInstance.clients[url] = &client{
-			nats:     natsClient,
-			pubsubs:  cmap.New(),
-			handlers: handlers,
-			isOpened: true,
+		clientsInstance.clients[url] = &clientProxy{
+			nats:        natsClient,
+			pubsubs:     cmap.New(),
+			handlers:    handlers,
+			isConnected: true,
 		}
 	}
 
-	client := clientsInstance.clients[url]
+	a.client = clientsInstance.clients[url]
 
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	a.client = client
 	for _, k := range a.client.handlers.Keys() {
 		v, _ := a.client.handlers.Get(k)
+
 		a.Subscribe(context.Background(), k, v.(core.ReplyHandler))
 	}
 
 	return nil
 }
 
-func (a *adapter) OnCircuitOpen() {
-	a.client.isOpened = false
-}
-
-func (a *adapter) Open() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return a.setClient(ctx)
-}
-
-func (a *adapter) Close() {
+func (a *adapter) Disconnect() {
 	a.client.nats.Close()
+
+	a.client.isConnected = false
 }
 
 func (a *adapter) Publish(ctx context.Context, coreEvent core.DomainEventer) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	bytes, err := json.Marshal(coreEvent)
+
 	if err != nil {
 		return err
 	}
+
 	return a.client.nats.Publish(coreEvent.GetTopic(), bytes)
 }
 
 func (a *adapter) Subscribe(ctx context.Context, topic string, handler core.ReplyHandler) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	pubsub, err := a.client.nats.Subscribe(topic, func(m *nats.Msg) {
 		handler(m.Data)
 	})
+
 	if err != nil {
 		return err
 	}
 
 	a.client.pubsubs.Set(topic, pubsub)
+
 	a.client.handlers.Set(topic, handler)
+
 	return nil
 }
 
 func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
-	if !a.client.isOpened {
-		a.Open()
-	}
-
 	if pubsub, ok := a.client.pubsubs.Get(topic); ok {
 		if pubsub, ok := pubsub.(*nats.Subscription); ok {
 			pubsub.Unsubscribe()
@@ -168,6 +151,8 @@ func (a *adapter) Unsubscribe(ctx context.Context, topic string) error {
 	}
 
 	a.client.pubsubs.Remove(topic)
+
 	a.client.handlers.Remove(topic)
+
 	return nil
 }

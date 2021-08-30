@@ -7,9 +7,9 @@ import (
 )
 
 type commandRepositoryAdapter interface {
-	OnCircuitOpen()
-	Open() error
-	Close()
+	IsConnected() bool
+	Connect(ctx context.Context) error
+	Disconnect()
 	SetModel(model Entitier, tableName string)
 	Remove(ctx context.Context, id uuid.UUID) error
 	RemoveRange(ctx context.Context, ids []uuid.UUID) error

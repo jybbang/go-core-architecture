@@ -15,7 +15,7 @@ import (
 func Test_leveldbStateService_Has(t *testing.T) {
 	ctx := context.Background()
 
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+	leveldb := leveldb.NewLevelDbAdapter(leveldb.LevelDbSettings{
 		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
@@ -50,7 +50,7 @@ func Test_leveldbStateService_Has(t *testing.T) {
 func Test_leveldbStateService_Get(t *testing.T) {
 	ctx := context.Background()
 
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+	leveldb := leveldb.NewLevelDbAdapter(leveldb.LevelDbSettings{
 		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
@@ -86,7 +86,7 @@ func Test_leveldbStateService_Get(t *testing.T) {
 func Test_leveldbStateService_GetNotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+	leveldb := leveldb.NewLevelDbAdapter(leveldb.LevelDbSettings{
 		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
@@ -104,7 +104,7 @@ func Test_leveldbStateService_GetNotFoundShouldBeError(t *testing.T) {
 func Test_leveldbStateService_Set(t *testing.T) {
 	ctx := context.Background()
 
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+	leveldb := leveldb.NewLevelDbAdapter(leveldb.LevelDbSettings{
 		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
@@ -139,7 +139,7 @@ func Test_leveldbStateService_Set(t *testing.T) {
 func Test_leveldbStateService_BatchSet(t *testing.T) {
 	ctx := context.Background()
 
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+	leveldb := leveldb.NewLevelDbAdapter(leveldb.LevelDbSettings{
 		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
@@ -176,7 +176,7 @@ func Test_leveldbStateService_BatchSet(t *testing.T) {
 func Test_leveldbStateService_Delete(t *testing.T) {
 	ctx := context.Background()
 
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+	leveldb := leveldb.NewLevelDbAdapter(leveldb.LevelDbSettings{
 		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().
@@ -212,7 +212,7 @@ func Test_leveldbStateService_Delete(t *testing.T) {
 func Test_leveldbStateService_DeleteNotFoundShouldBeNoError(t *testing.T) {
 	ctx := context.Background()
 
-	leveldb := leveldb.NewLevelDbAdapter(ctx, leveldb.LevelDbSettings{
+	leveldb := leveldb.NewLevelDbAdapter(leveldb.LevelDbSettings{
 		Path: "_test.db",
 	})
 	s := core.NewStateServiceBuilder().

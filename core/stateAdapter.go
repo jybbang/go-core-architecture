@@ -8,9 +8,9 @@ type KV struct {
 }
 
 type stateAdapter interface {
-	OnCircuitOpen()
-	Open() error
-	Close()
+	IsConnected() bool
+	Connect(ctx context.Context) error
+	Disconnect()
 	Has(ctx context.Context, key string) bool
 	Get(ctx context.Context, key string, dest interface{}) error
 	Set(ctx context.Context, key string, value interface{}) error

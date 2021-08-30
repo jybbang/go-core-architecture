@@ -1,23 +1,12 @@
 package gorms
 
 import (
-	"context"
-
 	"gorm.io/driver/sqlserver"
 )
 
-func NewSqlServerAdapter(ctx context.Context, settings GormSettings) *adapter {
-	connectionString := settings.ConnectionString
-
-	sqlserver := &adapter{
-		dialector: sqlserver.Open(connectionString),
+func NewSqlServerAdapter(settings GormSettings) *adapter {
+	return &adapter{
+		dialector: sqlserver.Open(settings.ConnectionString),
 		settings:  settings,
 	}
-
-	err := sqlserver.setClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	return sqlserver
 }

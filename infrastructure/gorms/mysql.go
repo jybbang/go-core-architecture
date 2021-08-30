@@ -1,23 +1,12 @@
 package gorms
 
 import (
-	"context"
-
 	"gorm.io/driver/mysql"
 )
 
-func NewMySqlAdapter(ctx context.Context, settings GormSettings) *adapter {
-	connectionString := settings.ConnectionString
-
-	mysql := &adapter{
-		dialector: mysql.Open(connectionString),
+func NewMySqlAdapter(settings GormSettings) *adapter {
+	return &adapter{
+		dialector: mysql.Open(settings.ConnectionString),
 		settings:  settings,
 	}
-
-	err := mysql.setClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	return mysql
 }

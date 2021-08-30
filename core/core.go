@@ -22,17 +22,6 @@ var repositories cmap.ConcurrentMap = cmap.New()
 
 var openTracerCloser reporter.Reporter
 
-func Close() {
-	if openTracerCloser != nil {
-		openTracerCloser.Close()
-	}
-	GetEventBus().close()
-	GetStateService().close()
-	for _, r := range repositories.Items() {
-		r.(*repositoryService).close()
-	}
-}
-
 // reference:
 // https://github.com/openzipkin/zipkin-go/blob/master/examples/httpserver_test.go
 func UseTracing(settings TracingSettings) {

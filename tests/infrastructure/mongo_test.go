@@ -19,7 +19,7 @@ func Test_mongoQueryRepositoryService_ConnectionTimeout(t *testing.T) {
 	ctx, c := context.WithTimeout(context.TODO(), timeout)
 	defer c()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -45,7 +45,7 @@ func Test_mongoQueryRepositoryService_ConnectionTimeout(t *testing.T) {
 func Test_mongoQueryRepositoryService_Find(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -62,7 +62,7 @@ func Test_mongoQueryRepositoryService_Find(t *testing.T) {
 	r.Add(ctx, dto)
 
 	dto2 := new(testModel)
-	count := 1000
+	count := 100
 	for i := 0; i < count; i++ {
 		go r.Find(ctx, dto.ID, dto2)
 	}
@@ -83,7 +83,7 @@ func Test_mongoQueryRepositoryService_Find(t *testing.T) {
 func Test_mongoQueryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -108,7 +108,7 @@ func Test_mongoQueryRepositoryService_FindnotFoundShouldBeError(t *testing.T) {
 func Test_mongoQueryRepositoryService_Any(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -124,7 +124,7 @@ func Test_mongoQueryRepositoryService_Any(t *testing.T) {
 
 	r.Add(ctx, dto)
 
-	count := 1000
+	count := 100
 	for i := 0; i < count; i++ {
 		go r.Any(ctx)
 	}
@@ -145,7 +145,7 @@ func Test_mongoQueryRepositoryService_Any(t *testing.T) {
 func Test_mongoQueryRepositoryService_AnyWithFilter(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -175,7 +175,7 @@ func Test_mongoQueryRepositoryService_AnyWithFilter(t *testing.T) {
 func Test_mongoQueryRepositoryService_Count(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -185,7 +185,7 @@ func Test_mongoQueryRepositoryService_Count(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 1000
+	expect := 100
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
 		dto.ID = uuid.New()
@@ -194,7 +194,7 @@ func Test_mongoQueryRepositoryService_Count(t *testing.T) {
 		r.Add(ctx, dto)
 	}
 
-	count := 1000
+	count := 100
 	for i := 0; i < count; i++ {
 		go r.Count(ctx)
 	}
@@ -215,7 +215,7 @@ func Test_mongoQueryRepositoryService_Count(t *testing.T) {
 func Test_mongoQueryRepositoryService_CountWithFilter(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -225,7 +225,7 @@ func Test_mongoQueryRepositoryService_CountWithFilter(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 1000
+	expect := 100
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
 	for i := 0; i < expect; i++ {
@@ -250,7 +250,7 @@ func Test_mongoQueryRepositoryService_CountWithFilter(t *testing.T) {
 func Test_mongoQueryRepositoryService_List(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -260,7 +260,7 @@ func Test_mongoQueryRepositoryService_List(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 1000
+	expect := 100
 	cntExpect := 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
@@ -290,7 +290,7 @@ func Test_mongoQueryRepositoryService_List(t *testing.T) {
 func Test_mongoQueryRepositoryService_ListWithFilter(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -300,7 +300,7 @@ func Test_mongoQueryRepositoryService_ListWithFilter(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 1000
+	expect := 100
 	cntExpect := 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
@@ -330,7 +330,7 @@ func Test_mongoQueryRepositoryService_ListWithFilter(t *testing.T) {
 func Test_mongoCommandRepositoryService_Remove(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -346,7 +346,7 @@ func Test_mongoCommandRepositoryService_Remove(t *testing.T) {
 
 	r.Add(ctx, dto)
 
-	count := 1000
+	count := 100
 	for i := 0; i < count; i++ {
 		go r.Remove(ctx, dto.ID)
 	}
@@ -370,7 +370,7 @@ func Test_mongoCommandRepositoryService_Remove(t *testing.T) {
 func Test_mongoCommandRepositoryService_RemoveRange(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -380,7 +380,7 @@ func Test_mongoCommandRepositoryService_RemoveRange(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 1000
+	expect := 100
 	var ids = make([]uuid.UUID, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
@@ -408,7 +408,7 @@ func Test_mongoCommandRepositoryService_RemoveRange(t *testing.T) {
 func Test_mongoCommandRepositoryService_AddRange(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -418,7 +418,7 @@ func Test_mongoCommandRepositoryService_AddRange(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 1000
+	expect := 100
 	var cntExpect int64 = 0
 	rand.Seed(time.Now().UnixNano())
 	random := rand.Int()
@@ -448,7 +448,7 @@ func Test_mongoCommandRepositoryService_AddRange(t *testing.T) {
 func Test_mongoCommandRepositoryService_Update(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -460,12 +460,12 @@ func Test_mongoCommandRepositoryService_Update(t *testing.T) {
 
 	dto := new(testModel)
 	dto.ID = uuid.New()
-	dto.Expect = 1000
+	dto.Expect = 100
 
 	r.Add(ctx, dto)
 
 	dto.Expect = 1
-	count := 1000
+	count := 100
 	for i := 0; i < count; i++ {
 		go r.Update(ctx, dto)
 	}
@@ -489,7 +489,7 @@ func Test_mongoCommandRepositoryService_Update(t *testing.T) {
 func Test_mongoCommandRepositoryService_UpdateRange(t *testing.T) {
 	ctx := context.Background()
 
-	mongo := mongo.NewMongoAdapter(ctx, mongo.MongoSettings{
+	mongo := mongo.NewMongoAdapter(mongo.MongoSettings{
 		ConnectionUri:       "mongodb://admin:admin@localhost:27017",
 		DatabaseName:        "testdb",
 		CanCreateCollection: true,
@@ -499,7 +499,7 @@ func Test_mongoCommandRepositoryService_UpdateRange(t *testing.T) {
 		QueryRepositoryAdapter(mongo).
 		Create()
 
-	expect := 1000
+	expect := 100
 	var dtos = make([]core.Entitier, 0)
 	for i := 0; i < expect; i++ {
 		dto := new(testModel)
