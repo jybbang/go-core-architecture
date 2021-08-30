@@ -31,7 +31,7 @@ type clientProxy struct {
 
 type clients struct {
 	clients map[string]*clientProxy
-	mutex   sync.Mutex
+	sync.Mutex
 }
 
 type MongoSettings struct {
@@ -40,20 +40,12 @@ type MongoSettings struct {
 	CanCreateCollection bool
 }
 
-var clientsSync sync.Once
-
 var clientsInstance *clients
 
-func getClients() *clients {
-	if clientsInstance == nil {
-		clientsSync.Do(
-			func() {
-				clientsInstance = &clients{
-					clients: make(map[string]*clientProxy),
-				}
-			})
+func init() {
+	clientsInstance = &clients{
+		clients: make(map[string]*clientProxy),
 	}
-	return clientsInstance
 }
 
 func (a *adapter) migration() {
@@ -99,10 +91,8 @@ func (a *adapter) IsConnected() bool {
 }
 
 func (a *adapter) Connect(ctx context.Context) error {
-	clientsInstance := getClients()
-
-	clientsInstance.mutex.Lock()
-	defer clientsInstance.mutex.Unlock()
+	clientsInstance.Lock()
+	defer clientsInstance.Unlock()
 
 	uri := a.settings.ConnectionUri
 
@@ -141,8 +131,8 @@ func (a *adapter) Connect(ctx context.Context) error {
 }
 
 func (a *adapter) Disconnect() {
-	clientsInstance.mutex.Lock()
-	defer clientsInstance.mutex.Unlock()
+	clientsInstance.Lock()
+	defer clientsInstance.Unlock()
 
 	a.client.conn.Disconnect(context.Background())
 

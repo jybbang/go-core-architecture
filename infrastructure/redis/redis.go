@@ -28,7 +28,7 @@ type clientProxy struct {
 
 type clients struct {
 	clients map[string]*clientProxy
-	mutex   sync.Mutex
+	sync.Mutex
 }
 
 type RedisSettings struct {
@@ -36,20 +36,12 @@ type RedisSettings struct {
 	Password string
 }
 
-var clientsSync sync.Once
-
 var clientsInstance *clients
 
-func getClients() *clients {
-	if clientsInstance == nil {
-		clientsSync.Do(
-			func() {
-				clientsInstance = &clients{
-					clients: make(map[string]*clientProxy),
-				}
-			})
+func init() {
+	clientsInstance = &clients{
+		clients: make(map[string]*clientProxy),
 	}
-	return clientsInstance
 }
 
 func NewRedisAdapter(settings RedisSettings) *adapter {
@@ -63,10 +55,8 @@ func (a *adapter) IsConnected() bool {
 }
 
 func (a *adapter) Connect(ctx context.Context) error {
-	clientsInstance := getClients()
-
-	clientsInstance.mutex.Lock()
-	defer clientsInstance.mutex.Unlock()
+	clientsInstance.Lock()
+	defer clientsInstance.Unlock()
 
 	host := a.settings.Host
 
@@ -120,8 +110,8 @@ func (a *adapter) Connect(ctx context.Context) error {
 }
 
 func (a *adapter) Disconnect() {
-	clientsInstance.mutex.Lock()
-	defer clientsInstance.mutex.Unlock()
+	clientsInstance.Lock()
+	defer clientsInstance.Unlock()
 
 	a.client.redis.Close()
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"sync"
 
 	dapr "github.com/dapr/go-sdk/client"
 
@@ -23,7 +22,15 @@ type DaprSettings struct {
 
 var daprClient dapr.Client
 
-var clientsSync sync.Once
+func init() {
+	client, err := dapr.NewClient()
+
+	if err != nil {
+		panic(err)
+	}
+
+	daprClient = client
+}
 
 func NewDaprAdapter(settings DaprSettings) *adapter {
 	return &adapter{
@@ -36,24 +43,6 @@ func (a *adapter) IsConnected() bool {
 }
 
 func (a *adapter) Connect(ctx context.Context) error {
-	if daprClient == nil {
-		clientsSync.Do(
-			func() {
-				client, err := dapr.NewClient()
-
-				if err != nil {
-					panic(err)
-				}
-
-				// Check context cancellation
-				if err := ctx.Err(); err != nil {
-					panic(err)
-				}
-
-				daprClient = client
-			})
-	}
-
 	a.client = daprClient
 
 	return nil

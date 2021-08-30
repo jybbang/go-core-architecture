@@ -25,7 +25,7 @@ type clientProxy struct {
 
 type clients struct {
 	clients map[string]*clientProxy
-	mutex   sync.Mutex
+	sync.Mutex
 }
 
 type EtcdSettings struct {
@@ -33,20 +33,12 @@ type EtcdSettings struct {
 	DialTimeout time.Duration `model:",omitempty"`
 }
 
-var clientsSync sync.Once
-
 var clientsInstance *clients
 
-func getClients() *clients {
-	if clientsInstance == nil {
-		clientsSync.Do(
-			func() {
-				clientsInstance = &clients{
-					clients: make(map[string]*clientProxy),
-				}
-			})
+func init() {
+	clientsInstance = &clients{
+		clients: make(map[string]*clientProxy),
 	}
-	return clientsInstance
 }
 
 func NewEtcdAdapter(settings EtcdSettings) *adapter {
@@ -69,10 +61,8 @@ func (a *adapter) IsConnected() bool {
 }
 
 func (a *adapter) Connect(ctx context.Context) error {
-	clientsInstance := getClients()
-
-	clientsInstance.mutex.Lock()
-	defer clientsInstance.mutex.Unlock()
+	clientsInstance.Lock()
+	defer clientsInstance.Unlock()
 
 	if len(a.settings.Endpoints) == 0 {
 		return fmt.Errorf("at least 1 endpoint required")
@@ -113,8 +103,8 @@ func (a *adapter) Connect(ctx context.Context) error {
 }
 
 func (a *adapter) Disconnect() {
-	clientsInstance.mutex.Lock()
-	defer clientsInstance.mutex.Unlock()
+	clientsInstance.Lock()
+	defer clientsInstance.Unlock()
 
 	a.client.etcd.Close()
 
